@@ -14,7 +14,7 @@
 #### Features:
 * Easy to use;
 * Standard RouterOS API syntax;
-* SSL include;
+* SSL not-included (is need more tests);
 * Verbose.
 - - -
 ## Dependences
