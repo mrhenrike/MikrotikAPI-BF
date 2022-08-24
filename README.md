@@ -22,11 +22,10 @@
 sudo apt-get install python3-pip libglib2.0-dev -y
 sudo python3 -m pip install laiarturs-ros-api
 ```
-## Download
+## Download latest version
 ```sh
-wget -c https://github.com/mrhenrike/MikrotikAPI-BF/archive/refs/tags/v1.0.0.zip -O MikrotikAPI-BF.zip \
-  && unzip MikrotikAPI-BF.zip \
-  && rm -f MikrotikAPI-BF.zip
+git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
+cd MikrotikAPI-BF
 ```
 ## Usage
 ```sh
