@@ -24,7 +24,7 @@ sudo python3 -m pip install laiarturs-ros-api
 ```
 ## Download
 ```sh
-wget -c https://github.com/mrhenrike/MikrotikAPI-BF/archive/master.zip -O MikrotikAPI-BF.zip \
+wget -c https://github.com/mrhenrike/MikrotikAPI-BF/archive/refs/tags/v1.0.0.zip -O MikrotikAPI-BF.zip \
   && unzip MikrotikAPI-BF.zip \
   && rm -f MikrotikAPI-BF.zip
 ```
