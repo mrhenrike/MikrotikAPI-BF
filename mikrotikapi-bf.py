@@ -46,7 +46,7 @@ banner=('''
         |_|  |_|_|_|\_\_|  \___/ \__|_|_|\_\/_/   \_\_|  |___|    |____/|_|
 
 
-                    Mikrotik RouterOS API Bruteforce Tool 1.0.0
+                    Mikrotik RouterOS API Bruteforce Tool 1.0.1
                             André Henrique (@mrhenrike)
           Please report tips, suggests and problems to Twitter (@mrhenrike)
                     https://github.com/mrhenrike/MikrotikAPI-BF
