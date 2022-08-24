@@ -99,7 +99,7 @@ Elapsed Time: 10.1 sec | Passwords Tried: 5
 + [mkbrutusproject / MKBRUTUS](http://mkbrutusproject.github.io/MKBRUTUS/)
 + [DEssMALA / RouterOS_API](https://github.com/DEssMALA/RouterOS_API)
 
-### Scenario Current
+### Scenario Current (Described by Federico Massa and Ramiro Caire)
 Mikrotik brand devices (www.mikrotik.com), which runs the RouterOS operative system, are worldwide known and popular with a high networking market penetration. Many companies choose them as they are a great combination of low-cost and good performance. RouterOS can be also installed on other devices such as PC em Virtual Environment.
 
 This system can be managed by the following ways:
