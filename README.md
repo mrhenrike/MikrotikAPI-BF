@@ -1,9 +1,23 @@
-# Mikrotik API Brute-force Tool
+# Mikrotik RouterOS API Bruteforce Tool
 [![Build Status](https://travis-ci.org/socialwifi/RouterOS-api.svg?branch=master)](https://travis-ci.org/socialwifi/RouterOS-api)
 [![Latest Version](https://img.shields.io/pypi/v/RouterOS-api.svg)](https://pypi.python.org/pypi/RouterOS-api/)
 ![Supported Python versions](https://img.shields.io/badge/Python-3-blue)
 ![Wheel Status](https://img.shields.io/pypi/wheel/RouterOS-api.svg)
 [![License](https://img.shields.io/pypi/l/RouterOS-api.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/blob/master/LICENSE)
+
+```sh
+        __  __ _ _              _   _ _        _    ____ ___      ____  _____
+        |  \/  (_) | ___ __ ___ | |_(_) | __   / \  |  _ \_ _|    | __ )|  ___|
+        | |\/| | | |/ / '__/ _ \| __| | |/ /  / _ \ | |_) | |_____|  _ \| |_
+        | |  | | |   <| | | (_) | |_| |   <  / ___ \|  __/| |_____| |_) |  _|
+        |_|  |_|_|_|\_\_|  \___/ \__|_|_|\_\/_/   \_\_|  |___|    |____/|_|
+
+
+                    Mikrotik RouterOS API Bruteforce Tool 1.0.1
+                            André Henrique (@mrhenrike)
+          Please report tips, suggests and problems to Twitter (@mrhenrike)
+                    https://github.com/mrhenrike/MikrotikAPI-BF
+```
 
 **Brute force attack tool on Mikrotik box credentials exploiting API requests.**
 - This is a tool developed in Python 3 that performs bruteforce attacks (dictionary-based) systems against RouterOS (ver. 3.x or newer) which have the 8728/TCP port open. Currently has all the basic features of a tool to make dictionary-based attacks, but in the future we plan to incorporate other options.
