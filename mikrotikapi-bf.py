@@ -127,19 +127,21 @@ class ApiRos:
         self.sock = socket.socket(af, socket.SOCK_STREAM)
         self.sock.settimeout(5)  # Set socket timeout to 5 seconds, default is None
 
-        try:
-            # Trying to connect to RouterOS, error can occur if IP target is not reachable, or API is blocked in
-            # RouterOS firewall or ip services, or port is wrong.
-            self.connection = self.sock.connect(sa)
-        
-        except (socket.timeout):
-            print("[-] SOCKET TIMEOUT! Target timed out! Exiting...")
-            self.close()
-            sys.exit(1)
-        
-        except OSError:
-            print("[-] SOCKET ERROR! Check Target (IP or PORT parameters). Exiting...")
-            raise CreateSocketError('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.target, self.port))
+        connected = False
+        while not connected:
+            try:
+                # Trying to connect to RouterOS, error can occur if IP target is not reachable, or API is blocked in
+                # RouterOS firewall or ip services, or port is wrong.
+                self.connection = self.sock.connect(sa)
+                connected = True
+
+            except (socket.timeout):
+                print("[-] SOCKET TIMEOUT! Target timed out!")
+                time.sleep(60)
+
+            except OSError:
+                print("[-] SOCKET ERROR! Check Target (IP or PORT parameters). Exiting...")
+                raise CreateSocketError('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.target, self.port))
 
         # if self.use_ssl:
         #     try:
