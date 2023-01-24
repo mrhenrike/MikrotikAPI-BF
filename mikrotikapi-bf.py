@@ -262,7 +262,7 @@ class ApiRos:
         # Everything will be appended to paragraph variable, and then returned.
         paragraph = []
         received_sentence = ['']
-        while received_sentence[0] != '!done':
+        while received_sentence and received_sentence[0] != '!done':
             received_sentence = read_sentence()
             paragraph.append(received_sentence)
         self.status = paragraph
