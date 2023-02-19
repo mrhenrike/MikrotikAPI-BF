@@ -53,6 +53,7 @@ cd MikrotikAPI-BF
          -d, --dictionary        Password dictionary
          -s, --seconds           Delay seconds between retry attempts (default 1)
          -q, --quiet             Quiet mode
+         -a, --autosave          Automatically save current progress to file, and read from it on startup
 
     EXAMPLE
          python3 mikrotikapi-bf.py -t 192.168.0.200 -u manager -p 1337 -d /tmp/passwords.txt -s 5
@@ -91,6 +92,13 @@ Elapsed Time: 0.4 sec | Passwords Tried: 1
 ___________________________________________
 Elapsed Time: 10.1 sec | Passwords Tried: 5
 ```
+
+## Bug Fix
+#### 2023/Feb/02 (Contributor: https://github.com/Dmitriusan)
+* bug fix for empty list response
+* added retries on socket timeout when opening the connection
+* added ability to autosave current progress and continue after program restart. Example: `python3 mikrotikapi-bf.py -t 192.168.0.1 -d /tmp/passwords.txt -a /tmp/autosave.json` 
+
 - - -
 
 ### Based from:
