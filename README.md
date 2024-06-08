@@ -1,8 +1,6 @@
-# Mikrotik RouterOS API Bruteforce Tool
-[![Build Status](https://travis-ci.org/socialwifi/RouterOS-api.svg?branch=master)](https://travis-ci.org/socialwifi/RouterOS-api)
+# Mikrotik RouterOS API Bruteforce Tool (Improved)
 [![Latest Version](https://img.shields.io/pypi/v/RouterOS-api.svg)](https://pypi.python.org/pypi/RouterOS-api/)
 ![Supported Python versions](https://img.shields.io/badge/Python-3-blue)
-![Wheel Status](https://img.shields.io/pypi/wheel/RouterOS-api.svg)
 [![License](https://img.shields.io/pypi/l/RouterOS-api.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/blob/master/LICENSE)
 
 ```sh
@@ -13,7 +11,7 @@
         |_|  |_|_|_|\_\_|  \___/ \__|_|_|\_\/_/   \_\_|  |___|    |____/|_|
 
 
-                    Mikrotik RouterOS API Bruteforce Tool 1.0.1
+                    Mikrotik RouterOS API Bruteforce Tool 1.0.1 (Improved)
                             André Henrique (@mrhenrike)
           Please report tips, suggests and problems to Twitter (@mrhenrike)
                     https://github.com/mrhenrike/MikrotikAPI-BF
