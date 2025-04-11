@@ -1,5 +1,5 @@
 # Mikrotik RouterOS API Bruteforce Tool
-[![Build Status](https://travis-ci.org/socialwifi/RouterOS-api.svg?branch=master)](https://travis-ci.org/socialwifi/RouterOS-api)
+[![Build Status](https://travis-ci.org/Wooowe/Mikrotik-rust.svg?branch=master)](https://travis-ci.org/Wooowe/Mikrotik-rust)
 [![Latest Version](https://img.shields.io/pypi/v/RouterOS-api.svg)](https://pypi.python.org/pypi/RouterOS-api/)
 ![Supported Python versions](https://img.shields.io/badge/Python-3-blue)
 ![Wheel Status](https://img.shields.io/pypi/wheel/RouterOS-api.svg)
@@ -13,52 +13,59 @@
         |_|  |_|_|_|\_\_|  \___/ \__|_|_|\_\/_/   \_\_|  |___|    |____/|_|
 
 
-                    Mikrotik RouterOS API Bruteforce Tool 1.0.1
-                            André Henrique (@mrhenrike)
-          Please report tips, suggests and problems to Twitter (@mrhenrike)
+                     Mikrotik RouterOS API Bruteforce Tool 1.2
+                     André Henrique (X / Linkedin: @mrhenrike)
+            Please report tips, suggests and problems to X or LinkedIn
                     https://github.com/mrhenrike/MikrotikAPI-BF
 ```
 
 **Brute force attack tool on Mikrotik box credentials exploiting API requests.**
-- This is a tool developed in Python 3 that performs bruteforce attacks (dictionary-based) systems against RouterOS (ver. 3.x or newer) which have the 8728/TCP port open. Currently has all the basic features of a tool to make dictionary-based attacks, but in the future we plan to incorporate other options.
+- This is a tool developed in Python 3 that performs bruteforce attacks (dictionary-based) systems against Mikrotik RouterOS and Cloud Hosted Router (ver. 6.x or newer) which have the API interface port open (mormally port 8728 for non-SSL, 8729 for SSL). Currently has all the basic features of a tool to make dictionary-based attacks, but in the future we plan to incorporate other options.
 - This tool is a fork of the MKBrutos Project (original project). As the original tool stopped being updated, many changes occurred in Mikrotik's boxes, including and its API requests. This current project is the improvement or "an upgrade" of MKBRUTUS using the new Mikrotik APIs. 
 
 > **WARNING** for old users: 
 > Project has changes it's structure and import signature.
 > So it is important to always perform a "git pull" or download the latest release again.
 
-#### Features:
-* Easy to use;
-* Standard RouterOS API syntax;
-* SSL not-included (is need more tests);
-* Verbose.
-- - -
-## Dependences
-```sh
-sudo apt-get install python3-pip libglib2.0-dev -y
-sudo python3 -m pip install laiarturs-ros-api
-```
+## Features
+- Brute-force attack using a password wordlist
+- SSL support (via `--ssl` flag)
+- Auto delay between attempts
+- Clear and structured terminal output
+- Modular code for easy integration and customization
+
+## Requirements
+- Python 3.x
+- No external dependencies required
+- Local modules: `_api.py`, `_log.py`
+
 ## Download latest version
 ```sh
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 ```
-## Usage
-```sh
-    OPTIONS
-         -t, --target            RouterOS target
-         -p, --port              RouterOS port (default 8728)
-         -u, --user              User name (default admin)
-         -h, --help              This help
-         -d, --dictionary        Password dictionary
-         -s, --seconds           Delay seconds between retry attempts (default 1)
-         -q, --quiet             Quiet mode
-         -a, --autosave          Automatically save current progress to file, and read from it on startup
 
-    EXAMPLE
-         python3 mikrotikapi-bf.py -t 192.168.0.200 -u manager -p 1337 -d /tmp/passwords.txt -s 5
-         python3 mikrotikapi-bf.py -t 192.168.0.1 -d /tmp/passwords.txt
+## Usage
+```bash
+python mikrotikapi-bf.py -t <target_ip> -d <wordlist.txt> [-u <user>] [-p <port>] [-s <seconds>] [--ssl]
 ```
+
+### Example
+```bash
+python mikrotikapi-bf.py -t 192.168.88.1 -d ./passwords.txt --ssl
+```
+
+## Arguments
+| Option       | Description                              | Default         |
+|--------------|------------------------------------------|-----------------|
+| `-t`         | Mikrotik IP address                      | *Required*      |
+| `-d`         | Path to password wordlist                | *Required*      |
+| `-u`         | Username to authenticate                 | `admin`         |
+| `-p`         | API non-ssl port                         | `8728`          |
+| `-s`         | Delay between attempts (in seconds)      | `1`             |
+| `--ssl`      | Use SSL for RouterOS API (port 8729)     | *Disabled*      |
+
+
 ## Outputs
 #### If login successfull
 ```sh
@@ -126,3 +133,7 @@ Both, Winbox and API ports uses a RouterOS proprietary protocol to "talk" with m
 It is possible that in the midst of a pentesting project, you can find the ports 8291/TCP (Winbox default) and 8728/TCP (API Non-SSL default) open and here we have a new attack vector.
 
 Because the port 8291/TCP is only possible to authenticate using the Winbox tool (at least by now ;), we realized the need of develop a tool to perform dictionary-based attacks over the API port (8728/TCP), in order to allow the pentester to have another option to try to gain access
+
+## License
+
+MIT License
