@@ -1,8 +1,0 @@
-root:toor
-manager:sexy%%baby
-admin:C0C0D3GRILO
-administrator:teste
-adm:ro48br48
-info:info
-user:user
-ftp:ftp
