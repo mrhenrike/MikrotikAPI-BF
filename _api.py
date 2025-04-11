@@ -2,7 +2,6 @@
 import socket
 import ssl
 
-
 class Api:
     def __init__(self, host, port, use_ssl=False):
         self.host = host

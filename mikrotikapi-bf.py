@@ -1,8 +1,9 @@
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-_version = "1.8"
+_version = "1.9"
 
-import time, argparse, threading, concurrent.futures
+import time, argparse, threading, concurrent.futures, socket
 from datetime import datetime
 from pathlib import Path
 
@@ -20,7 +21,7 @@ def current_time():
     return datetime.now().strftime("%H:%M:%S")
 
 class Bruteforce:
-    def __init__(self, target, port, usernames, passwords, combo_dict, delay, use_ssl=False, max_workers=2, verbose=False, verbose_all=False):
+    def __init__(self, target, port, usernames, passwords, combo_dict, delay, use_ssl=False, max_workers=2, verbose=False, verbose_all=False, services_to_validate=None):
         self.target = target
         self.port = port
         self.usernames = usernames
@@ -31,6 +32,7 @@ class Bruteforce:
         self.max_workers = min(max_workers, 15)
         self.verbose = verbose
         self.verbose_all = verbose_all
+        self.services_to_validate = services_to_validate or []
         self.log = Log(verbose=verbose, verbose_all=verbose_all)
         self.wordlist = []
         self.successes = []
@@ -82,6 +84,20 @@ class Bruteforce:
 
         self.wordlist = list(dict.fromkeys(self.wordlist))
 
+    def check_ftp(self):
+        try:
+            with socket.create_connection((self.target, 21), timeout=3) as s:
+                banner = s.recv(1024).decode(errors='ignore')
+                if 'ftp' in banner.lower():
+                    self.log.info("[*] FTP service detected and accessible.")
+                    return True
+                else:
+                    self.log.warning("[*] FTP port open but banner is unexpected.")
+                    return False
+        except Exception as e:
+            self.log.warning(f"[*] FTP service check failed: {e}")
+            return False
+
     def get_next_combo(self):
         with self.index_lock:
             if self.index >= len(self.wordlist):
@@ -111,6 +127,11 @@ class Bruteforce:
             time.sleep(self.delay)
 
     def run(self):
+        if "ftp" in self.services_to_validate:
+            self.log.info("[*] Validating service: FTP")
+            if not self.check_ftp():
+                self.log.warning("[*] FTP service is not available. Skipping FTP brute-force.")
+
         self.log.info("[*] Starting brute force attack...")
         self.log.info(f"[*] Total Attempts {len(self.wordlist)}...")
 
@@ -148,7 +169,10 @@ if __name__ == "__main__":
     parser.add_argument("--threads", type=int, default=2, help="Number of concurrent threads (default: 2, max: 15)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Show failed and warning attempts")
     parser.add_argument("-vv", "--verbose-all", action="store_true", help="Show debug and error messages")
+    parser.add_argument("--validate", help="Comma-separated list of services to validate before attack (ftp,ssh,telnet,webfig)", type=str)
     args = parser.parse_args()
+
+    services_to_validate = [s.strip().lower() for s in args.validate.split(',')] if args.validate else []
 
     print(f"""
          __  __ _ _              _   _ _        _    ____ ___      ____  _____
@@ -176,7 +200,8 @@ if __name__ == "__main__":
         use_ssl=args.ssl,
         max_workers=args.threads,
         verbose=args.verbose,
-        verbose_all=args.verbose_all
+        verbose_all=args.verbose_all,
+        services_to_validate=services_to_validate
     )
 
     try:

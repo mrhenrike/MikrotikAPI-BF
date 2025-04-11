@@ -1,7 +1,0 @@
-manager
-admin
-administrator
-adm
-info
-user
-ftp
