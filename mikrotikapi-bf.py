@@ -514,7 +514,15 @@ def main():
         # First of all, we'll try with RouterOS default credentials ("admin":"")
         while defcredcheck:
             s = None
-            apiros = ApiRos(s, target, "admin", "", port)
+
+            # check connection
+            # mayby administrator is disabled api on router
+            try:
+                apiros = ApiRos(s, target, "admin", "", port)
+            except:
+                print("Connection Failed. Mayby Administrator Disabled The Api...")
+                sys.exit('Bye :D')
+                
             dictFile.close()
             defaultcreds = apiros.status
             login = ''.join(defaultcreds[0][0])
