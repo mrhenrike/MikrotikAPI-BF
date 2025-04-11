@@ -1,0 +1,5 @@
+# MikrotikAPI-BF requirements (minimal)
+# No default dependencies are required for core functionality
+
+# Optional: for ESC key interruption support
+keyboard ; platform_system == "Windows" or platform_system == "Linux"

