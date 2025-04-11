@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-_version = "1.7"
+_version = "1.8"
 
 import time, argparse, threading, concurrent.futures
 from datetime import datetime
