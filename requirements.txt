@@ -15,3 +15,7 @@ pip install colorama>=0.4.6
 # If you want to use SSH connections, install paramiko
 # For SSH connections to Mikrotik devices
 pip install paramiko
+
+# For HTML parsing
+# If you want to use HTML parsing, install BeautifulSoup4   
+pip install bs4
