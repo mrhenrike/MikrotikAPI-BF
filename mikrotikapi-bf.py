@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-_version = "1.11"
+_version = "1.12"
 
 import time, argparse, threading, concurrent.futures
 from datetime import datetime
 from pathlib import Path
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 try:
     from _api import Api
@@ -106,6 +109,7 @@ class Bruteforce:
 
     def validate_extra_services(self):
         from ftplib import FTP
+        import telnetlib
         import paramiko
 
         for cred in self.successes:
@@ -140,6 +144,42 @@ class Bruteforce:
                 except Exception as e:
                     if self.verbose_all:
                         self.log.debug(f"SSH failed for {user}:{passwd} — {e}")
+
+            if "telnet" in self.validate_services:
+                port = self.validate_services.get("telnet") or 23
+                try:
+                    if self.verbose_all:
+                        self.log.debug(f"Testing TELNET for {user}:{passwd} on port {port}")
+                    tn = telnetlib.Telnet(self.target, port, timeout=5)
+                    tn.read_until(b"login: ", timeout=5)
+                    tn.write(user.encode('ascii') + b"\n")
+                    tn.read_until(b"Password: ", timeout=5)
+                    tn.write(passwd.encode('ascii') + b"\n")
+
+                    idx, match, _ = tn.expect([
+                        b"incorrect",
+                        b">",
+                        b"#",
+                        b"\$",
+                    ], timeout=5)
+
+                    tn.close()
+
+                    if idx in [1, 2, 3]:  # prompt shell: > # $
+                        validated.append("telnet")
+                        if self.verbose_all:
+                            self.log.debug(f"TELNET login success for {user}:{passwd}")
+                    elif idx == 0:  # matched "incorrect"
+                        matched_text = match.group().decode(errors="ignore")
+                        self.log.debug(f"TELNET failed for {user}:{passwd} — matched: {matched_text.strip()}")
+                    else:  # no match — TELNET likely accepted the login (but didn't send a known prompt)
+                        validated.append("telnet")
+                        self.log.debug(f"TELNET login assumed valid for {user}:{passwd} — matched: correct but no prompt")
+
+                except Exception as e:
+                    if self.verbose_all:
+                        self.log.debug(f"TELNET exception for {user}:{passwd} on port {port} — {e}")
+
 
             if validated:
                 cred["services"].extend(s for s in validated if s not in cred["services"])
