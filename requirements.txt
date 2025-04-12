@@ -3,3 +3,6 @@
 
 # Optional: for ESC key interruption support
 keyboard ; platform_system == "Windows" or platform_system == "Linux"
+
+# Used for colored terminal output (cross-platform)
+colorama>=0.4.6

