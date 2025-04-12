@@ -24,21 +24,44 @@ class Log:
 
     def info(self, message):
         # General output for normal execution flow (always visible)
-        self._format("INFO", message, Fore.YELLOW)
+        if self.verbose:
+            self._format("INFO", message, Fore.YELLOW)
+        elif self.verbose_all:
+            self._format("INFO", message, Fore.YELLOW)
+        else:
+            self._format("INFO", message, Fore.YELLOW)
 
     def success(self, message):
         # Highlight successful logins or events
-        self._format("SUCC", message, Fore.GREEN)
+        if self.verbose:
+            self._format("SUCC", message, Fore.GREEN)
+        elif self.verbose_all:
+            self._format("SUCC", message, Fore.GREEN)
+        else:
+            self._format("SUCC", message, Fore.GREEN)
+
+    def warning(self, message):
+        # Show warnings if in very verbose (debug) mode
+        if self.verbose:
+            self._format("WARN", message, Fore.LIGHTMAGENTA_EX)
+        elif self.verbose_all:
+            self._format("WARN", message, Fore.LIGHTMAGENTA_EX)
+        else:
+            self._format("WARN", message, Fore.LIGHTMAGENTA_EX)
 
     def fail(self, message):
         # Only show failed attempts if verbosity is enabled
         if self.verbose:
             self._format("FAIL", message, Fore.RED)
-
-    def warning(self, message):
-        # Show warnings if in very verbose (debug) mode
         if self.verbose_all:
-            self._format("WARN", message, Fore.LIGHTMAGENTA_EX)
+            self._format("FAIL", message, Fore.RED)
+
+    def skip(self, message):
+        # Show warnings if in very verbose (debug) mode
+        if self.verbose:
+            self._format("SKIP", message, Fore.BLUE)
+        elif self.verbose_all:
+            self._format("SKIP", message, Fore.BLUE)
 
     def error(self, message):
         # Show errors if in very verbose (debug) mode
@@ -51,7 +74,11 @@ class Log:
             self._format("DEBB", message, Fore.CYAN)
     
     @staticmethod
-    def banner():
+    def banner(version):
+        # Display the banner with version information
+        _version = version
+        # ANSI escape codes for colors
+        # Print the banner with version information
         print(f"""
             __  __ _ _              _   _ _        _    ____ ___      ____  _____
             |  \/  (_) | ___ __ ___ | |_(_) | __   / \\  |  _ \\_ _|    | __ )|  ___|
@@ -59,7 +86,7 @@ class Log:
             | |  | | |   <| | | (_) | |_| |   <  / ___ \\|  __/| |_____| |_) |  _|
             |_|  |_|_|_|\\_\\_|  \\___/ \\__|_|_|\\_\\/_/   \\_\\_|  |___|    |____/|_|
 
-                        Mikrotik RouterOS API Bruteforce Tool v1.10
+                      Mikrotik RouterOS API Bruteforce Tool v"{_version}"
                         André Henrique (X / Linkedin: @mrhenrike)
                 Please report tips, suggests and problems to X or LinkedIn
                         https://github.com/mrhenrike/MikrotikAPI-BF
