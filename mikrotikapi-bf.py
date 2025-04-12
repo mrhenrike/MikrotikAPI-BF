@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Author: Andre Henrique (LinkedIn: https://www.linkedin.com/in/mrhenrike)
+# Author: Andre Henrique (LinkedIn: https://www.linkedin.com/in/mrhenrike | X: @mrhenrike)
 
 _version = "1.15"
 
