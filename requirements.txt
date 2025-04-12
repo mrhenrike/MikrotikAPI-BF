@@ -4,5 +4,14 @@
 # Optional: for ESC key interruption support
 keyboard ; platform_system == "Windows" or platform_system == "Linux"
 
-# Used for colored terminal output (cross-platform)
-colorama>=0.4.6
+# This is optional and not required for core functionality
+# For colored terminal output
+# If you want to use colored terminal output, install colorama
+# For Windows and Linux
+pip install colorama>=0.4.6
+
+# Note: paramiko is not required for the core functionality of the library
+# but is needed for SSH connections.
+# If you want to use SSH connections, install paramiko
+# For SSH connections to Mikrotik devices
+pip install paramiko

