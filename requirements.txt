@@ -1,5 +1,6 @@
 # MikrotikAPI-BF requirements (minimal)
-# No default dependencies are required for core functionality
+# Supported for Python >= 3.8 and < 3.13
+requests
 
 # Optional: for ESC key interruption support
 keyboard ; platform_system == "Windows" or platform_system == "Linux"
