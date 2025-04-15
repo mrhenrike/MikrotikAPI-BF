@@ -33,17 +33,28 @@ This tool supports:
 
 > Tip: Use `python3.12` with a virtual environment for guaranteed compatibility or install the python v3.12.2 in your machine via `install-python-3.12.sh` without substitute the python v3.13+.
 
-### 🐍 Installing Python 3.12.x on Kali Linux (Without Removing Python 3.13.x)
+### 🐍 Installing Python 3.12.x on Kali Linux and Windows (Without Removing Python 3.13.x)
 
 Kali Linux ships with Python 3.13.x by default, which may cause compatibility issues with some tools — including this one. Below is a clean way to install **Python 3.12.x side-by-side**, without breaking the system or affecting existing system dependencies.
 
-#### 🚀 Quick Setup Using the Provided Script
+#### 🚀 Quick Setup Using the Provided Script for Kali Linux
 
 Use the `install-python-3.12.sh` script included in this repository:
 
 ```bash
 chmod +x install-python-3.12.sh
 ./install-python-3.12.sh
+```
+
+#### 🚀 Quick Setup Using the Provided Script for Windows Systems
+
+Use the `install-python-3.12.ps1` script included in this repository:
+
+```powershell
+# Open powershell with Admin-mode and surf until path where downloaded the script, for example:
+Set-ExecutionPolicy RemoteSigned
+cd "C:\Users\YOURUSER\Downloads"
+.\install-python-3.12.ps1
 ```
 
 To install all dependencies:
