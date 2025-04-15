@@ -7,6 +7,11 @@ Todas as alterações relevantes neste projeto serão documentadas neste arquivo
 
 ---
 
+## [v1.16] - 2025-04-14
+### 🔥 Correção e ajustes
+- ✅ Correção de compatibilidade com python v3.8 até v3.12 com ajustes de libs importadas
+- ✅ Criação e script de suporte para compatibilidade com python 3.12 caso o sistema tenha uma versão superior
+
 ## [v1.15] - 2025-04-12
 ### 🔥 Adicionado
 - ✅ Sumário final dos serviços testados com status `SUCCESS`, `ERROR` ou `NOT TESTED`.

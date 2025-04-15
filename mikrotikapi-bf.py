@@ -2,7 +2,33 @@
 # -*- coding: utf-8 -*-
 # Author: Andre Henrique (LinkedIn: https://www.linkedin.com/in/mrhenrike | X: @mrhenrike)
 
-_version = "1.15"
+_version = "1.16"
+
+# Check if python version is between 3.8.x until 3.12.x
+import sys
+
+MIN_PYTHON = (3, 8)
+MAX_PYTHON = (3, 12)
+current_version = sys.version_info[:2]
+
+if current_version < MIN_PYTHON:
+    print(f"\n[ERROR] Unsupported Python version: {sys.version.split()[0]}")
+    print("[INFO] MikrotikAPI-BF requires Python 3.8 or higher.\n")
+    sys.exit(1)
+
+elif current_version > MAX_PYTHON:
+    print(f"\n[WARN] You are using Python {sys.version.split()[0]}, which is newer than supported (max: 3.12.x).")
+    print("[INFO] Some modules (e.g., 'telnetlib') may be deprecated or removed in this version.")
+    print("[SUGGESTION] It's recommended to install Python 3.12.x (no need to uninstall your current version).")
+
+    try:
+        response = input("\n[?] Do you want to continue anyway? [y/N]: ").strip().lower()
+        if response not in ["y", "yes"]:
+            print("\n[ABORTED] Execution cancelled by user.\n")
+            sys.exit(1)
+    except KeyboardInterrupt:
+        print("\n[ABORTED] Interrupted by user.\n")
+        sys.exit(1)
 
 # This module provides a brute-force attack tool for Mikrotik RouterOS API and REST-API
 # It allows users to test credentials against the API and validate post-login access to services like FTP, SSH, and TELNET.
@@ -278,7 +304,7 @@ class Bruteforce:
                     tn.write(passwd.encode('ascii') + b"\n")
 
                     idx, match, _ = tn.expect([
-                        b"incorrect", b">", b"#", b"\$"
+                        b"incorrect", b">", b"#", br"$"
                     ], timeout=5)
                     tn.close()
 

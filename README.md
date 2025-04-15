@@ -24,11 +24,27 @@ MikrotikAPI-BF is a Python-based brute-force tool designed to test Mikrotik Rout
 - Clean, deduplicated output table with detected services per credential
 - Verbosity toggles for clean or full logging experience
 
-## Requirements
-- Python 3.7+
-- Modules:
-  - `colorama`
-  - `ftplib`
+## Python Compatibility
+This tool supports:
+
+- ✅ Python 3.8 to 3.12 — Fully supported and tested
+- ⚠️ Python 3.6/3.7 — May work, but not officially tested
+- ❌ Python 3.13+ — Not supported due to removal of `telnetlib`
+
+> Tip: Use `python3.12` with a virtual environment for guaranteed compatibility or install the python v3.12.2 in your machine via `install-python-3.12.sh` without substitute the python v3.13+.
+
+### 🐍 Installing Python 3.12.x on Kali Linux (Without Removing Python 3.13.x)
+
+Kali Linux ships with Python 3.13.x by default, which may cause compatibility issues with some tools — including this one. Below is a clean way to install **Python 3.12.x side-by-side**, without breaking the system or affecting existing system dependencies.
+
+#### 🚀 Quick Setup Using the Provided Script
+
+Use the `install-python-3.12.sh` script included in this repository:
+
+```bash
+chmod +x install-python-3.12.sh
+./install-python-3.12.sh
+```
 
 To install all dependencies:
 ```bash
