@@ -8,14 +8,14 @@ keyboard ; platform_system == "Windows" or platform_system == "Linux"
 # For colored terminal output
 # If you want to use colored terminal output, install colorama
 # For Windows and Linux
-pip install colorama>=0.4.6
+colorama>=0.4.6
 
 # Note: paramiko is not required for the core functionality of the library
 # but is needed for SSH connections.
 # If you want to use SSH connections, install paramiko
 # For SSH connections to Mikrotik devices
-pip install paramiko
+paramiko
 
 # For HTML parsing
 # If you want to use HTML parsing, install BeautifulSoup4   
-pip install bs4
+bs4
