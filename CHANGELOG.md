@@ -8,9 +8,52 @@ Todas as alterações relevantes neste projeto serão documentadas neste arquivo
 ---
 
 ## [v1.16] - 2025-04-14
-### 🔥 Correção e ajustes
-- ✅ Correção de compatibilidade com python v3.8 até v3.12 com ajustes de libs importadas
-- ✅ Criação e script de suporte para compatibilidade com python 3.12 caso o sistema tenha uma versão superior
+### 🧠 Novidades e Funcionalidades
+- **Compatibilidade ampliada com Python 3.12+**:
+  - Implementada verificação automática de versão mínima e máxima suportada (`>=3.8` e `<3.13`).
+  - Exibe aviso para versões não testadas (ex: Python 3.13+), com opção de continuar mesmo assim.
+
+- **Suporte completo a verificação de serviços (validação pós-login)**:
+  - Adicionados testes dinâmicos para:
+    - `FTP`
+    - `SSH`
+    - `TELNET`
+    - `REST-API` (HTTP ou HTTPS)
+  - Verificações feitas apenas se as respectivas portas estiverem abertas no alvo.
+
+- **Novo resumo final de serviços (`SERVICE SUMMARY`)**:
+  - Exibe status de teste por serviço (`OK`, `ERROR`, `NOT TESTED`)
+  - Mostra as portas reais testadas e se foram válidas ou não
+  - Consolida os resultados ao final do script com contagem total por categoria
+
+- **Melhoria no tratamento de wordlists e credenciais**:
+  - Correções na renderização de campos com largura dinâmica na tabela final
+  - Tratamento adequado de wordlists duplicadas
+
+- **Organização e UX CLI refinados**:
+  - `argparse` agora exibe valores padrão nas descrições
+  - Melhor explicação sobre cada flag de uso
+  - Argumento `--validate` agora aceita `ftp`, `ssh`, `telnet` com ou sem definição de porta (`ftp=2121`)
+
+### 🐛 Correções de Bugs
+- Corrigido erro de renderização com f-strings para colunas `USERNAME` e `PASSWORD`
+- Corrigido erro de execução no Linux onde `telnetlib` foi removido no Python 3.13+
+- Corrigido erro de digitação em `restapi` quando `--ssl` está ativado sem a porta 443 acessível
+- Corrigido crash na renderização de tabela final quando algum serviço estava com status `None`
+
+### ⚠️ Notas Importantes
+- **Python 3.13+** não é oficialmente suportado devido à remoção de bibliotecas padrão (ex: `telnetlib`)
+- Recomendado uso de **Python 3.12.x**
+  - Scripts de instalação automática foram incluídos:
+    - `install-python-3.12.sh` (Linux)
+    - `install-python-3.12.ps1` (Windows)
+
+### 🧪 Testado em
+
+- ✅ Kali Linux (Python 3.12 via script)
+- ✅ Windows 11 (PowerShell + Python 3.12 via instalador oficial)
+- ✅ ParrotSec OS
+- ✅ Ubuntu Desktop 22.04+
 
 ## [v1.15] - 2025-04-12
 ### 🔥 Adicionado
