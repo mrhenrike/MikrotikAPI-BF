@@ -138,6 +138,9 @@ It is possible that in the midst of a pentesting project, you can find the ports
 
 Because the port 8291/TCP is only possible to authenticate using the Winbox tool (at least by now ;), we realized the need of develop a tool to perform dictionary-based attacks over the API port (8728/TCP), in order to allow the pentester to have another option to try to gain access
 
+## Disclaimer
+Usage of these software for attacking targets without prior consent is illegal. It's the end user's responsibility to obey all applicable laws. The developer is not responsible for any misuse of these functions.
+
 ## License
 MIT License - see [LICENSE](LICENSE) file.
 
