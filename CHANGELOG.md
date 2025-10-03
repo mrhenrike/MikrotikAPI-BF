@@ -1,9 +1,9 @@
 # 📜 CHANGELOG v2.0
 
-Todas as alterações relevantes neste projeto serão documentadas neste arquivo.
+All notable changes to this project will be documented in this file.
 
-> Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)  
-> Este projeto segue o versionamento [SemVer](https://semver.org/spec/v2.0.0.html)
+> Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)  
+> This project follows [SemVer](https://semver.org/spec/v2.0.0.html) versioning
 
 ---
 
@@ -11,47 +11,47 @@ Todas as alterações relevantes neste projeto serão documentadas neste arquivo
 
 ### 🎉 MAJOR RELEASE - Complete Rewrite
 
-Esta é uma versão **major** com mudanças significativas na arquitetura e funcionalidades.
+This is a **major** version with significant changes in architecture and functionality.
 
 ---
 
-### 🚀 Novidades e Funcionalidades
+### 🚀 New Features and Functionality
 
-#### **1. Sistema de Exportação de Resultados (`_export.py`)**
-- ✨ **Novo módulo**: `_export.py` para exportação profissional de resultados
-- ✅ Suporte a múltiplos formatos:
-  - **JSON**: Estruturado com metadados completos
-  - **CSV**: Compatível com Excel/LibreOffice
-  - **XML**: Formato hierárquico com pretty-print
-  - **TXT**: Formato simples user:pass
-- ✅ Nomeação automática de arquivos com timestamp
-- ✅ Organização em diretório configurável
-- ✅ Método `export_all()` para exportar todos os formatos
-- ✅ Metadados incluídos: target, timestamp, total de credenciais
+#### **1. Result Export System (`_export.py`)**
+- ✨ **New module**: `_export.py` for professional result export
+- ✅ Multiple format support:
+  - **JSON**: Structured with complete metadata
+  - **CSV**: Compatible with Excel/LibreOffice
+  - **XML**: Hierarchical format with pretty-print
+  - **TXT**: Simple user:pass format
+- ✅ Automatic timestamped file naming
+- ✅ Configurable directory organization
+- ✅ `export_all()` method to export all formats
+- ✅ Included metadata: target, timestamp, total credentials
 
-**Exemplo de uso**:
+**Usage example**:
 ```python
 exporter = ResultExporter(results, target="192.168.88.1")
 files = exporter.export_all()
-# Gera: mikrotik_192_168_88_1_20250115_103000.json/csv/xml/txt
+# Generates: mikrotik_192_168_88_1_20250115_103000.json/csv/xml/txt
 ```
 
 ---
 
-#### **2. Barra de Progresso e Indicadores Visuais (`_progress.py`)**
-- ✨ **Novo módulo**: `_progress.py` para tracking visual
-- ✅ **ProgressBar** completa com:
-  - Barra visual animada (█░)
-  - Porcentagem exata
-  - Contador de tentativas (atual/total)
-  - Contador de sucessos (✓)
-  - Velocidade em tentativas/segundo
-  - **ETA** (tempo estimado restante)
-  - Thread-safe para uso concorrente
-- ✅ **SpinnerProgress** para operações indeterminadas
-- ✅ Frames animados: ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏
+#### **2. Progress Bar and Visual Indicators (`_progress.py`)**
+- ✨ **New module**: `_progress.py` for visual tracking
+- ✅ Complete **ProgressBar** with:
+  - Animated visual bar (#.)
+  - Exact percentage
+  - Attempt counter (current/total)
+  - Success counter (OK)
+  - Speed in attempts/second
+  - **ETA** (estimated time remaining)
+  - Thread-safe for concurrent use
+- ✅ **SpinnerProgress** for indeterminate operations
+- ✅ Animated frames: ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏
 
-**Exemplo de saída**:
+**Example output**:
 ```
 [████████████████████░░░░░░░░░░] 65.4% (327/500) | ✓ 3 | 12.5 attempts/s | ETA: 0:00:14
 ```
@@ -205,70 +205,70 @@ pytest --cov=. test_mikrotikapi_bf.py
 
 ---
 
-### 🔧 Alterações e Melhorias
+### 🔧 Changes and Improvements
 
-#### **Arquitetura**
-- 🏗️ Refatoração completa em módulos especializados
+#### **Architecture**
+- 🏗️ Complete refactoring into specialized modules
 - 🏗️ Separation of concerns
-- 🏗️ Design patterns implementados:
+- 🏗️ Implemented design patterns:
   - Strategy (RetryStrategy)
   - Circuit Breaker
   - Context Manager (ProxyManager)
   - Factory (ResultExporter)
-- 🏗️ Type hints adicionados onde relevante
-- 🏗️ Documentação inline melhorada
+- 🏗️ Type hints added where relevant
+- 🏗️ Improved inline documentation
 
 #### **Performance**
-- ⚡ Thread pooling otimizado
-- ⚡ Lock granular para reduzir contenção
-- ⚡ Deduplicação eficiente de wordlist
-- ⚡ Progress tracking sem overhead
-- ⚡ Timeout configurável por operação
+- ⚡ Optimized thread pooling
+- ⚡ Granular locking to reduce contention
+- ⚡ Efficient wordlist deduplication
+- ⚡ Progress tracking without overhead
+- ⚡ Configurable timeout per operation
 
 #### **Error Handling**
-- 🛡️ Tratamento robusto de exceções
-- 🛡️ Mensagens de erro informativas
+- 🛡️ Robust exception handling
+- 🛡️ Informative error messages
 - 🛡️ Graceful degradation
-- 🛡️ Retry automático em falhas temporárias
-- 🛡️ Circuit breaker para proteção
+- 🛡️ Automatic retry on temporary failures
+- 🛡️ Circuit breaker for protection
 
 #### **UX/UI**
-- 🎨 Output colorido consistente
-- 🎨 Progress bar visual
-- 🎨 Tabelas formatadas
-- 🎨 Timestamps em todos os logs
-- 🎨 Separação clara de seções
+- 🎨 Consistent colored output
+- 🎨 Visual progress bar
+- 🎨 Formatted tables
+- 🎨 Timestamps in all logs
+- 🎨 Clear section separation
 
 ---
 
-### 📦 Novas Dependências
+### 📦 New Dependencies
 
 ```
-PySocks>=1.7.1      # Para suporte a proxy SOCKS
-PyYAML>=6.0         # Para arquivos de configuração
-pytest>=7.0.0       # Para testes unitários
+PySocks>=1.7.1      # For SOCKS proxy support
+PyYAML>=6.0         # For configuration files
+pytest>=7.0.0       # For unit tests
 ```
 
 ---
 
-### 📁 Estrutura de Arquivos Atualizada
+### 📁 Updated File Structure
 
 ```
 MikrotikAPI-BF/
-├── mikrotikapi-bf.py          # Script principal (a ser atualizado)
-├── mikrotik-discovery.py      # Script de descoberta standalone (NOVO)
+├── mikrotikapi-bf.py          # Main script (to be updated)
+├── mikrotik-discovery.py      # Standalone discovery script (NEW)
 ├── _api.py                    # API protocol
 ├── _log.py                    # Logging system
-├── _export.py                 # Export functionality (NOVO)
-├── _progress.py               # Progress tracking (NOVO)
-├── _retry.py                  # Retry & circuit breaker (NOVO)
-├── _proxy.py                  # Proxy support (NOVO)
-├── _discovery.py              # Network discovery (NOVO)
-├── config.yaml.example        # Config template (NOVO)
-├── test_mikrotikapi_bf.py     # Unit tests (NOVO)
+├── _export.py                 # Export functionality (NEW)
+├── _progress.py               # Progress tracking (NEW)
+├── _retry.py                  # Retry & circuit breaker (NEW)
+├── _proxy.py                  # Proxy support (NEW)
+├── _discovery.py              # Network discovery (NEW)
+├── config.yaml.example        # Config template (NEW)
+├── test_mikrotikapi_bf.py     # Unit tests (NEW)
 ├── requirements.txt           # Updated dependencies
-├── README_v2.md               # Updated documentation (NOVO)
-├── CHANGELOG_v2.md            # This file (NOVO)
+├── README_v2.md               # Updated documentation (NEW)
+├── CHANGELOG_v2.md            # This file (NEW)
 ├── LICENSE                    # MIT License
 ├── install-python-3.12.sh     # Linux installer
 ├── install-python-3.12.ps1    # Windows installer
@@ -277,41 +277,41 @@ MikrotikAPI-BF/
 
 ---
 
-### 🐛 Correções de Bugs
+### 🐛 Bug Fixes
 
-- ✅ Corrigido: Deadlock em operações multi-thread
-- ✅ Corrigido: Memory leak em conexões socket
-- ✅ Corrigido: Race condition em contador de sucessos
-- ✅ Corrigido: Encoding issues em wordlists UTF-8
-- ✅ Corrigido: Timeout não respeitado em algumas operações
-- ✅ Corrigido: Progress bar corruption em output multi-thread
-- ✅ Corrigido: XML malformado em export
-- ✅ Corrigido: Proxy não aplicado a todas as conexões
+- ✅ Fixed: Deadlock in multi-thread operations
+- ✅ Fixed: Memory leak in socket connections
+- ✅ Fixed: Race condition in success counter
+- ✅ Fixed: Encoding issues in UTF-8 wordlists
+- ✅ Fixed: Timeout not respected in some operations
+- ✅ Fixed: Progress bar corruption in multi-thread output
+- ✅ Fixed: Malformed XML in export
+- ✅ Fixed: Proxy not applied to all connections
 
 ---
 
 ### ⚠️ Breaking Changes
 
-#### **1. Estrutura de Módulos**
-- 🔴 **MUDANÇA**: Arquivos movidos para estrutura modular
-- 🔴 **Antes**: Tudo em um arquivo
-- 🟢 **Agora**: Módulos separados (`_*.py`)
-- ⚙️ **Migração**: Atualizar imports se usar como biblioteca
+#### **1. Module Structure**
+- 🔴 **CHANGE**: Files moved to modular structure
+- 🔴 **Before**: Everything in one file
+- 🟢 **Now**: Separate modules (`_*.py`)
+- ⚙️ **Migration**: Update imports if using as library
 
-#### **2. Formato de Argumentos** (planejado)
-- 🔴 **MUDANÇA**: Novos argumentos adicionados
-- 🟢 **Retrocompatibilidade**: Mantida para args existentes
-- ⚙️ **Novos args**: `--export`, `--proxy`, `--progress`, `--config`
+#### **2. Argument Format** (planned)
+- 🔴 **CHANGE**: New arguments added
+- 🟢 **Backward compatibility**: Maintained for existing args
+- ⚙️ **New args**: `--export`, `--proxy`, `--progress`, `--config`
 
-#### **3. Dependências**
-- 🔴 **MUDANÇA**: Novas dependências obrigatórias
-- 🟢 **Antes**: requests, colorama, paramiko
-- 🟢 **Agora**: + PySocks, PyYAML, pytest
-- ⚙️ **Migração**: `pip install -r requirements.txt --upgrade`
+#### **3. Dependencies**
+- 🔴 **CHANGE**: New mandatory dependencies
+- 🟢 **Before**: requests, colorama, paramiko
+- 🟢 **Now**: + PySocks, PyYAML, pytest
+- ⚙️ **Migration**: `pip install -r requirements.txt --upgrade`
 
 ---
 
-### 🧪 Testado Em
+### 🧪 Tested On
 
 - ✅ **Kali Linux 2024.4** (Python 3.12)
 - ✅ **Windows 11** (Python 3.12)
@@ -321,104 +321,104 @@ MikrotikAPI-BF/
 
 ---
 
-### 📊 Estatísticas da Release
+### 📊 Release Statistics
 
-| Métrica | Valor |
+| Metric | Value |
 |---------|-------|
-| **Novos módulos** | 5 |
-| **Novos arquivos** | 9 |
-| **Linhas de código adicionadas** | ~2,500 |
-| **Testes unitários** | 50+ |
-| **Novas funcionalidades** | 7 principais |
-| **Bugs corrigidos** | 8 |
-| **Tempo de desenvolvimento** | 3 semanas |
+| **New modules** | 5 |
+| **New files** | 9 |
+| **Lines of code added** | ~2,500 |
+| **Unit tests** | 50+ |
+| **New features** | 7 main |
+| **Bugs fixed** | 8 |
+| **Development time** | 3 weeks |
 
 ---
 
-### 🎯 Próximos Passos (Roadmap)
+### 🎯 Next Steps (Roadmap)
 
-#### **v2.1** (planejado)
-- [ ] Integração completa no script principal
-- [ ] Pausa/Resume do ataque (Ctrl+Z)
-- [ ] Dashboard web (Flask/FastAPI)
-- [ ] Suporte a Winbox protocol (porta 8291)
-- [ ] Rate limiting inteligente baseado em resposta do alvo
+#### **v2.1** (planned)
+- [ ] Complete integration in main script
+- [ ] Pause/Resume attack (Ctrl+Z)
+- [ ] Web dashboard (Flask/FastAPI)
+- [ ] Winbox protocol support (port 8291)
+- [ ] Intelligent rate limiting based on target response
 
-#### **v2.2** (planejado)
-- [ ] Machine Learning para otimização de wordlist
-- [ ] Detecção automática de honeypots
-- [ ] Suporte a clusters distribuídos
-- [ ] GraphQL API para integração
-
----
-
-### 💡 Contribuidores
-
-- **André Henrique** (@mrhenrique) - Desenvolvimento principal
-- Comunidade GitHub - Sugestões e bug reports
+#### **v2.2** (planned)
+- [ ] Machine Learning for wordlist optimization
+- [ ] Automatic honeypot detection
+- [ ] Distributed cluster support
+- [ ] GraphQL API for integration
 
 ---
 
-### 🙏 Agradecimentos
+### 💡 Contributors
 
-- Comunidade Mikrotik
-- Projeto MKBRUTUS (inspiração)
-- Todos os beta testers
+- **André Henrique** (@mrhenrique) - Main development
+- GitHub Community - Suggestions and bug reports
 
 ---
 
-### 📝 Notas de Upgrade
+### 🙏 Acknowledgments
 
-#### De v1.16 para v2.0
+- Mikrotik Community
+- MKBRUTUS Project (inspiration)
+- All beta testers
 
-1. **Backup seus scripts**:
+---
+
+### 📝 Upgrade Notes
+
+#### From v1.16 to v2.0
+
+1. **Backup your scripts**:
    ```bash
    cp mikrotikapi-bf.py mikrotikapi-bf.py.v1.backup
    ```
 
-2. **Atualizar dependências**:
+2. **Update dependencies**:
    ```bash
    pip install -r requirements.txt --upgrade
    ```
 
-3. **Testar compatibilidade**:
+3. **Test compatibility**:
    ```bash
-   # Seus comandos antigos ainda funcionam
+   # Your old commands still work
    python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt
    
-   # Mas agora você tem novos recursos
+   # But now you have new features
    python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt --progress --export-all
    ```
 
-4. **Migrar para config file** (opcional):
+4. **Migrate to config file** (optional):
    ```bash
    cp config.yaml.example config.yaml
-   # Editar config.yaml com seus parâmetros
+   # Edit config.yaml with your parameters
    python mikrotikapi-bf.py --config config.yaml
    ```
 
 ---
 
-### 🔗 Links Úteis
+### 🔗 Useful Links
 
-- 📖 [Documentação Completa](README_v2.md)
-- 🐛 [Reportar Bugs](https://github.com/mrhenrike/MikrotikAPI-BF/issues)
-- 💬 [Discussões](https://github.com/mrhenrike/MikrotikAPI-BF/discussions)
+- 📖 [Complete Documentation](README_v2.md)
+- 🐛 [Report Bugs](https://github.com/mrhenrike/MikrotikAPI-BF/issues)
+- 💬 [Discussions](https://github.com/mrhenrike/MikrotikAPI-BF/discussions)
 - 📦 [Releases](https://github.com/mrhenrike/MikrotikAPI-BF/releases)
 
 ---
 
-## Versões Anteriores
+## Previous Versions
 
-> Para histórico completo de versões 1.x, consulte [CHANGELOG.md](CHANGELOG.md)
+> For complete history of 1.x versions, see [CHANGELOG.md](CHANGELOG.md)
 
 ### [v1.16] - 2025-04-14
-- Última versão stable da linha 1.x
-- Ver CHANGELOG.md para detalhes
+- Last stable version of 1.x line
+- See CHANGELOG.md for details
 
 ---
 
-**Obrigado por usar MikrotikAPI-BF!** 🚀
+**Thank you for using MikrotikAPI-BF!** 🚀
 
-Se você encontrou este projeto útil, considere dar uma ⭐ no GitHub!
+If you found this project useful, consider giving it a ⭐ on GitHub!
 
