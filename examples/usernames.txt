@@ -1,0 +1,11 @@
+admin
+administrator
+root
+manager
+user
+mikrotik
+support
+guest
+operator
+tech
+
