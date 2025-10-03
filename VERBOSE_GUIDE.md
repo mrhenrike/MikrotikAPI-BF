@@ -9,7 +9,7 @@ MikrotikAPI-BF v2.0 has **3 verbosity levels** to control the amount of informat
 ## 📊 Available Levels
 
 ### **Level 0: Normal (Default)**
-**Command**: `python mikrotikapi-bf.py -t TARGET -d combos.txt`
+**Command**: `python mikrotikapi-bf.py -t TARGET -d examples/combos.txt`
 
 **What it shows**:
 - ✅ CHECKING TARGET SERVICES (port scan)
@@ -32,7 +32,7 @@ MikrotikAPI-BF v2.0 has **3 verbosity levels** to control the amount of informat
 ---
 
 ### **Level 1: Verbose (`-v`)**
-**Command**: `python mikrotikapi-bf.py -t TARGET -d combos.txt -v`
+**Command**: `python mikrotikapi-bf.py -t TARGET -d examples/combos.txt -v`
 
 **What it shows** (in addition to Level 0):
 - ✅ **ALL attempts** being tested
@@ -55,7 +55,7 @@ MikrotikAPI-BF v2.0 has **3 verbosity levels** to control the amount of informat
 ---
 
 ### **Level 2: Very Verbose / Debug (`-vv`)**
-**Command**: `python mikrotikapi-bf.py -t TARGET -d combos.txt -vv`
+**Command**: `python mikrotikapi-bf.py -t TARGET -d examples/combos.txt -vv`
 
 **What it shows** (in addition to Level 1):
 - ✅ **Internal debug** from each module
@@ -179,16 +179,16 @@ Success Rate    : 20.0%
 ### Combine with Progress Bar
 ```powershell
 # Normal with progress = Clean UI
-python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt --progress
+python mikrotikapi-bf.py -t 192.168.88.1 -d examples/combos.txt --progress
 
 # Verbose with progress = Best of both worlds
-python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt --progress -v
+python mikrotikapi-bf.py -t 192.168.88.1 -d examples/combos.txt --progress -v
 ```
 
 ### Save Output to File
 ```powershell
 # Capture everything
-python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -vv > output.log 2>&1
+python mikrotikapi-bf.py -t 192.168.88.1 -d examples/combos.txt -vv > output.log 2>&1
 
 # View later
 type output.log
@@ -197,10 +197,10 @@ type output.log
 ### Filter Output
 ```powershell
 # Only successes
-python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -v | Select-String "SUCC"
+python mikrotikapi-bf.py -t 192.168.88.1 -d examples/combos.txt -v | Select-String "SUCC"
 
 # Only errors
-python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -vv | Select-String "ERROR|WARN"
+python mikrotikapi-bf.py -t 192.168.88.1 -d examples/combos.txt -vv | Select-String "ERROR|WARN"
 ```
 
 ---
@@ -211,21 +211,21 @@ If something doesn't work, follow this verbose order:
 
 1. **First**: Execute without verbose
    ```powershell
-   python mikrotikapi-bf.py -t TARGET -d combos.txt
+   python mikrotikapi-bf.py -t TARGET -d examples/combos.txt
    ```
    - See if ports are open
    - See final statistics
 
 2. **If nothing is found**: Add `-v`
    ```powershell
-   python mikrotikapi-bf.py -t TARGET -d combos.txt -v
+   python mikrotikapi-bf.py -t TARGET -d examples/combos.txt -v
    ```
    - See all attempts
    - Identify failure patterns
 
 3. **If there are errors**: Add `-vv`
    ```powershell
-   python mikrotikapi-bf.py -t TARGET -d combos.txt -vv
+   python mikrotikapi-bf.py -t TARGET -d examples/combos.txt -vv
    ```
    - See technical details
    - Identify root cause
@@ -339,11 +339,12 @@ Troubleshooting:
 ## 🚀 Test Now with the New Verbose
 
 ```powershell
-# Visual demo
-.\demo_test.ps1
-
-# Or execute directly
+# Execute directly with examples
 python mikrotikapi-bf.py -t 192.168.88.1 -d examples\combos.txt --export-all -v
+
+# Or use the example scripts
+cd examples
+.\example_basic.sh
 ```
 
 You will see **much more information** now! 📊
@@ -366,6 +367,6 @@ You will see **much more information** now! 📊
 
 **Now it's IMPOSSIBLE not to know what's happening!** 🎉
 
-Test the `.\demo_test.ps1` to see everything working!
+Test the examples in the `examples/` directory to see everything working!
 
 
