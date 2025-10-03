@@ -79,15 +79,15 @@ MikrotikAPI-BF v2.0 has **3 verbosity levels** to control the amount of informat
 [10:30:16] [DEBB] Testing FTP for admin:password on port 21
 ```
 
-**Ideal para**: Troubleshooting, debugging, desenvolvimento.
+**Ideal for**: Troubleshooting, debugging, development.
 
 ---
 
-## 🔍 Comparação Visual
+## 🔍 Visual Comparison
 
-### Cenário: 5 tentativas, 1 sucesso
+### Scenario: 5 attempts, 1 success
 
-#### **Normal (sem flags)**
+#### **Normal (no flags)**
 ```
 ============================================================
 CHECKING TARGET SERVICES
@@ -126,7 +126,7 @@ Success Rate    : 20.0%
 
 #### **Verbose (`-v`)**
 ```
-(tudo do Normal, MAIS:)
+(everything from Normal, PLUS:)
 
 [FAIL] [10:30:15] [API] admin:admin
 [FAIL] [10:30:15] [REST] admin:admin
@@ -138,13 +138,13 @@ Success Rate    : 20.0%
 
 #### **Very Verbose (`-vv`)**
 ```
-(tudo do Verbose, MAIS:)
+(everything from Verbose, PLUS:)
 
 [DEBB] [10:30:15] Worker thread #1 initialized
 [DEBB] [10:30:15] Testing admin:admin
 [DEBB] [10:30:15] Connecting to 192.168.88.1:8728
 [WARN] [10:30:15] Connection timeout after 5s
-[ERRO] [10:30:15] Socket error: Connection refused
+[ERROR] [10:30:15] Socket error: Connection refused
 [DEBB] [10:30:16] Trying next combination
 [SKIP] [10:30:17] FTP test skipped due to port check
 ```
@@ -200,7 +200,7 @@ type output.log
 python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -v | Select-String "SUCC"
 
 # Only errors
-python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -vv | Select-String "ERRO|WARN"
+python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -vv | Select-String "ERROR|WARN"
 ```
 
 ---
@@ -268,9 +268,9 @@ If something doesn't work, follow this verbose order:
 
 ---
 
-## 📊 Output Esperado com Melhorias
+## 📊 Expected Output with Improvements
 
-### Agora você verá isso:
+### Now you will see this:
 
 ```
 ============================================================
@@ -301,7 +301,7 @@ Export         : JSON, CSV, XML, TXT
 [INFO] [10:30:15] [*] Starting brute force attack...
 [INFO] [10:30:15] [*] Testing 15 credential combinations...
 
-[TEST] [10:30:15] admin:****** ← Mostra o que está testando!
+[TEST] [10:30:15] admin:****** ← Shows what's being tested!
 [FAIL] [10:30:15] [API] admin:admin
 [TEST] [10:30:16] admin:********
 [FAIL] [10:30:16] [API] admin:password
@@ -320,7 +320,7 @@ Success Rate    : 0.0%
 No valid credentials were discovered.
 Total attempts: 15
 
-⚠ Warning: 15 connection errors occurred ← Diagnóstico!
+⚠ Warning: 15 connection errors occurred ← Diagnosis!
 Possible causes:
   - Target is unreachable or offline
   - Firewall blocking connections
@@ -336,36 +336,36 @@ Troubleshooting:
 
 ---
 
-## 🚀 Teste Agora com o Novo Verbose
+## 🚀 Test Now with the New Verbose
 
 ```powershell
-# Demo visual
+# Visual demo
 .\demo_test.ps1
 
-# Ou execute direto
+# Or execute directly
 python mikrotikapi-bf.py -t 192.168.88.1 -d examples\combos.txt --export-all -v
 ```
 
-Você verá **muito mais informação** agora! 📊
+You will see **much more information** now! 📊
 
 ---
 
-## 📝 Resumo das Melhorias de Verbose
+## 📝 Verbose Improvements Summary
 
-| Feature | Antes | Agora |
-|---------|-------|-------|
-| **Port Scan** | ❌ Não mostrava | ✅ Mostra antes de atacar |
-| **Config** | ❌ Não mostrava | ✅ Mostra configuração completa |
-| **Primeiras tentativas** | ❌ Nada | ✅ Mostra 3 primeiras |
-| **Estatísticas** | ❌ Não mostrava | ✅ Mostra resumo completo |
-| **Troubleshooting** | ❌ Nada | ✅ Dicas de resolução |
-| **Error count** | ❌ Não contava | ✅ Mostra total de erros |
-| **Progresso** | ❌ Sem feedback | ✅ Mostra andamento |
+| Feature | Before | Now |
+|---------|--------|-----|
+| **Port Scan** | ❌ Didn't show | ✅ Shows before attacking |
+| **Config** | ❌ Didn't show | ✅ Shows complete configuration |
+| **First attempts** | ❌ Nothing | ✅ Shows first 3 attempts |
+| **Statistics** | ❌ Didn't show | ✅ Shows complete summary |
+| **Troubleshooting** | ❌ Nothing | ✅ Resolution tips |
+| **Error count** | ❌ Didn't count | ✅ Shows total errors |
+| **Progress** | ❌ No feedback | ✅ Shows progress |
 
 ---
 
-**Agora é IMPOSSÍVEL não saber o que está acontecendo!** 🎉
+**Now it's IMPOSSIBLE not to know what's happening!** 🎉
 
-Teste o `.\demo_test.ps1` para ver tudo funcionando!
+Test the `.\demo_test.ps1` to see everything working!
 
 
