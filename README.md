@@ -542,8 +542,6 @@ Based on:
 
 ## 🔗 Links
 
-- 📖 [Documentation](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 - 🐛 [Issue Tracker](https://github.com/mrhenrike/MikrotikAPI-BF/issues)
-- 💬 [Discussions](https://github.com/mrhenrike/MikrotikAPI-BF/discussions)
 - 📦 [Releases](https://github.com/mrhenrike/MikrotikAPI-BF/releases)
 
