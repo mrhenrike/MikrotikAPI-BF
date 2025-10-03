@@ -1,0 +1,15 @@
+admin:admin
+admin:password
+admin:
+admin:123456
+admin:mikrotik
+root:root
+root:toor
+root:password
+manager:manager
+manager:password
+mikrotik:mikrotik
+guest:guest
+operator:operator
+support:support
+user:user

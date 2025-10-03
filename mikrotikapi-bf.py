@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Author: Andre Henrique (LinkedIn: https://www.linkedin.com/in/mrhenrike | X: @mrhenrike)
 
-_version = "1.16"
+_version = "2.0"
 
 # Check if python version is between 3.8.x until 3.12.x
 import sys
@@ -22,13 +22,19 @@ elif current_version > MAX_PYTHON:
     print("[SUGGESTION] It's recommended to install Python 3.12.x (no need to uninstall your current version).")
 
     try:
-        response = input("\n[?] Do you want to continue anyway? [y/N]: ").strip().lower()
+        # Check if running in non-interactive mode (like CI/CD or automated testing)
+        if hasattr(sys.stdin, 'isatty') and not sys.stdin.isatty():
+            print("\n[INFO] Running in non-interactive mode, continuing with Python 3.13+...")
+            response = "y"
+        else:
+            response = input("\n[?] Do you want to continue anyway? [y/N]: ").strip().lower()
+        
         if response not in ["y", "yes"]:
             print("\n[ABORTED] Execution cancelled by user.\n")
             sys.exit(1)
-    except KeyboardInterrupt:
-        print("\n[ABORTED] Interrupted by user.\n")
-        sys.exit(1)
+    except (KeyboardInterrupt, EOFError):
+        print("\n[INFO] Non-interactive mode detected, continuing with Python 3.13+...")
+        response = "y"
 
 # This module provides a brute-force attack tool for Mikrotik RouterOS API and REST-API
 # It allows users to test credentials against the API and validate post-login access to services like FTP, SSH, and TELNET.
@@ -55,16 +61,27 @@ try:
 except ModuleNotFoundError:
     raise ImportError(f"[{datetime.now().strftime('%H:%M:%S')}] Module '_log' not found.")
 
+# Import new modules (v2.0)
+try:
+    from _export import ResultExporter
+    from _progress import ProgressBar
+    from _proxy import ProxyManager
+except ModuleNotFoundError as e:
+    print(f"[WARN] Some v2.0 modules not available: {e}")
+    ResultExporter = None
+    ProgressBar = None
+    ProxyManager = None
+
 # Check if the required modules are available
 def current_time():
     return datetime.now().strftime("%H:%M:%S")
 
 # Function to check if a port is open on the target host
-def is_port_open(host, port, timeout=2):
+def is_port_open(host, port, timeout=3):
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True
-    except:
+    except (socket.timeout, socket.error, ConnectionRefusedError, OSError):
         return False
 
 # Function to test REST API login
@@ -79,9 +96,14 @@ def test_restapi_login(host, username, password, port, use_ssl=False):
 
 # Function to check service ports
 def check_service_ports(target, api_port, http_port, ssl_port, validate_services, use_ssl, log):
+    log.info(f"[CHECK] Testing API port {api_port}...")
+    api_open = is_port_open(target, api_port)
+    log.info(f"[CHECK] Testing HTTP port {http_port}...")
+    http_open = is_port_open(target, http_port)
+    
     services_ok = {
-        "api": is_port_open(target, api_port),
-        "http": is_port_open(target, http_port)
+        "api": api_open,
+        "http": http_open
     }
 
     if use_ssl:
@@ -94,12 +116,10 @@ def check_service_ports(target, api_port, http_port, ssl_port, validate_services
             services_ok[svc] = is_port_open(target, port)
 
     if not services_ok["http"]:
-        log.error(f"[CHECK] HTTP port ({http_port}) is closed. Aborting.")
-        exit(1)
+        log.warning(f"[CHECK] HTTP port ({http_port}) is closed. REST-API tests will be skipped.")
 
     if not services_ok["api"]:
-        log.error(f"[CHECK] API port ({api_port}) is closed. Aborting.")
-        exit(1)
+        log.warning(f"[CHECK] API port ({api_port}) is closed. API tests will be skipped.")
 
     if use_ssl and not services_ok.get("ssl"):
         log.warning(f"[CHECK] SSL port ({ssl_port}) is closed. Ignoring tests with SSL.")
@@ -112,7 +132,7 @@ def check_service_ports(target, api_port, http_port, ssl_port, validate_services
 
 # === Class for Brute Force Attack ===
 class Bruteforce:
-    def __init__(self, target, usernames, passwords, combo_dict, delay, api_port=8728, rest_port=8729, http_port=80, use_ssl=False, ssl_port=443, max_workers=2, verbose=False, verbose_all=False, validate_services=None, services_ok=None):
+    def __init__(self, target, usernames, passwords, combo_dict, delay, api_port=8728, rest_port=8729, http_port=80, use_ssl=False, ssl_port=443, max_workers=2, verbose=False, verbose_all=False, validate_services=None, services_ok=None, show_progress=False, proxy_url=None, export_formats=None, export_dir="results", max_retries=1):
         self.target = target
         self.api_port = api_port
         self.rest_port = rest_port
@@ -134,6 +154,24 @@ class Bruteforce:
         self.lock = threading.Lock()
         self.index_lock = threading.Lock()
         self.index = 0
+        
+        # v2.0 features
+        self.show_progress = show_progress
+        self.progress_bar = None
+        self.proxy_manager = None
+        self.export_formats = export_formats or []
+        self.export_dir = export_dir
+        self.max_retries = max_retries
+        
+        # Setup proxy if provided
+        if proxy_url and ProxyManager:
+            self.proxy_manager = ProxyManager(proxy_url)
+            if not self.proxy_manager.test_connection():
+                self.log.warning("[PROXY] Connection test failed. Continuing without proxy.")
+                self.proxy_manager = None
+            else:
+                self.log.info(f"[PROXY] Using proxy: {proxy_url}")
+        
         self.load_wordlist()
 
     # Load wordlist from file or generate based on provided usernames and passwords
@@ -189,8 +227,11 @@ class Bruteforce:
                 break
             user, password = combo
 
-            if self.verbose_all:
+            # Always show what we're testing (but only first few if not verbose)
+            if self.verbose or self.verbose_all:
                 self.log.debug(f"Trying -> {user}:{password}")
+            elif self.index <= 3:
+                print(f"[{current_time()}] [TEST] {user}:{'*' * len(password) if password else '(empty)'}")
 
             services = []
 
@@ -205,8 +246,12 @@ class Bruteforce:
                     elif self.verbose or self.verbose_all:
                         self.log.fail(f"[API] {user}:{password}")
                 except Exception as e:
-                    if self.verbose_all:
-                        self.log.warning(f"[API] error for {user}:{password} — {e}")
+                    if self.verbose or self.verbose_all:
+                        self.log.warning(f"[API] Connection error: {str(e)[:100]}")
+                    # Count connection errors
+                    if not hasattr(self, 'error_count'):
+                        self.error_count = 0
+                    self.error_count += 1
             else:
                 if self.verbose_all:
                     self.log.debug("[SKIP] API test skipped due to port check.")
@@ -243,6 +288,13 @@ class Bruteforce:
             if services:
                 with self.lock:
                     self.successes.append({"user": user, "pass": password, "services": services})
+                    # Update progress bar with success
+                    if self.progress_bar:
+                        self.progress_bar.update(1, success=True)
+            else:
+                # Update progress bar without success
+                if self.progress_bar:
+                    self.progress_bar.update(1, success=False)
 
             time.sleep(self.delay)
 
@@ -330,13 +382,60 @@ class Bruteforce:
 
     # === Main function to run the brute force attack ===
     def run(self):
+        # Show attack configuration
+        print("\n" + "="*60)
+        print("ATTACK CONFIGURATION")
+        print("="*60)
+        print(f"Target         : {self.target}")
+        print(f"API Port       : {self.api_port}")
+        print(f"HTTP Port      : {self.http_port}")
+        print(f"SSL Enabled    : {self.use_ssl}")
+        print(f"Threads        : {self.max_workers}")
+        print(f"Delay          : {self.delay}s between attempts")
+        print(f"Total Attempts : {len(self.wordlist)}")
+        print(f"Max Retries    : {self.max_retries}")
+        if self.proxy_manager:
+            print(f"Proxy          : Enabled")
+        if self.validate_services:
+            print(f"Validation     : {', '.join(self.validate_services.keys()).upper()}")
+        if self.export_formats:
+            print(f"Export         : {', '.join(self.export_formats).upper()}")
+        print("="*60 + "\n")
+        
+        # Setup proxy if available
+        if self.proxy_manager:
+            self.log.info("[PROXY] Setting up proxy connection...")
+            self.proxy_manager.setup_socket()
+        
         self.log.info("[*] Starting brute force attack...")
-        self.log.info(f"[*] Total Attempts {len(self.wordlist)}...")
+        self.log.info(f"[*] Testing {len(self.wordlist)} credential combinations...")
+
+        # Initialize progress bar if requested
+        if self.show_progress and ProgressBar:
+            self.progress_bar = ProgressBar(len(self.wordlist), show_eta=True, show_speed=True)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [executor.submit(self.worker) for _ in range(self.max_workers)]
             concurrent.futures.wait(futures)
 
+        # Finish progress bar
+        if self.progress_bar:
+            self.progress_bar.finish()
+
+        # Restore socket if proxy was used
+        if self.proxy_manager:
+            self.proxy_manager.restore_socket()
+
+        # Show attack statistics
+        print("\n" + "="*60)
+        print("ATTACK STATISTICS")
+        print("="*60)
+        print(f"Total Tested    : {len(self.wordlist)}")
+        print(f"Successful      : {len(self.successes)}")
+        print(f"Failed          : {len(self.wordlist) - len(self.successes)}")
+        print(f"Success Rate    : {(len(self.successes)/len(self.wordlist)*100) if self.wordlist else 0:.1f}%")
+        print("="*60 + "\n")
+        
         self.log.info("[*] Attack finished.\n")
 
         # === Post-login validation ===
@@ -360,8 +459,64 @@ class Bruteforce:
                 print(f"{idx:03} | {d['user']:<22} | {d['pass']:<22} | {services}")
             print(f"{'-'*80}")
             print("\nAttack completed successfully.\n")
+            
+            # === Export results (v2.0) ===
+            if self.export_formats and ResultExporter:
+                self.log.info("[*] Exporting results...")
+                exporter = ResultExporter(deduped, self.target, output_dir=self.export_dir)
+                
+                for fmt in self.export_formats:
+                    if fmt == 'json':
+                        f = exporter.export_json()
+                        self.log.info(f"[*] Exported JSON: {f}")
+                    elif fmt == 'csv':
+                        f = exporter.export_csv()
+                        self.log.info(f"[*] Exported CSV: {f}")
+                    elif fmt == 'xml':
+                        f = exporter.export_xml()
+                        self.log.info(f"[*] Exported XML: {f}")
+                    elif fmt == 'txt':
+                        f = exporter.export_txt()
+                        self.log.info(f"[*] Exported TXT: {f}")
         else:
-            print("\nNo credentials were validated successfully with the given users and passwords.\n")
+            print("\n## NO CREDENTIALS FOUND ##")
+            print("="*60)
+            print("No valid credentials were discovered.")
+            print(f"Total attempts: {len(self.wordlist)}")
+            
+            # Show common issues
+            if hasattr(self, 'error_count') and self.error_count > 0:
+                print(f"\n⚠ Warning: {self.error_count} connection errors occurred")
+                print("Possible causes:")
+                print("  - Target is unreachable or offline")
+                print("  - Firewall blocking connections")
+                print("  - Wrong port number")
+                print("  - Target is not a Mikrotik device")
+                print("\nTroubleshooting:")
+                print(f"  1. Verify target is reachable: ping {self.target}")
+                print(f"  2. Check if API port is open: telnet {self.target} {self.api_port}")
+                print("  3. Try with verbose mode: -vv")
+            
+            print("="*60 + "\n")
+            
+            # === Export results even when no credentials found (v2.0) ===
+            if self.export_formats and ResultExporter:
+                self.log.info("[*] Exporting results...")
+                exporter = ResultExporter([], self.target, output_dir=self.export_dir)
+                
+                for fmt in self.export_formats:
+                    if fmt == 'json':
+                        f = exporter.export_json()
+                        self.log.info(f"[*] Exported JSON: {f}")
+                    elif fmt == 'csv':
+                        f = exporter.export_csv()
+                        self.log.info(f"[*] Exported CSV: {f}")
+                    elif fmt == 'xml':
+                        f = exporter.export_xml()
+                        self.log.info(f"[*] Exported XML: {f}")
+                    elif fmt == 'txt':
+                        f = exporter.export_txt()
+                        self.log.info(f"[*] Exported TXT: {f}")
 
 # === CLI Entrypoint ===
 # This is the main entry point for the script. It sets up the command-line interface (CLI) using argparse.
@@ -401,7 +556,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dictionary", help="File with combo list (user:pass format)")
 
     # === Timing and Performance ===
-    parser.add_argument("-s", "--seconds", type=int, default=5, help="Delay between attempts in seconds (default: 5)")
+    parser.add_argument("-s", "--seconds", type=float, default=5, help="Delay between attempts in seconds (default: 5)")
     parser.add_argument("--threads", type=int, default=2, help="Number of concurrent threads (default: 2, max: 15)")
 
     # === Ports and Protocols ===
@@ -421,6 +576,13 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output with failed attempts")
     parser.add_argument("-vv", "--verbose-all", action="store_true", help="Enable full debug output")
 
+    # === New v2.0 Features ===
+    parser.add_argument("--progress", action="store_true", help="Show progress bar with ETA")
+    parser.add_argument("--proxy", help="Proxy URL (e.g., socks5://127.0.0.1:9050)")
+    parser.add_argument("--export", help="Export formats: json, csv, xml, txt (comma-separated)")
+    parser.add_argument("--export-all", action="store_true", help="Export to all formats (JSON, CSV, XML, TXT)")
+    parser.add_argument("--export-dir", default="results", help="Export directory (default: results)")
+    parser.add_argument("--max-retries", type=int, default=1, help="Max retry attempts on connection failure")
 
     args = parser.parse_args()
 
@@ -443,11 +605,24 @@ if __name__ == "__main__":
     service_ports = parse_validate_services(args.validate)
     usernames = args.userlist if args.userlist else args.user
     passwords = args.passlist if args.passlist else args.passw
+    
+    # Parse export formats
+    export_formats = []
+    if args.export_all:
+        export_formats = ['json', 'csv', 'xml', 'txt']
+    elif args.export:
+        export_formats = [fmt.strip().lower() for fmt in args.export.split(',')]
 
     # Check if the target is provided
     log = Log(verbose=args.verbose, verbose_all=args.verbose_all)
 
     # Check if ports are open
+    print("\n" + "="*60)
+    print("CHECKING TARGET SERVICES")
+    print("="*60)
+    print(f"Target: {args.target}")
+    print("Scanning ports...")
+    
     services_ok = check_service_ports(
         target=args.target,
         api_port=args.api_port,
@@ -457,6 +632,14 @@ if __name__ == "__main__":
         use_ssl=args.ssl,
         log=log
     )
+    
+    # Show results
+    print("\nPort Scan Results:")
+    print(f"  API ({args.api_port}):  {'[OK] OPEN' if services_ok.get('api') else '[FAIL] CLOSED/FILTERED'}")
+    print(f"  HTTP ({args.http_port}): {'[OK] OPEN' if services_ok.get('http') else '[FAIL] CLOSED/FILTERED'}")
+    if args.ssl:
+        print(f"  SSL ({args.ssl_port}):  {'[OK] OPEN' if services_ok.get('ssl') else '[FAIL] CLOSED/FILTERED'}")
+    print("="*60)
 
     # Instancia brute
     bf = Bruteforce(
@@ -473,7 +656,12 @@ if __name__ == "__main__":
         max_workers=args.threads,
         verbose=args.verbose,
         verbose_all=args.verbose_all,
-        validate_services=service_ports
+        validate_services=service_ports,
+        show_progress=args.progress,
+        proxy_url=args.proxy,
+        export_formats=export_formats,
+        export_dir=args.export_dir,
+        max_retries=args.max_retries
     )
 
     # Set the services_ok attribute
@@ -482,7 +670,14 @@ if __name__ == "__main__":
     try:
         bf.run()
     except KeyboardInterrupt:
-        print(f"\n[{current_time()}] [!] Attack interrupted by user. Exiting cleanly.\n")
+        print(f"\n[{current_time()}] [!] Attack interrupted by user. Exiting cleanly.")
+        print(f"Tested {bf.index}/{len(bf.wordlist)} combinations before interruption.\n")
+    except Exception as e:
+        print(f"\n[{current_time()}] [ERROR] Unexpected error: {e}")
+        if args.verbose_all:
+            import traceback
+            traceback.print_exc()
+        print("\nIf this is a bug, please report at: https://github.com/mrhenrike/MikrotikAPI-BF/issues\n")
 
     def format_status(status):
         return {
