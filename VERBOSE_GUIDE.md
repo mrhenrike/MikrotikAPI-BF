@@ -1,72 +1,72 @@
-# 📢 Guia de Verbosidade - MikrotikAPI-BF v2.0
+# 📢 Verbosity Guide - MikrotikAPI-BF v2.0
 
-## 🎯 Níveis de Verbosidade
+## 🎯 Verbosity Levels
 
-O MikrotikAPI-BF v2.0 possui **3 níveis de verbosidade** para controlar a quantidade de informação exibida.
+MikrotikAPI-BF v2.0 has **3 verbosity levels** to control the amount of information displayed.
 
 ---
 
-## 📊 Níveis Disponíveis
+## 📊 Available Levels
 
-### **Nível 0: Normal (Padrão)**
-**Comando**: `python mikrotikapi-bf.py -t TARGET -d combos.txt`
+### **Level 0: Normal (Default)**
+**Command**: `python mikrotikapi-bf.py -t TARGET -d combos.txt`
 
-**O que mostra**:
-- ✅ CHECKING TARGET SERVICES (scan de portas)
+**What it shows**:
+- ✅ CHECKING TARGET SERVICES (port scan)
 - ✅ Port Scan Results
-- ✅ ATTACK CONFIGURATION (config do ataque)
-- ✅ Primeiras 3 tentativas (para mostrar que está funcionando)
-- ✅ Sucessos (credenciais encontradas)
-- ✅ ATTACK STATISTICS (estatísticas finais)
-- ✅ Resultados finais
+- ✅ ATTACK CONFIGURATION (attack config)
+- ✅ First 3 attempts (to show it's working)
+- ✅ Successes (credentials found)
+- ✅ ATTACK STATISTICS (final statistics)
+- ✅ Final results
 - ✅ SERVICE SUMMARY
 
-**O que NÃO mostra**:
-- ❌ Todas as tentativas
-- ❌ Falhas individuais
-- ❌ Warnings de conexão
-- ❌ Debug interno
+**What it does NOT show**:
+- ❌ All attempts
+- ❌ Individual failures
+- ❌ Connection warnings
+- ❌ Internal debug
 
-**Ideal para**: Execuções rápidas, quando você só quer os resultados.
+**Ideal for**: Quick executions, when you only want the results.
 
 ---
 
-### **Nível 1: Verbose (`-v`)**
-**Comando**: `python mikrotikapi-bf.py -t TARGET -d combos.txt -v`
+### **Level 1: Verbose (`-v`)**
+**Command**: `python mikrotikapi-bf.py -t TARGET -d combos.txt -v`
 
-**O que mostra** (além do Nível 0):
-- ✅ **TODAS as tentativas** sendo testadas
-- ✅ **Falhas** de autenticação (`[FAIL]`)
-- ✅ **Warnings** gerais (`[WARN]`)
-- ✅ Erros de conexão resumidos
+**What it shows** (in addition to Level 0):
+- ✅ **ALL attempts** being tested
+- ✅ **Failures** of authentication (`[FAIL]`)
+- ✅ **Warnings** general (`[WARN]`)
+- ✅ Connection errors summarized
 
-**Exemplo de output**:
+**Example output**:
 ```
 [10:30:15] [TEST] admin:admin
 [10:30:15] [FAIL] [API] admin:admin
 [10:30:16] [TEST] admin:password
-[10:30:16] [SUCC] [API] admin:password ← ENCONTROU!
+[10:30:16] [SUCC] [API] admin:password ← FOUND!
 [10:30:17] [TEST] admin:123456
 [10:30:17] [FAIL] [API] admin:123456
 ```
 
-**Ideal para**: Monitorar o progresso em tempo real, ver o que está sendo testado.
+**Ideal for**: Monitor progress in real time, see what's being tested.
 
 ---
 
-### **Nível 2: Very Verbose / Debug (`-vv`)**
-**Comando**: `python mikrotikapi-bf.py -t TARGET -d combos.txt -vv`
+### **Level 2: Very Verbose / Debug (`-vv`)**
+**Command**: `python mikrotikapi-bf.py -t TARGET -d combos.txt -vv`
 
-**O que mostra** (além do Nível 1):
-- ✅ **Debug interno** de cada módulo
-- ✅ **Erros completos** com stack trace
-- ✅ Detalhes de conexão socket
-- ✅ Mensagens de skip
+**What it shows** (in addition to Level 1):
+- ✅ **Internal debug** from each module
+- ✅ **Complete errors** with stack trace
+- ✅ Socket connection details
+- ✅ Skip messages
 - ✅ Timeout details
 - ✅ Proxy connection details
 - ✅ Thread execution info
 
-**Exemplo de output**:
+**Example output**:
 ```
 [10:30:15] [DEBB] Worker thread #1 started
 [10:30:15] [DEBB] Testing proxy connection...
@@ -151,97 +151,97 @@ Success Rate    : 20.0%
 
 ---
 
-## 🎯 Quando Usar Cada Nível
+## 🎯 When to Use Each Level
 
-### **Normal** (Padrão)
-✅ Produção / Auditorias oficiais  
-✅ Quando já sabe que funciona  
-✅ Output limpo para relatórios  
-✅ Não quer poluir o terminal  
+### **Normal** (Default)
+✅ Production / Official audits  
+✅ When you already know it works  
+✅ Clean output for reports  
+✅ Don't want to clutter terminal  
 
 ### **Verbose** (`-v`)
-✅ Desenvolvimento / Testes  
-✅ Quer ver progresso em tempo real  
-✅ Troubleshooting básico  
-✅ Verificar se credentials específicas foram testadas  
+✅ Development / Testing  
+✅ Want to see real-time progress  
+✅ Basic troubleshooting  
+✅ Verify if specific credentials were tested  
 
 ### **Very Verbose** (`-vv`)
-✅ Debugging profundo  
-✅ Reportar bugs  
-✅ Entender erros de conexão  
-✅ Desenvolvimento de features  
-✅ Análise forense do comportamento  
+✅ Deep debugging  
+✅ Report bugs  
+✅ Understand connection errors  
+✅ Feature development  
+✅ Forensic analysis of behavior  
 
 ---
 
-## 💡 Dicas Pro
+## 💡 Pro Tips
 
-### Combinar com Progress Bar
+### Combine with Progress Bar
 ```powershell
-# Normal com progress = Clean UI
+# Normal with progress = Clean UI
 python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt --progress
 
-# Verbose com progress = Best of both worlds
+# Verbose with progress = Best of both worlds
 python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt --progress -v
 ```
 
-### Salvar Output em Arquivo
+### Save Output to File
 ```powershell
-# Capturar tudo
+# Capture everything
 python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -vv > output.log 2>&1
 
-# Ver depois
+# View later
 type output.log
 ```
 
-### Filtrar Output
+### Filter Output
 ```powershell
-# Apenas sucessos
+# Only successes
 python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -v | Select-String "SUCC"
 
-# Apenas erros
+# Only errors
 python mikrotikapi-bf.py -t 192.168.88.1 -d combos.txt -vv | Select-String "ERRO|WARN"
 ```
 
 ---
 
-## 📋 Checklist de Troubleshooting
+## 📋 Troubleshooting Checklist
 
-Se algo não funcionar, siga esta ordem de verbose:
+If something doesn't work, follow this verbose order:
 
-1. **Primeiro**: Execute sem verbose
+1. **First**: Execute without verbose
    ```powershell
    python mikrotikapi-bf.py -t TARGET -d combos.txt
    ```
-   - Veja se portas estão abertas
-   - Veja estatísticas finais
+   - See if ports are open
+   - See final statistics
 
-2. **Se não encontrar nada**: Adicione `-v`
+2. **If nothing is found**: Add `-v`
    ```powershell
    python mikrotikapi-bf.py -t TARGET -d combos.txt -v
    ```
-   - Veja todas as tentativas
-   - Identifique padrões de falha
+   - See all attempts
+   - Identify failure patterns
 
-3. **Se houver erros**: Adicione `-vv`
+3. **If there are errors**: Add `-vv`
    ```powershell
    python mikrotikapi-bf.py -t TARGET -d combos.txt -vv
    ```
-   - Veja detalhes técnicos
-   - Identifique causa raiz
+   - See technical details
+   - Identify root cause
 
 ---
 
-## 🔍 Exemplos de Mensagens
+## 🔍 Message Examples
 
-### Sucesso
+### Success
 ```
 [SUCC] [10:30:16] [API] admin:password123
 [SUCC] [10:30:16] [REST] admin:password123
 [SUCC] [10:30:16] [FTP] admin:password123
 ```
 
-### Falha
+### Failure
 ```
 [FAIL] [10:30:15] [API] admin:wrongpass
 [FAIL] [10:30:15] [REST] admin:wrongpass
