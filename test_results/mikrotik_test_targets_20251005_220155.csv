@@ -1,0 +1,3 @@
+username,password,services
+admin,admin,"api, http"
+mikrotik,mikrotik,api

@@ -1,0 +1,26 @@
+{
+    "scan_info": {
+        "target": "test_targets",
+        "timestamp": "2025-10-05T22:01:55.488424",
+        "total_found": 2
+    },
+    "credentials": [
+        {
+            "user": "admin",
+            "pass": "admin",
+            "services": [
+                "api",
+                "http"
+            ],
+            "target": "143.244.153.61"
+        },
+        {
+            "user": "mikrotik",
+            "pass": "mikrotik",
+            "services": [
+                "api"
+            ],
+            "target": "83.221.222.37"
+        }
+    ]
+}
