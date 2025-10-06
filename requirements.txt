@@ -1,36 +1,33 @@
-# MikrotikAPI-BF requirements (minimal)
+# MikrotikAPI-BF v2.1 requirements
 # Supported for Python >= 3.8 and < 3.13
-requests
+
+# Core dependencies
+requests>=2.25.0
+colorama>=0.4.6
+paramiko>=2.7.0
+beautifulsoup4>=4.9.0
+
+# Enhanced features v2.1
+PySocks>=1.7.1          # For SOCKS/HTTP proxy support
+PyYAML>=6.0             # For YAML configuration files
+pytest>=7.0.0           # For testing (development only)
 
 # Optional: for ESC key interruption support
-keyboard ; platform_system == "Windows" or platform_system == "Linux"
+keyboard>=1.13.0 ; platform_system == "Windows" or platform_system == "Linux"
 
-# This is optional and not required for core functionality
-# For colored terminal output
-# If you want to use colored terminal output, install colorama
-# For Windows and Linux
-colorama>=0.4.6
-
-# Note: paramiko is not required for the core functionality of the library
-# but is needed for SSH connections.
-# If you want to use SSH connections, install paramiko
-# For SSH connections to Mikrotik devices
-paramiko
-
-# For HTML parsing
-# If you want to use HTML parsing, install BeautifulSoup4   
-bs4
-
-# New dependencies for enhanced features
-# For SOCKS/HTTP proxy support
-PySocks>=1.7.1
-
-# For YAML configuration file support
-PyYAML>=6.0
-
-# For testing (development only)
-pytest>=7.0.0
-
-# For IP address manipulation
-# (included in Python 3.3+, but adding for older versions)
+# For IP address manipulation (included in Python 3.3+)
 ipaddress ; python_version < "3.3"
+
+# Additional dependencies for v2.1 features
+urllib3>=1.26.0         # For HTTP requests
+socket>=1.0.0           # For network operations (built-in)
+threading>=1.0.0        # For multi-threading (built-in)
+concurrent.futures>=1.0.0  # For thread pools (built-in)
+pathlib>=1.0.0          # For file operations (built-in)
+datetime>=1.0.0         # For timestamps (built-in)
+json>=1.0.0             # For JSON operations (built-in)
+csv>=1.0.0              # For CSV operations (built-in)
+re>=1.0.0               # For regex operations (built-in)
+time>=1.0.0             # For timing operations (built-in)
+os>=1.0.0               # For OS operations (built-in)
+sys>=1.0.0              # For system operations (built-in)

