@@ -102,7 +102,7 @@ You should expect throttling and evidence in logs during testing. Prefer stealth
 Referencing the Mikrotik ecosystem map from the community project [`0ki/mikrotik-tools`](https://github.com/0ki/mikrotik-tools) 
 
 <div align="center">
-![Mikrotik Eco](img/mikrotik_eco.png)
+[![Mikrotik Eco](img/mikrotik_eco.png)
 </div>
 
 Our tool focuses on:
