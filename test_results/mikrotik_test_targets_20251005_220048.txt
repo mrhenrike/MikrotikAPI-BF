@@ -1,0 +1,7 @@
+# Mikrotik API Bruteforce Results
+# Target: test_targets
+# Date: 2025-10-05T22:00:48.493952
+# Total found: 2
+
+admin:admin (api, http)
+mikrotik:mikrotik (api)
