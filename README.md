@@ -2,393 +2,168 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.1-red.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1-red.svg)](docs/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 
-**Ferramenta Avançada de Pentesting para Dispositivos Mikrotik RouterOS**
+Advanced CLI toolkit for security testing of Mikrotik RouterOS and CHR. It performs credential testing against multiple entry points (RouterOS API/REST-API) with optional post-login validation on network services (FTP/SSH/Telnet), includes robust session persistence, progress/ETA, export, stealth, and fingerprinting.
 
-Uma ferramenta profissional de segurança desenvolvida especificamente para testes de penetração em equipamentos Mikrotik Cloud Hosted Router (CHR) e dispositivos RouterOS. Oferece capacidades completas de autenticação, validação pós-login e sistema de sessão persistente.
+## ✨ Key Features
 
-## ✨ Principais Características
+### 🔐 Authentication Targets
+- **RouterOS API** (TCP 8728) — proprietary binary protocol
+- **REST-API** over **HTTP/HTTPS** (TCP 80/443) — Basic Auth
+- Full TLS support for HTTPS
 
-### 🔐 **Autenticação Dupla**
-- **API RouterOS** (porta 8728) - Protocolo binário proprietário
-- **REST-API** (portas 80/443) - HTTP/HTTPS com Basic Auth
-- Suporte completo a SSL/TLS
+### 🛡️ Post-Login Service Validation
+- **FTP** (TCP 21)
+- **SSH** (TCP 22)
+- **Telnet** (TCP 23)
+- Custom ports supported per service (e.g., `--validate ssh=2222`)
 
-### 🛡️ **Validação Pós-Login**
-- **FTP** (porta 21) - Autenticação e acesso
-- **SSH** (porta 22) - Conexão segura
-- **Telnet** (porta 23) - Acesso remoto
-- Portas customizadas suportadas
+### 🔄 Persistent Sessions
+- Resume from the last attempt, JtR-like behavior
+- Duplicate test avoidance for the same target/services/wordlist
+- ETA calculation based on average attempt time
+- Session listing and inspection
 
-### 🔄 **Sistema de Sessão Persistente**
-- **Resume automático** - Continua de onde parou
-- **Prevenção de duplicatas** - Não testa novamente se já completou
-- **Tempo estimado** - Calcula ETA baseado em tentativas anteriores
-- **Gerenciamento de sessões** - Lista, visualiza e gerencia sessões
+### 🥷 Stealth Mode
+- Fibonacci-based randomized delays
+- User-Agent rotation and randomized headers
+- Jitter to avoid timing signatures
 
-### 🥷 **Stealth Mode**
-- **Delays Fibonacci** (1, 2, 3, 5, 8, 13, 21, 34, 55 segundos)
-- **Rotação de User-Agent** - Evita detecção
-- **Headers aleatórios** - Simula navegadores reais
-- **Jitter aplicado** - Variação temporal
+### 🔍 Fingerprinting
+- RouterOS version, device model, open ports, services
+- Basic risk scoring and observations for exposure
 
-### 🔍 **Fingerprinting Avançado**
-- **Identificação de dispositivo** - Modelo, versão RouterOS
-- **Portas abertas** - Scan automático de serviços
-- **Vulnerabilidades** - Detecção de riscos conhecidos
-- **Score de risco** (0-10) - Avaliação de segurança
+### 📊 Progress & Export
+- Deterministic progress bar with ETA and speed
+- Export in JSON, CSV, XML and TXT
 
-### 📊 **Progress Tracking**
-- **Barra de progresso visual** - Acompanhamento em tempo real
-- **ETA (Estimated Time)** - Tempo estimado de conclusão
-- **Velocidade de tentativas** - Tentativas por segundo
-- **Contador de sucessos** - Credenciais encontradas
+### 🎯 Smart Wordlists
+- Target-informed combinations, BR-focused lists supported locally by the user
 
-### 📋 **Exportação Completa**
-- **JSON** - Estrutura completa de dados
-- **CSV** - Planilhas para análise
-- **XML** - Integração com ferramentas
-- **TXT** - Relatórios legíveis
+## 🚀 Quick Start
 
-### 🎯 **Smart Wordlists**
-- **Geração inteligente** - Baseada em informações do target
-- **Wordlists brasileiras** - Específicas para o mercado BR
-- **Combinações customizadas** - User:pass otimizadas
-- **Estatísticas** - Análise de efetividade
+### Prerequisites
+- Python 3.8–3.12 (3.12.x recommended)
+- Windows, Linux, or macOS
 
-## 🚀 Instalação Rápida
-
-### Pré-requisitos
-- Python 3.8 - 3.12 (recomendado 3.12.x)
-- Sistema: Windows, Linux, macOS
-
-### Instalação Automática
+### One-liners
 ```bash
-# Clone o repositório
-git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
-cd MikrotikAPI-BF
-
-# Execute o script de instalação
-./install-v2.1.sh  # Linux/macOS
-# ou
-.\install-v2.1.ps1  # Windows
-
-# Teste a instalação
-python mikrotikapi-bf-v2.1.py --help
-```
-
-### Instalação Manual
-```bash
-# Criar ambiente virtual
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-# ou
-.\venv\Scripts\Activate.ps1  # Windows
-
-# Instalar dependências
-pip install -r requirements.txt
-```
-
-## 🎮 Uso Básico
-
-### Comando Simples
-```bash
+# Basic
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -U admin -P 123456
-```
 
-### Com Wordlists
-```bash
+# With wordlists (provide your own, not tracked in repo)
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
-```
 
-### Com Validação de Serviços
-```bash
+# With post-login validation
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
-```
 
-### Pentest Completo
-```bash
+# Full pentest-style run
 python mikrotikapi-bf-v2.1.py \
   -t 192.168.1.1 \
   -u wordlists/users.lst \
   -p wordlists/passwords.lst \
   --validate ftp,ssh,telnet \
-  --stealth \
-  --fingerprint \
-  --progress \
-  --export-all \
-  --threads 5 \
-  -vv
+  --stealth --fingerprint --progress --export-all \
+  --threads 5 -vv
 ```
 
-## 🔧 Recursos Avançados
-
-### Sistema de Sessão
+### Installation
 ```bash
-# Listar sessões
-python mikrotikapi-bf-v2.1.py --list-sessions
-
-# Continuar sessão existente
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --resume
-
-# Forçar nova sessão
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --force
-
-# Ver informações de sessão
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --session-info
+git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
+cd MikrotikAPI-BF
+pip install -r requirements.txt
+python mikrotikapi-bf-v2.1.py --help
 ```
 
-### Stealth Mode
-```bash
-# Ativar stealth mode
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth
-```
+## 🧭 Services Tested and Why Winbox/WebFig Are Not
 
-**Características:**
-- Delays Fibonacci (1, 2, 3, 5, 8, 13, 21, 34, 55 segundos)
-- Rotação de User-Agent
-- Headers aleatórios
-- Jitter aplicado
+### Supported services (tested correctly)
+- API (8728) — binary login via `_api.py`
+- REST-API (80/443) — HTTP Basic Auth against `/rest/system/identity`
+- FTP/SSH/Telnet — functional post-login validation using standard clients
 
-### Fingerprinting
-```bash
-# Fingerprinting do dispositivo
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --fingerprint
-```
+### Not supported (and why)
+- **Winbox** (TCP 8291): proprietary GUI protocol; there is no reliable, legal, and portable Linux/Python library to emulate the Winbox login handshake. Previous attempts typically degenerate into port-open checks, producing false positives — therefore intentionally removed.
+- **Web Console (WebFig)**: on target CHR builds it frequently responds `406 Not Acceptable` for automated requests and/or requires dynamic flows not stable for programmatic auth. This produces false positives/negatives; therefore removed to avoid misleading results.
 
-**Informações coletadas:**
-- Versão do RouterOS
-- Modelo do dispositivo
-- Portas abertas
-- Serviços detectados
-- Vulnerabilidades conhecidas
-- Score de risco (0-10)
+## 🧱 Modern CHR Defenses You Will Hit
+- Session controls and server-side antifraud for auth flows
+- Request limits and rate-limiting per source
+- Temporary account lockouts and backoff windows
+- Extensive logging (auth failures, rate limiting, HTTP 4xx/5xx)
+- IDS/IPS/NAC and WAF-likes in front of HTTP endpoints
 
-### Exportação
-```bash
-# Exportar em todos os formatos
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
+You should expect throttling and evidence in logs during testing. Prefer stealth mode, sensible thread counts, and authorized maintenance windows.
 
-# Exportar formatos específicos
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json,csv
+## 🗺️ Where This Tool Attacks (Attack Surface Mapping)
 
-# Especificar diretório de saída
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all --export-dir reports/
-```
+Referencing the Mikrotik ecosystem map from the community project [`0ki/mikrotik-tools`](https://github.com/0ki/mikrotik-tools) — image: `mikrotik_eco.png` ([link](https://github.com/0ki/mikrotik-tools/raw/master/mikrotik_eco.png)). Our tool focuses on:
 
-## 📊 Exemplo de Saída
+- Access vectors: `telnet`, `ssh`, `ftp`, `web` (REST endpoints) and `api`;
+- Access targets: the services and daemons bound to the device CPU/stack, not internal storage or removable media.
 
-```
-[INFO] Starting MikrotikAPI-BF v2.1
-[INFO] Target: 192.168.1.1
-[INFO] Loading wordlist: 25 combinations
-[INFO] Starting brute force with 5 threads
-[FINGERPRINT] Target: 192.168.1.1
-[FINGERPRINT] RouterOS Version: 7.8
-[FINGERPRINT] Model: RB750
-[FINGERPRINT] Risk Score: 7.5/10
-[SUCCESS] [API] admin:123456
-[SUCCESS] [REST] admin:123456
-[VALIDATION] FTP login successful for admin:123456
-[VALIDATION] SSH login successful for admin:123456
-[VALIDATION] TELNET login successful for admin:123456
-[INFO] Found 1 valid credential(s)
-[INFO] Exporting results to results/
-[INFO] Session completed successfully
-```
+Why it’s possible:
+- These services expose interactive authentication endpoints reachable over the network.
+- RouterOS supports API/REST for automation; FTP/SSH/Telnet are often enabled for management or legacy reasons.
 
-## 🛠️ Serviços Suportados
+How to reduce or eliminate exposure:
+- Disable unused services (e.g., `telnet`, `ftp`).
+- Restrict `api`, `ssh`, and `http/https` to management networks only.
+- Enforce strong passwords and multi-factor where possible (e.g., SSH keys).
+- Apply per-service `address-list` filters and firewall rules.
+- Enable rate limits, lockouts, and schedule maintenance windows.
+- Keep RouterOS updated, review logs, and rotate credentials.
 
-### Autenticação Principal
-| Serviço | Porta | Protocolo | Descrição |
-|---------|-------|------------|-----------|
-| **API** | 8728 | Binário | RouterOS API nativo |
-| **REST-API** | 80/443 | HTTP/HTTPS | REST API com Basic Auth |
+## 📄 CLI Essentials
 
-### Validação Pós-Login
-| Serviço | Porta | Protocolo | Status |
-|---------|-------|-----------|--------|
-| **FTP** | 21 | FTP | ✅ Funcional |
-| **SSH** | 22 | SSH | ✅ Funcional |
-| **Telnet** | 23 | Telnet | ✅ Funcional |
+Common flags:
+- `--validate ftp,ssh,telnet` — post-login validation with optional custom ports (`ssh=2222`).
+- `--resume | --force | --list-sessions | --session-info` — session control.
+- `--stealth` — stealth delays and header rotation.
+- `--progress` — progress bar with ETA.
+- `--export json,csv,xml,txt | --export-all` — reporting.
 
-### Serviços Removidos
-| Serviço | Motivo |
-|---------|--------|
-| **Winbox** | Protocolo proprietário não implementável |
-| **Web Console** | WebFig retorna erro 406 para todos os requests |
-
-## 📋 Parâmetros Principais
-
-### Básicos
-| Parâmetro | Descrição | Padrão |
-|-----------|-----------|--------|
-| `-t, --target` | IP do dispositivo Mikrotik | Obrigatório |
-| `-u, --userlist` | Arquivo com usuários | - |
-| `-p, --passlist` | Arquivo com senhas | - |
-| `-d, --dictionary` | Arquivo combo (user:pass) | - |
-| `--threads` | Número de threads (max 15) | 2 |
-| `-s, --seconds` | Delay entre tentativas | 5 |
-
-### Avançados
-| Parâmetro | Descrição | Padrão |
-|-----------|-----------|--------|
-| `--api-port` | Porta da API | 8728 |
-| `--http-port` | Porta HTTP | 80 |
-| `--ssl` | Usar HTTPS | False |
-| `--ssl-port` | Porta HTTPS | 443 |
-| `--proxy` | URL do proxy | - |
-| `--max-retries` | Tentativas de retry | 1 |
-
-### Sessão
-| Parâmetro | Descrição |
-|-----------|-----------|
-| `--resume` | Continuar sessão existente |
-| `--force` | Forçar nova sessão |
-| `--list-sessions` | Listar sessões disponíveis |
-| `--session-info` | Mostrar informações da sessão |
-
-### Verbosidade
-| Nível | Parâmetro | Descrição |
-|-------|-----------|-----------|
-| **Normal** | - | Apenas resultados |
-| **Verbose** | `-v` | Mostra tentativas falhadas |
-| **Debug** | `-vv` | Log completo com debug |
-
-## 📁 Estrutura do Projeto
+## 📁 Project Layout
 
 ```
 MikrotikAPI-BF/
-├── mikrotikapi-bf-v2.1.py      # Script principal
-├── _api.py                      # Comunicação RouterOS API
-├── _log.py                      # Sistema de logging
-├── _session.py                  # Gerenciamento de sessões
-├── _export.py                   # Exportação de resultados
-├── _progress.py                 # Progress tracking
-├── _stealth.py                  # Stealth mode
-├── _fingerprint.py              # Fingerprinting
-├── _wordlists.py                # Smart wordlists
-├── wordlists/                   # Wordlists brasileiras
-├── results/                     # Resultados exportados
-├── sessions/                    # Sessões persistentes
-├── docs/                        # Documentação completa
-│   ├── README.md
-│   ├── API_REFERENCE.md
-│   ├── INSTALLATION.md
-│   ├── USAGE_EXAMPLES.md
-│   └── index.html
-├── requirements.txt             # Dependências Python
-├── install-v2.1.sh             # Script de instalação Linux/macOS
-├── install-v2.1.ps1             # Script de instalação Windows
-└── README.md                    # Este arquivo
+├── mikrotikapi-bf-v2.1.py
+├── _api.py  _log.py  _session.py  _export.py  _progress.py  _stealth.py  _fingerprint.py  _wordlists.py
+├── docs/
+│   ├── README.md  API_REFERENCE.md  INSTALLATION.md  USAGE_EXAMPLES.md  index.html  CHANGELOG.md  FEATURES.md  QUICKSTART.md  VERBOSE_GUIDE.md
+├── requirements.txt  install-v2.1.sh
+└── .gitignore
 ```
 
-## 🔧 Troubleshooting
+## ⚠️ Legal Notice and Responsible Use
+- Use only on systems you own or have explicit, written authorization to test.
+- Your tests will likely be logged; coordinate with stakeholders.
+- Respect rate limits, user privacy, and applicable laws.
 
-### Problemas Comuns
+## 🔧 Troubleshooting (Quick)
+- Python 3.13+ may deprecate stdlib modules (e.g., `telnetlib`); prefer 3.12.x.
+- For connection timeouts: check routing, firewall, and service ports.
+- For REST-API TLS issues: use `--ssl` and confirm certificates where appropriate.
 
-#### 1. Erro de Python Version
-```
-[WARN] You are using Python 3.13.5, which is newer than supported
-```
-**Solução**: Use Python 3.12.x ou aceite continuar com `y`
+## 📚 Documentation
+- [Full Documentation](docs/README.md)
+- [API Reference](docs/API_REFERENCE.md)
+- [Installation Guide](docs/INSTALLATION.md)
+- [Usage Examples](docs/USAGE_EXAMPLES.md)
+- [HTML Docs](docs/index.html)
 
-#### 2. Módulos Não Encontrados
-```
-ModuleNotFoundError: No module named '_api'
-```
-**Solução**: Verifique se todos os arquivos estão no diretório correto
+## 🆕 What’s New in v2.1
+- Persistent sessions (resume, ETA, duplicate avoidance)
+- Stealth mode (Fibonacci delays, UA rotation)
+- Advanced fingerprinting
+- Post-login validation for FTP/SSH/Telnet
+- Multi-format export and improved progress UI
+- Removed unreliable Winbox/WebFig testing
 
-#### 3. Timeout de Conexão
-```
-Connection timeout
-```
-**Solução**: Verifique conectividade de rede e firewall
+## Support
+- GitHub: https://github.com/mrhenrike/MikrotikAPI-BF
+- Issues: https://github.com/mrhenrike/MikrotikAPI-BF/issues
 
-#### 4. Erro de Permissão
-```
-Permission denied
-```
-**Solução**: Execute com privilégios adequados
-
-### Logs de Debug
-```bash
-# Ativar debug completo
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst -vv
-
-# Verificar sessões
-python mikrotikapi-bf-v2.1.py --list-sessions
-
-# Limpar sessões antigas
-rm -rf sessions/*.json
-```
-
-## 📚 Documentação Completa
-
-- **[📖 Documentação Completa](docs/README.md)** - Guia detalhado
-- **[🔧 Referência da API](docs/API_REFERENCE.md)** - Documentação técnica
-- **[🚀 Guia de Instalação](docs/INSTALLATION.md)** - Instalação passo a passo
-- **[📚 Exemplos de Uso](docs/USAGE_EXAMPLES.md)** - Exemplos práticos
-- **[🌐 Documentação HTML](docs/index.html)** - Versão web interativa
-
-## 🆕 Changelog v2.1
-
-### ✨ Novos Recursos
-- **Sistema de sessão persistente** - Resume automático como John The Ripper
-- **Stealth mode** - Delays Fibonacci e rotação de User-Agent
-- **Fingerprinting avançado** - Identificação completa de dispositivos
-- **Smart wordlists** - Geração inteligente de combinações
-- **Progress tracking** - Barra de progresso com ETA
-- **Exportação múltipla** - JSON, CSV, XML, TXT
-- **Validação pós-login** - FTP, SSH, Telnet
-
-### 🔧 Melhorias
-- **Código modularizado** - Arquitetura limpa e extensível
-- **Tratamento de erros** - Robusto e informativo
-- **Performance otimizada** - Threading e connection pooling
-- **Documentação completa** - Guias detalhados e exemplos
-
-### 🗑️ Removido
-- **Suporte a Winbox** - Protocolo proprietário não implementável
-- **Suporte a Web Console** - WebFig retorna erro 406 para todos os requests
-
-## 📞 Suporte e Contato
-
-- **GitHub**: [github.com/mrhenrike/MikrotikAPI-BF](https://github.com/mrhenrike/MikrotikAPI-BF)
-- **LinkedIn**: [linkedin.com/in/mrhenrike](https://www.linkedin.com/in/mrhenrike)
-- **X (Twitter)**: [@mrhenrike](https://x.com/mrhenrike)
-- **Issues**: [GitHub Issues](https://github.com/mrhenrike/MikrotikAPI-BF/issues)
-
-## 📄 Licença
-
-Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
-## ⚠️ Aviso Legal
-
-Esta ferramenta é destinada apenas para:
-
-- ✅ **Testes de segurança autorizados**
-- ✅ **Auditorias de segurança**
-- ✅ **Pesquisa em segurança**
-- ✅ **Educação em segurança**
-
-**❌ NÃO use em sistemas que você não possui ou não tem autorização explícita para testar.**
-
-## 🎯 Roadmap Futuro
-
-- [ ] **Integração com Nmap** - Scan automático de portas
-- [ ] **Integração com Metasploit** - Exploits automáticos
-- [ ] **Integração com Nuclei** - Detecção de vulnerabilidades
-- [ ] **Burp Extension** - Integração com Burp Suite
-- [ ] **GUI Interface** - Interface gráfica para usuários
-- [ ] **Machine Learning** - Otimização inteligente de wordlists
-- [ ] **Cloud Integration** - Suporte a AWS, Azure, GCP
-- [ ] **Mobile App** - Aplicativo móvel para pentesters
-
----
-
-**Desenvolvido com ❤️ por [Andre Henrique](https://www.linkedin.com/in/mrhenrike)**
-
-*Ferramenta profissional para profissionais de segurança*
+Licensed under MIT. See `LICENSE`.

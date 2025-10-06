@@ -1,4 +1,4 @@
-# MikrotikAPI-BF v2.1 - Exemplos de Uso
+# MikrotikAPI-BF v2.1 - Usage Examples (en-us)
 
 ## 📋 Índice
 
@@ -8,16 +8,16 @@
 4. [Configurações Específicas](#configurações-específicas)
 5. [Troubleshooting](#troubleshooting)
 
-## 🚀 Exemplos Básicos
+## 🚀 Basic Examples
 
-### 1. Teste Simples com Credenciais Únicas
+### 1. Single Credential Test
 
 ```bash
 # Teste básico com usuário e senha únicos
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -U admin -P 123456
 ```
 
-**Saída esperada:**
+Expected output:
 ```
 [INFO] Starting MikrotikAPI-BF v2.1
 [INFO] Target: 192.168.1.1
@@ -28,14 +28,14 @@ python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -U admin -P 123456
 [INFO] Exporting results...
 ```
 
-### 2. Teste com Wordlists
+### 2. Wordlist Test
 
 ```bash
 # Teste com wordlists de usuários e senhas
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
 ```
 
-**Estrutura das wordlists:**
+Wordlists structure:
 ```
 # wordlists/users.lst
 admin
@@ -52,14 +52,14 @@ admin
 mikrotik
 ```
 
-### 3. Teste com Arquivo Combo
+### 3. Combo File Test
 
 ```bash
 # Teste com arquivo combo (user:pass)
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -d wordlists/combo.lst
 ```
 
-**Estrutura do arquivo combo:**
+Combo file format:
 ```
 admin:123456
 user:password
@@ -68,14 +68,14 @@ administrator:mikrotik
 root:12345
 ```
 
-### 4. Teste com Validação de Serviços
+### 4. Post-login Validation
 
 ```bash
 # Teste com validação pós-login
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
 ```
 
-**Saída esperada:**
+Expected output:
 ```
 [SUCCESS] [API] admin:123456
 [SUCCESS] [REST] admin:123456
@@ -84,29 +84,28 @@ python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --val
 [VALIDATION] TELNET login successful for admin:123456
 ```
 
-## 🔧 Exemplos Avançados
+## 🔧 Advanced Examples
 
-### 1. Teste com Stealth Mode
+### 1. Stealth Mode
 
 ```bash
 # Teste com stealth mode ativado
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth --threads 1
 ```
 
-**Características do Stealth Mode:**
-- Delays Fibonacci (1, 2, 3, 5, 8, 13, 21, 34, 55 segundos)
-- Rotação de User-Agent
-- Headers aleatórios
-- Jitter aplicado
+Features:
+- Fibonacci delays (1..55s)
+- UA rotation and random headers
+- Jitter
 
-### 2. Teste com Fingerprinting
+### 2. Fingerprinting
 
 ```bash
 # Teste com fingerprinting do dispositivo
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --fingerprint
 ```
 
-**Saída do fingerprinting:**
+Sample output:
 ```
 [FINGERPRINT] Target: 192.168.1.1
 [FINGERPRINT] RouterOS Version: 7.8
@@ -118,27 +117,27 @@ python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --fingerprint
 [FINGERPRINT] Vulnerabilities: Exposed TELNET service
 ```
 
-### 3. Teste com Progress Bar
+### 3. Progress Bar
 
 ```bash
 # Teste com barra de progresso
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --progress
 ```
 
-**Saída da barra de progresso:**
+Sample output:
 ```
 Progress: [████████████████████████████████████████] 100% (500/500)
 ETA: 00:02:30 | Speed: 3.3 attempts/sec | Success: 2
 ```
 
-### 4. Teste com Exportação
+### 4. Export
 
 ```bash
 # Teste com exportação em todos os formatos
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
 ```
 
-**Arquivos gerados:**
+Generated files:
 ```
 results/
 ├── mikrotik_192_168_1_1_20251005_123456.json
@@ -147,7 +146,7 @@ results/
 └── mikrotik_192_168_1_1_20251005_123456.txt
 ```
 
-### 5. Teste com Proxy
+### 5. Proxy
 
 ```bash
 # Teste com proxy SOCKS5
@@ -157,9 +156,9 @@ python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --pro
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --proxy http://user:pass@proxy.example.com:8080
 ```
 
-## 🎯 Cenários de Pentesting
+## 🎯 Pentesting Scenarios
 
-### 1. Pentest Completo
+### 1. Full Pentest Run
 
 ```bash
 # Pentest completo com todos os recursos
@@ -176,14 +175,14 @@ python mikrotikapi-bf-v2.1.py \
   -vv
 ```
 
-### 2. Teste de Descoberta
+### 2. Discovery (separate script if applicable)
 
 ```bash
 # Descoberta de dispositivos Mikrotik na rede
 python mikrotik-discovery.py --cidr 192.168.1.0/24 --threads 10 --export json
 ```
 
-### 3. Teste com Sessão Persistente
+### 3. Persistent Session
 
 ```bash
 # Criar nova sessão
@@ -199,7 +198,7 @@ python mikrotikapi-bf-v2.1.py --list-sessions
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --session-info
 ```
 
-### 4. Teste com Smart Wordlists
+### 4. Smart Wordlists
 
 ```bash
 # Gerar wordlist inteligente baseada no target
@@ -212,9 +211,9 @@ print(f'Generated {len(combinations)} combinations')
 "
 ```
 
-## ⚙️ Configurações Específicas
+## ⚙️ Specific Configurations
 
-### 1. Teste em Portas Customizadas
+### 1. Custom Ports
 
 ```bash
 # Teste com portas customizadas
@@ -229,7 +228,7 @@ python mikrotikapi-bf-v2.1.py \
   --validate ftp=2121,ssh=2222,telnet=2323
 ```
 
-### 2. Teste com Retry e Timeout
+### 2. Retry and Timeout
 
 ```bash
 # Teste com configurações de retry
@@ -241,7 +240,7 @@ python mikrotikapi-bf-v2.1.py \
   --timeout 10
 ```
 
-### 3. Teste com Verbosidade
+### 3. Verbosity
 
 ```bash
 # Teste com verbosidade normal
@@ -254,7 +253,7 @@ python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst -v
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst -vv
 ```
 
-### 4. Teste com Configuração YAML
+### 4. YAML Configuration
 
 ```yaml
 # config.yaml
@@ -278,9 +277,9 @@ verbose: true
 python mikrotikapi-bf-v2.1.py --config config.yaml
 ```
 
-## 🔍 Exemplos de Saída
+## 🔍 Sample Outputs
 
-### 1. Saída de Sucesso
+### 1. Successful Run
 
 ```
 [INFO] Starting MikrotikAPI-BF v2.1
@@ -301,7 +300,7 @@ python mikrotikapi-bf-v2.1.py --config config.yaml
 [INFO] Session completed successfully
 ```
 
-### 2. Saída com Progress Bar
+### 2. With Progress Bar
 
 ```
 Progress: [████████████████████████████████████████] 100% (25/25)
@@ -313,7 +312,7 @@ ETA: 00:01:30 | Speed: 2.5 attempts/sec | Success: 1
 [VALIDATION] TELNET login successful for admin:123456
 ```
 
-### 3. Saída de Debug
+### 3. Debug Mode
 
 ```
 [DEBUG] Trying -> admin:123456
@@ -329,9 +328,9 @@ ETA: 00:01:30 | Speed: 2.5 attempts/sec | Success: 1
 [VALIDATION] TELNET login successful for admin:123456
 ```
 
-## 📊 Exemplos de Exportação
+## 📊 Export Examples
 
-### 1. JSON Export
+### 1. JSON
 
 ```json
 {
@@ -352,14 +351,14 @@ ETA: 00:01:30 | Speed: 2.5 attempts/sec | Success: 1
 }
 ```
 
-### 2. CSV Export
+### 2. CSV
 
 ```csv
 username,password,services,target
 admin,123456,"api, restapi, ftp, ssh, telnet",192.168.1.1
 ```
 
-### 3. XML Export
+### 3. XML
 
 ```xml
 <?xml version='1.0' encoding='utf-8'?>
@@ -380,7 +379,7 @@ admin,123456,"api, restapi, ftp, ssh, telnet",192.168.1.1
 </scan_results>
 ```
 
-### 4. TXT Export
+### 4. TXT
 
 ```
 MikrotikAPI-BF v2.1 - Scan Results
@@ -399,7 +398,7 @@ Target: 192.168.1.1
 
 ## 🛠️ Troubleshooting
 
-### 1. Problema: Timeout de Conexão
+### 1. Issue: Connection timeout
 
 ```bash
 # Verificar conectividade
@@ -409,7 +408,7 @@ ping 192.168.1.1
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -U admin -P 123456 --timeout 30
 ```
 
-### 2. Problema: Módulos Não Encontrados
+### 2. Issue: Missing modules
 
 ```bash
 # Verificar se está no diretório correto
@@ -420,7 +419,7 @@ ls -la _*.py
 pip install --force-reinstall -r requirements.txt
 ```
 
-### 3. Problema: Permissões Negadas
+### 3. Issue: Permission denied
 
 ```bash
 # Linux/macOS
@@ -430,7 +429,7 @@ chmod +x mikrotikapi-bf-v2.1.py
 # Executar PowerShell como Administrador
 ```
 
-### 4. Problema: Erro de Encoding
+### 4. Issue: Encoding
 
 ```bash
 # Definir encoding UTF-8
@@ -450,7 +449,7 @@ rm -rf sessions/*.json
 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --force
 ```
 
-## 📚 Scripts de Exemplo
+## 📚 Example Scripts
 
 ### 1. Script de Teste Automatizado
 

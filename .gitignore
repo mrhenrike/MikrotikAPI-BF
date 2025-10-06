@@ -49,6 +49,7 @@ desktop.ini
 results/
 sessions/
 test_results/
+wordlists/
 *.log
 *.tmp
 *.bak
