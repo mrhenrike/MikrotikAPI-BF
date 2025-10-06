@@ -102,11 +102,15 @@ You should expect throttling and evidence in logs during testing. Prefer stealth
 Understanding where MikrotikAPI-BF operates within the Mikrotik ecosystem is crucial for effective security testing. The following diagram illustrates the complete attack surface of Mikrotik RouterOS devices:
 
 <div align="center">
+<<<<<<< HEAD
 
 ![Mikrotik Ecosystem Attack Surface](img/mikrotik_eco.png)
 
 *Mikrotik RouterOS Ecosystem Map - Attack Surface Visualization*
 
+=======
+[![Mikrotik Eco](img/mikrotik_eco.png)]
+>>>>>>> 223e111e9b2341d7d91ee301f80615a49260599b
 </div>
 
 ### 🎯 **Our Tool's Focus Areas**
