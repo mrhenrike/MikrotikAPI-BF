@@ -1,4 +1,4 @@
-# MikrotikAPI-BF v2.1 - Guia de Instalação
+# MikrotikAPI-BF v2.1 - Installation Guide (en-us)
 
 ## 📋 Índice
 
@@ -10,172 +10,171 @@
 6. [Troubleshooting](#troubleshooting)
 7. [Atualização](#atualização)
 
-## 🔧 Pré-requisitos
+## 🔧 Prerequisites
 
-### Sistema Operacional
-- **Windows**: 10/11 (PowerShell 5.1+ ou PowerShell Core 7+)
-- **Linux**: Ubuntu 18.04+, CentOS 7+, Debian 10+
-- **macOS**: 10.15+ (Catalina)
+### Operating Systems
+- Windows 10/11 (PowerShell 5.1+ or PowerShell 7+)
+- Linux (Ubuntu 18.04+, Debian 10+, CentOS 7+, Fedora)
+- macOS 10.15+
 
 ### Python
-- **Versão**: 3.8.x até 3.12.x (recomendado 3.12.x)
-- **Gerenciador**: pip, conda, ou pyenv
+- Version: 3.8.x to 3.12.x (3.12.x recommended)
+- Package manager: pip/venv
 
-### Dependências do Sistema
+### System dependencies
 
 #### Windows
 ```powershell
-# Verificar se Python está instalado
+# Check Python
 python --version
 
-# Se não estiver, baixar do python.org
-# Ou usar winget
+# Install using winget
 winget install Python.Python.3.12
 ```
 
 #### Linux (Ubuntu/Debian)
 ```bash
-# Atualizar sistema
+# Update
 sudo apt update && sudo apt upgrade -y
 
-# Instalar Python e pip
+# Install Python and pip
 sudo apt install python3 python3-pip python3-venv -y
 
-# Verificar versão
+# Verify version
 python3 --version
 ```
 
 #### macOS
 ```bash
-# Usando Homebrew
+# Using Homebrew
 brew install python@3.12
 
-# Verificar versão
+# Verify version
 python3 --version
 ```
 
-## 🪟 Instalação no Windows
+## 🪟 Windows Installation
 
-### Método 1: Instalação Automática
+### Method 1: Automated
 
 ```powershell
-# 1. Clone o repositório
+# 1. Clone the repository
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 
-# 2. Execute o script de instalação
+# 2. Run installer
 .\install-v2.1.ps1
 
-# 3. Ative o ambiente virtual
+# 3. Activate venv
 .\venv\Scripts\Activate.ps1
 
-# 4. Teste a instalação
+# 4. Test installation
 python mikrotikapi-bf-v2.1.py --help
 ```
 
-### Método 2: Instalação Manual
+### Method 2: Manual
 
 ```powershell
 # 1. Clone o repositório
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 
-# 2. Crie ambiente virtual
+# 2. Create venv
 python -m venv venv
 
-# 3. Ative o ambiente virtual
+# 3. Activate venv
 .\venv\Scripts\Activate.ps1
 
-# 4. Atualize pip
+# 4. Upgrade pip
 python -m pip install --upgrade pip
 
-# 5. Instale dependências
+# 5. Install requirements
 pip install -r requirements.txt
 
-# 6. Teste a instalação
+# 6. Test installation
 python mikrotikapi-bf-v2.1.py --help
 ```
 
-### Método 3: Usando Chocolatey
+### Method 3: Chocolatey
 
 ```powershell
-# 1. Instalar Chocolatey (se não tiver)
+# 1. Install Chocolatey
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
-# 2. Instalar Python
+# 2. Install Python
 choco install python --version=3.12.0
 
-# 3. Clone e configure
+# 3. Clone and setup
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 pip install -r requirements.txt
 ```
 
-## 🐧 Instalação no Linux/macOS
+## 🐧 Linux/macOS Installation
 
-### Método 1: Instalação Automática
+### Method 1: Automated
 
 ```bash
-# 1. Clone o repositório
+# 1. Clone repository
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 
-# 2. Torne o script executável
+# 2. Make script executable
 chmod +x install-v2.1.sh
 
-# 3. Execute o script de instalação
+# 3. Run installer
 ./install-v2.1.sh
 
-# 4. Ative o ambiente virtual
+# 4. Activate venv
 source venv/bin/activate
 
-# 5. Teste a instalação
+# 5. Test installation
 python mikrotikapi-bf-v2.1.py --help
 ```
 
-### Método 2: Instalação Manual
+### Method 2: Manual
 
 #### Ubuntu/Debian
 ```bash
-# 1. Atualizar sistema
+# 1. Update system
 sudo apt update && sudo apt upgrade -y
 
-# 2. Instalar dependências
+# 2. Install deps
 sudo apt install python3 python3-pip python3-venv git curl -y
 
-# 3. Clone o repositório
+# 3. Clone repository
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 
-# 4. Criar ambiente virtual
+# 4. Create venv
 python3 -m venv venv
 
-# 5. Ativar ambiente virtual
+# 5. Activate venv
 source venv/bin/activate
 
-# 6. Atualizar pip
+# 6. Upgrade pip
 pip install --upgrade pip
 
-# 7. Instalar dependências
+# 7. Install requirements
 pip install -r requirements.txt
 
-# 8. Testar instalação
+# 8. Test installation
 python mikrotikapi-bf-v2.1.py --help
 ```
 
 #### CentOS/RHEL/Fedora
 ```bash
-# 1. Atualizar sistema
+# 1. Update
 sudo yum update -y  # CentOS/RHEL
 # ou
 sudo dnf update -y  # Fedora
 
-# 2. Instalar dependências
+# 2. Install deps
 sudo yum install python3 python3-pip git curl -y  # CentOS/RHEL
 # ou
 sudo dnf install python3 python3-pip git curl -y  # Fedora
 
-# 3. Clone e configure
+# 3. Clone and setup
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 python3 -m venv venv
@@ -185,13 +184,13 @@ pip install -r requirements.txt
 
 #### Arch Linux
 ```bash
-# 1. Atualizar sistema
+# 1. Update
 sudo pacman -Syu
 
-# 2. Instalar dependências
+# 2. Install deps
 sudo pacman -S python python-pip git curl
 
-# 3. Clone e configure
+# 3. Clone and setup
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 python -m venv venv
@@ -201,13 +200,13 @@ pip install -r requirements.txt
 
 ### macOS
 ```bash
-# 1. Instalar Homebrew (se não tiver)
+# 1. Install Homebrew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# 2. Instalar Python
+# 2. Install Python
 brew install python@3.12
 
-# 3. Clone e configure
+# 3. Clone and setup
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 python3 -m venv venv
@@ -215,7 +214,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## 🐳 Instalação via Docker
+## 🐳 Docker Installation
 
 ### Dockerfile
 ```dockerfile
@@ -223,22 +222,22 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Instalar dependências do sistema
+# System deps
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar arquivos
+# Copy files
 COPY . .
 
-# Instalar dependências Python
+# Install Python deps
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Tornar executável
+# Make executable
 RUN chmod +x mikrotikapi-bf-v2.1.py
 
-# Comando padrão
+# Default command
 CMD ["python", "mikrotikapi-bf-v2.1.py", "--help"]
 ```
 
@@ -258,65 +257,65 @@ services:
     command: ["python", "mikrotikapi-bf-v2.1.py", "-t", "192.168.1.1", "--help"]
 ```
 
-### Comandos Docker
+### Docker commands
 ```bash
-# 1. Build da imagem
+# 1. Build image
 docker build -t mikrotikapi-bf:v2.1 .
 
-# 2. Executar container
+# 2. Run container
 docker run -it --rm mikrotikapi-bf:v2.1 python mikrotikapi-bf-v2.1.py --help
 
-# 3. Executar com volumes
+# 3. Run with volumes
 docker run -it --rm \
   -v $(pwd)/wordlists:/app/wordlists \
   -v $(pwd)/results:/app/results \
   -v $(pwd)/sessions:/app/sessions \
   mikrotikapi-bf:v2.1 python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
 
-# 4. Usando Docker Compose
+# 4. Using Docker Compose
 docker-compose up
 ```
 
-## ✅ Verificação da Instalação
+## ✅ Verify Installation
 
-### Teste Básico
+### Basic test
 ```bash
-# Verificar versão do Python
+# Check Python version
 python --version
 # Deve retornar: Python 3.8.x até 3.12.x
 
-# Verificar se o script executa
+# Check script runs
 python mikrotikapi-bf-v2.1.py --help
 # Deve mostrar a ajuda do programa
 ```
 
-### Teste de Dependências
+### Dependencies test
 ```bash
-# Verificar se todas as dependências estão instaladas
+# Verify deps installed
 python -c "
 import requests, colorama, paramiko, bs4, socks, yaml, pytest
 print('✅ Todas as dependências estão instaladas!')
 "
 ```
 
-### Teste de Funcionalidade
+### Functionality test
 ```bash
-# Teste básico com target local
+# Basic local test
 python mikrotikapi-bf-v2.1.py -t 127.0.0.1 -U admin -P 123456 --fingerprint
 
 # Deve mostrar informações de fingerprinting
 ```
 
-### Verificação de Módulos
+### Module check
 ```bash
-# Verificar se todos os módulos estão presentes
+# Verify modules exist
 ls -la _*.py
 # Deve mostrar: _api.py, _log.py, _session.py, _export.py, _progress.py, _stealth.py, _fingerprint.py, _wordlists.py
 ```
 
 ## 🔧 Troubleshooting
 
-### Problema: Python não encontrado
+### Issue: Python not found
 ```bash
 # Windows
 # Adicionar Python ao PATH ou reinstalar
@@ -326,7 +325,7 @@ sudo apt install python3 python3-pip  # Ubuntu/Debian
 brew install python@3.12              # macOS
 ```
 
-### Problema: Módulos não encontrados
+### Issue: Missing modules
 ```bash
 # Verificar se está no diretório correto
 pwd
@@ -336,7 +335,7 @@ ls -la mikrotikapi-bf-v2.1.py
 pip install --force-reinstall -r requirements.txt
 ```
 
-### Problema: Permissões negadas
+### Issue: Permission denied
 ```bash
 # Linux/macOS
 chmod +x mikrotikapi-bf-v2.1.py
@@ -346,7 +345,7 @@ chmod +x install-v2.1.sh
 # Executar PowerShell como Administrador
 ```
 
-### Problema: Erro de SSL/TLS
+### Issue: SSL/TLS error
 ```bash
 # Atualizar certificados
 pip install --upgrade certifi
@@ -355,7 +354,7 @@ pip install --upgrade certifi
 export PYTHONHTTPSVERIFY=0
 ```
 
-### Problema: Timeout de rede
+### Issue: Network timeout
 ```bash
 # Verificar conectividade
 ping 8.8.8.8
@@ -364,7 +363,7 @@ ping 8.8.8.8
 python mikrotikapi-bf-v2.1.py -t 127.0.0.1 --fingerprint
 ```
 
-### Problema: Erro de encoding
+### Issue: Encoding error
 ```bash
 # Definir encoding UTF-8
 export PYTHONIOENCODING=utf-8
@@ -373,25 +372,25 @@ export PYTHONIOENCODING=utf-8
 set PYTHONIOENCODING=utf-8
 ```
 
-## 🔄 Atualização
+## 🔄 Update
 
-### Atualização via Git
+### Update via Git
 ```bash
-# 1. Fazer backup da configuração
+# 1. Backup
 cp -r sessions/ sessions_backup/
 cp -r results/ results_backup/
 
-# 2. Atualizar código
+# 2. Pull latest
 git pull origin master
 
-# 3. Atualizar dependências
+# 3. Upgrade deps
 pip install --upgrade -r requirements.txt
 
-# 4. Verificar se tudo funciona
+# 4. Verify
 python mikrotikapi-bf-v2.1.py --help
 ```
 
-### Atualização Manual
+### Manual update
 ```bash
 # 1. Fazer backup
 cp -r MikrotikAPI-BF/ MikrotikAPI-BF_backup/
@@ -408,32 +407,32 @@ cd MikrotikAPI-BF
 pip install --upgrade -r requirements.txt
 ```
 
-## 📋 Checklist de Instalação
+## 📋 Installation Checklist
 
-### ✅ Pré-instalação
+### ✅ Pre-install
 - [ ] Python 3.8-3.12 instalado
 - [ ] Git instalado
 - [ ] Conexão com internet
 - [ ] Permissões adequadas
 
-### ✅ Instalação
+### ✅ Install
 - [ ] Repositório clonado
 - [ ] Ambiente virtual criado
 - [ ] Dependências instaladas
 - [ ] Scripts com permissão de execução
 
-### ✅ Pós-instalação
+### ✅ Post-install
 - [ ] Teste básico executado
 - [ ] Dependências verificadas
 - [ ] Módulos presentes
 - [ ] Funcionalidade testada
 
-### ✅ Configuração
+### ✅ Configuration
 - [ ] Diretórios criados (wordlists/, results/, sessions/)
 - [ ] Wordlists baixadas
 - [ ] Configuração personalizada (se necessário)
 
-## 🆘 Suporte
+## 🆘 Support
 
 Se encontrar problemas durante a instalação:
 
@@ -443,7 +442,7 @@ Se encontrar problemas durante a instalação:
 4. **Verificar permissões**: `ls -la mikrotikapi-bf-v2.1.py`
 5. **Reportar issue**: GitHub Issues com logs completos
 
-### Informações para Suporte
+### Info for support
 ```bash
 # Coletar informações do sistema
 python --version
