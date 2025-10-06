@@ -97,30 +97,59 @@ python mikrotikapi-bf-v2.1.py --help
 
 You should expect throttling and evidence in logs during testing. Prefer stealth mode, sensible thread counts, and authorized maintenance windows.
 
-## 🗺️ Where This Tool Attacks (Attack Surface Mapping)
+## 🗺️ Attack Surface Mapping
 
-Referencing the Mikrotik ecosystem map from the community project [`0ki/mikrotik-tools`](https://github.com/0ki/mikrotik-tools) 
+Understanding where MikrotikAPI-BF operates within the Mikrotik ecosystem is crucial for effective security testing. The following diagram illustrates the complete attack surface of Mikrotik RouterOS devices:
 
 <div align="center">
-![Mikrotik Eco](img/mikrotik_eco.png)
+
+![Mikrotik Ecosystem Attack Surface](img/mikrotik_eco.png)
+
+*Mikrotik RouterOS Ecosystem Map - Attack Surface Visualization*
+
 </div>
 
-Our tool focuses on:
+### 🎯 **Our Tool's Focus Areas**
 
-- Access vectors: `telnet`, `ssh`, `ftp`, `web` (REST endpoints) and `api`;
-- Access targets: the services and daemons bound to the device CPU/stack, not internal storage or removable media.
+**Access Vectors (Orange boxes in diagram):**
+- **`api`** - RouterOS API (TCP 8728) - Binary protocol for automation
+- **`web`** - REST-API endpoints (TCP 80/443) - HTTP/HTTPS with Basic Auth
+- **`ssh`** - Secure Shell (TCP 22) - Encrypted remote access
+- **`telnet`** - Unencrypted remote access (TCP 23) - Legacy protocol
+- **`ftp`** - File Transfer Protocol (TCP 21) - File management
 
-Why it’s possible:
-- These services expose interactive authentication endpoints reachable over the network.
-- RouterOS supports API/REST for automation; FTP/SSH/Telnet are often enabled for management or legacy reasons.
+**Access Targets (Blue boxes in diagram):**
+- Network services and daemons bound to the CPU
+- Management interfaces and authentication systems
+- **NOT** internal storage or removable media (those require physical access)
 
-How to reduce or eliminate exposure:
-- Disable unused services (e.g., `telnet`, `ftp`).
-- Restrict `api`, `ssh`, and `http/https` to management networks only.
-- Enforce strong passwords and multi-factor where possible (e.g., SSH keys).
-- Apply per-service `address-list` filters and firewall rules.
-- Enable rate limits, lockouts, and schedule maintenance windows.
-- Keep RouterOS updated, review logs, and rotate credentials.
+### 🔍 **Why These Attacks Are Possible**
+
+1. **Network Exposure**: These services are intentionally exposed for management and automation
+2. **Authentication Endpoints**: Each service provides interactive login capabilities
+3. **Legacy Support**: Many services remain enabled for backward compatibility
+4. **Automation Requirements**: API/REST endpoints are needed for device management
+
+### 🛡️ **How to Defend Against These Attacks**
+
+**Immediate Actions:**
+- **Disable unused services** (telnet, ftp if not needed)
+- **Restrict management access** to specific networks using firewall rules
+- **Enable strong authentication** (SSH keys, complex passwords)
+- **Implement rate limiting** and account lockouts
+
+**Advanced Defenses:**
+- **Network segmentation** - Isolate management interfaces
+- **VPN access only** - Require VPN connection for management
+- **Multi-factor authentication** where supported
+- **Regular security updates** and credential rotation
+- **Monitoring and logging** - Watch for brute-force attempts
+
+**Modern CHR Defenses:**
+- Session controls and request limits
+- Per-source rate limiting and temporary lockouts
+- Extensive logging of authentication failures
+- WAF/IPS protection for HTTP endpoints
 
 ## 📄 CLI Essentials
 
