@@ -99,7 +99,13 @@ You should expect throttling and evidence in logs during testing. Prefer stealth
 
 ## 🗺️ Where This Tool Attacks (Attack Surface Mapping)
 
-Referencing the Mikrotik ecosystem map from the community project [`0ki/mikrotik-tools`](https://github.com/0ki/mikrotik-tools) — image: `mikrotik_eco.png` ([link](https://github.com/0ki/mikrotik-tools/raw/master/mikrotik_eco.png)). Our tool focuses on:
+Referencing the Mikrotik ecosystem map from the community project [`0ki/mikrotik-tools`](https://github.com/0ki/mikrotik-tools) 
+
+<div align="center">
+![Mikrotik Eco](img/mikrotik_eco.png)
+</div>
+
+Our tool focuses on:
 
 - Access vectors: `telnet`, `ssh`, `ftp`, `web` (REST endpoints) and `api`;
 - Access targets: the services and daemons bound to the device CPU/stack, not internal storage or removable media.
