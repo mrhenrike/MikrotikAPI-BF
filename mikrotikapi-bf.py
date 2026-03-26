@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Author: André Henrique (LinkedIn/X: @mrhenrike)
-# Version: 3.0.0
+# Version: 3.1.0
 
 """
 MikrotikAPI-BF — RouterOS Attack & Exploitation Framework
@@ -86,7 +86,7 @@ MikrotikFingerprinter = _mods["MikrotikFingerprinter"]
 SmartWordlistManager  = _mods["SmartWordlistManager"]
 ProxyManager          = _mods["ProxyManager"]
 
-_VERSION = "3.0.0"
+_VERSION = "3.1.0"
 
 # ── Telnet fallback (removed from stdlib in Python 3.13) ─────────────────
 
@@ -648,6 +648,8 @@ def _build_parser() -> argparse.ArgumentParser:
     feat.add_argument("--stealth",      action="store_true", help="Enable stealth delays & UA rotation")
     feat.add_argument("--fingerprint",  action="store_true", help="Run advanced device fingerprinting")
     feat.add_argument("--exploit",      action="store_true", help="Run exploit/CVE scanner after BF")
+    feat.add_argument("--scan-cve",     action="store_true", help="Fingerprint target and run all applicable CVE PoCs")
+    feat.add_argument("--all-cves",     action="store_true", help="Show ALL CVEs regardless of version (with --scan-cve)")
     feat.add_argument("--proxy",        metavar="URL",       help="Proxy URL (socks5://127.0.0.1:9050)")
     feat.add_argument("--interactive",  action="store_true", help="Start interactive REPL")
     feat.add_argument("--max-retries",  type=int, default=1, help="Connection retry count (default: 1)")
@@ -700,6 +702,168 @@ def _list_sessions(sm: SessionManager) -> None:
     print()
 
 
+# ── CVE Scan standalone function ──────────────────────────────────────────
+
+def _run_cve_scan(
+    target: str,
+    username: str = "",
+    password: str = "",
+    show_all: bool = False,
+) -> None:
+    """Fingerprint target and run applicable CVE PoC checks.
+
+    Args:
+        target: Target IP address or hostname.
+        username: Optional credential for authenticated checks.
+        password: Optional credential for authenticated checks.
+        show_all: If True, display all CVEs regardless of version applicability.
+    """
+    try:
+        from xpl.cve_db import get_all_cves, get_cves_for_version
+        from xpl.exploits import EXPLOIT_REGISTRY
+    except ImportError as e:
+        print(f"[ERROR] Cannot import xpl module: {e}")
+        return
+
+    SEP = "=" * 68
+    SEP2 = "-" * 68
+
+    print(f"\n{SEP}")
+    print("  SCAN-CVE — RouterOS Vulnerability Assessment")
+    print(f"  Target : {target}")
+    print(f"  Mode   : {'ALL CVEs (--all-cves)' if show_all else 'version-filtered'}")
+    print(SEP)
+
+    # ── Step 1: Fingerprint ──────────────────────────────────────────────────
+    detected_version: Optional[str] = None
+    board_name = "unknown"
+    arch = "unknown"
+
+    print("\n[1/3] Fingerprinting target...")
+    try:
+        import requests as _req
+        import urllib3 as _u3
+        _u3.disable_warnings()
+        r = _req.get(
+            f"http://{target}/rest/system/resource",
+            auth=(username, password) if username else None,
+            timeout=8,
+            verify=False,
+        )
+        if r.status_code == 200:
+            info = r.json()
+            detected_version = info.get("version", "").split(" ")[0]
+            board_name = info.get("board-name", "unknown")
+            arch = info.get("architecture-name", "unknown")
+            print(f"  Version : RouterOS {detected_version}")
+            print(f"  Board   : {board_name}")
+            print(f"  Arch    : {arch}")
+        elif r.status_code == 401:
+            print("  [WARN] REST API requires credentials — use -U / -P for authenticated checks")
+            print("  [WARN] Falling back to port-based detection...")
+        else:
+            print(f"  [WARN] REST API returned HTTP {r.status_code}")
+    except Exception as fp_err:
+        print(f"  [WARN] Fingerprint via REST failed: {fp_err}")
+
+    # Try API binary fingerprint if REST failed
+    if not detected_version:
+        try:
+            from core.api import Api
+            api = Api(target, port=8728, timeout=5)
+            if api.login(username, password):
+                info = api.get_system_info()
+                detected_version = (info.get("version") or "").split(" ")[0] or None
+                board_name = info.get("board-name", "unknown")
+                arch = info.get("architecture-name", "unknown")
+                if detected_version:
+                    print(f"  Version : RouterOS {detected_version} (via binary API)")
+        except Exception:
+            pass
+
+    if not detected_version:
+        print("  [WARN] Could not detect RouterOS version — showing all CVEs")
+        show_all = True
+
+    # ── Step 2: CVE matching ─────────────────────────────────────────────────
+    print("\n[2/3] Matching CVE database...")
+    all_cves = get_all_cves()
+    applicable = get_cves_for_version(detected_version) if detected_version and not show_all else all_cves
+
+    print(f"  Total CVEs in database : {len(all_cves)}")
+    print(f"  Applicable to {detected_version or 'N/A':<10}: {len(applicable)}")
+    print(f"  With PoC               : {sum(1 for c in applicable if c['poc_available'])}")
+
+    # Print CVE table
+    print(f"\n  {'CVE ID':<28} {'SEV':<9} {'CVSS':<6} {'AUTH':<9} {'PoC':<5} STATUS")
+    print(f"  {SEP2}")
+
+    for cve in all_cves:
+        cid = cve["cve_id"]
+        sev = cve["severity"]
+        cvss = cve["cvss_score"]
+        auth = "auth" if cve["auth_required"] else "pre-auth"
+        has_poc = "[PoC]" if cve["poc_available"] else "     "
+        is_applicable = cve in applicable
+        status = "APPLICABLE" if is_applicable else "patched/n.a."
+        print(f"  {has_poc} {cid:<28} {sev:<9} {cvss:<6.1f} {auth:<9} {status}")
+
+    # ── Step 3: Run PoC checks ───────────────────────────────────────────────
+    print(f"\n[3/3] Running PoC checks on applicable CVEs...")
+    print(SEP2)
+
+    vuln_count = 0
+    skip_count = 0
+
+    for cve in applicable:
+        cid = cve["cve_id"]
+        exploit_cls = EXPLOIT_REGISTRY.get(cid)
+        if not exploit_cls:
+            skip_count += 1
+            continue
+
+        requires_auth = cve.get("auth_required", False)
+        if requires_auth and not username:
+            print(f"  [SKIP] {cid} — requires credentials (use -U / -P)")
+            skip_count += 1
+            continue
+
+        print(f"  [RUN]  {cid} — {cve['title'][:50]}")
+        try:
+            exploit = exploit_cls(
+                target=target,
+                username=username,
+                password=password,
+                timeout=10,
+            )
+            result = exploit.check()
+            if result.get("vulnerable"):
+                vuln_count += 1
+                evidence = result.get("evidence", "")[:100]
+                print(f"  [VULN] {cid} VULNERABLE")
+                print(f"         {evidence}")
+            else:
+                err = result.get("error") or result.get("evidence", "not vulnerable")
+                print(f"  [SAFE] {cid} — {err[:80]}")
+        except Exception as exc:
+            print(f"  [ERR]  {cid} — {exc}")
+
+    # ── Summary ──────────────────────────────────────────────────────────────
+    print(f"\n{SEP}")
+    print(f"  RESULT SUMMARY — {target}")
+    print(SEP)
+    print(f"  Version     : RouterOS {detected_version or 'unknown'} | {board_name} | {arch}")
+    print(f"  CVEs total  : {len(all_cves)}")
+    print(f"  Applicable  : {len(applicable)}")
+    print(f"  Vulnerable  : {vuln_count}")
+    print(f"  Skipped     : {skip_count} (no credentials or no PoC)")
+    if vuln_count > 0:
+        print(f"\n  [!] {vuln_count} VULNERABILITY/IES CONFIRMED — immediate remediation required")
+    else:
+        print(f"\n  [+] No exploitable CVEs confirmed for current version")
+    print(SEP)
+
+
 # ── Entrypoint ────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -730,6 +894,16 @@ def main() -> None:
     if args.interactive:
         cli = PentestCLI()
         cli.start()
+        sys.exit(0)
+
+    # ── CVE Scan mode (standalone — no BF needed) ─────────────────────
+    if getattr(args, "scan_cve", False) and args.target:
+        _run_cve_scan(
+            target=args.target,
+            username=getattr(args, "user", ""),
+            password=getattr(args, "passw", ""),
+            show_all=getattr(args, "all_cves", False),
+        )
         sys.exit(0)
 
     # ── Target required for all other modes ───────────────────────────

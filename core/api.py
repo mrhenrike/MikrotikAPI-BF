@@ -7,8 +7,12 @@ RouterOS API Client — MikrotikAPI-BF
 =====================================
 Low-level interaction with Mikrotik RouterOS API over TCP socket.
 
-Supports both legacy plaintext login (RouterOS < 6.43) and the modern
-challenge/response (MD5) login flow used in RouterOS 6.43+.
+Authentication flow (auto-detected):
+  - RouterOS 7.x: direct plaintext login in a single sentence
+    (send /login =name=user =password=pass directly)
+  - RouterOS 6.43+: MD5 challenge/response flow
+    (send /login =name=user, get challenge, send MD5 hash response)
+  - RouterOS < 6.43: legacy plaintext (sends /login without challenge)
 
 Protocol reference:
   https://wiki.mikrotik.com/wiki/Manual:API
@@ -131,9 +135,14 @@ class Api:
         """
         Authenticate against RouterOS API.
 
-        Tries the modern challenge/response (MD5) flow first; falls back to
-        legacy plaintext if the server responds with ``!done`` without
-        ``=ret=``.
+        Auth strategy (in order of attempt):
+          1. RouterOS 7.x direct mode — ``/login =name=user =password=pass``
+             If ``!done`` → success, no further steps needed.
+          2. MD5 challenge/response (RouterOS 6.43 – 6.49) — first send
+             ``/login =name=user`` to receive ``=ret=<hex_challenge>``, then
+             compute MD5 and send ``=response=00<hexdigest>``.
+          3. Legacy plaintext (RouterOS < 6.43) — if step 1 returns ``!done``
+             without a challenge and without a trap.
 
         Args:
             username: RouterOS username.
@@ -144,11 +153,36 @@ class Api:
         """
         try:
             self.connect()
-            # Step 1 – send login with name only to get the challenge
+
+            # ── Strategy 1: RouterOS 7.x direct plaintext ─────────────────
+            # Send name + password in a single sentence. RouterOS 7.x accepts
+            # this immediately; older versions return a challenge or !trap.
+            self.send(["/login", f"=name={username}", f"=password={password}"])
+            response = self.read_sentence()
+
+            if "!done" in response and "!trap" not in response:
+                # Either RouterOS 7.x accepted it OR it's a legacy device
+                # that doesn't need a challenge when password is sent inline.
+                return True
+
+            # If we got a !trap right away, credentials are wrong.
+            if "!trap" in response:
+                return False
+
+            # ── Strategy 2: MD5 challenge/response (RouterOS 6.43+) ───────
+            # Some builds don't respond with !done to the combined sentence
+            # but instead return a challenge — reconnect and use the old flow.
+        except Exception:
+            pass
+        finally:
+            self.disconnect()
+
+        # Re-connect for the MD5 challenge flow.
+        try:
+            self.connect()
             self.send(["/login", f"=name={username}"])
             response = self.read_sentence()
 
-            # Modern challenge/response login (RouterOS 6.43+)
             challenge = self._extract_value(response, "=ret=")
             if challenge:
                 digest = self._md5_challenge(password, challenge)
@@ -156,7 +190,7 @@ class Api:
                 response = self.read_sentence()
                 return "!done" in response and "!trap" not in response
 
-            # Legacy plaintext login (RouterOS < 6.43)
+            # ── Strategy 3: legacy plaintext (RouterOS < 6.43) ────────────
             if "!done" in response:
                 self.send(["/login", f"=name={username}", f"=password={password}"])
                 response = self.read_sentence()
