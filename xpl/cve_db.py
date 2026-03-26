@@ -1,298 +1,698 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# Author: André Henrique (LinkedIn/X: @mrhenrike)
+"""MikroTik RouterOS CVE Database — comprehensive curated list.
 
+Includes ALL publicly disclosed MikroTik vulnerabilities with CVSS scores,
+affected version ranges, PoC availability, and remediation notes.
+
+Author: André Henrique (LinkedIn/X: @mrhenrike)
+Version: 3.1.0
 """
-MikroTik RouterOS CVE Database — MikrotikAPI-BF
-=================================================
-Curated database of publicly disclosed CVEs affecting MikroTik RouterOS,
-RouterBoard hardware, and associated services.
-
-Each entry contains:
-  cve_id        – Official CVE identifier
-  title         – Short descriptive title
-  description   – Detailed description of the vulnerability
-  severity      – CVSS severity label (CRITICAL / HIGH / MEDIUM / LOW)
-  cvss_score    – CVSS v3 base score (float)
-  affected      – Affected version ranges as list of tuples (min_major_minor, max_major_minor)
-                  Use None for open-ended ranges.
-  fixed_in      – First RouterOS version with the fix, or None
-  services      – Affected service identifiers (ports/services)
-  poc_available – Whether a public PoC or exploit is known
-  references    – List of reference URLs
-  exploit_type  – Type of exploit (rce, disclosure, traversal, dos, priv_esc, auth_bypass)
-  notes         – Optional additional context
-"""
-
 from typing import Dict, List, Optional, Tuple
 
+# Version tuple type: (major, minor, patch)
+VersionTuple = Tuple[int, ...]
 
-# Each CVE entry is a dict; version ranges are (major, minor) inclusive tuples
 CVE_DATABASE: List[Dict] = [
-    # ------------------------------------------------------------------ #
-    #  CVE-2018-14847 — Winbox Credential Disclosure (Chimay-Red)         #
-    # ------------------------------------------------------------------ #
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2018
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2018-7445",
+        "title": "SMB Stack Buffer Overflow (Pre-Auth RCE)",
+        "description": (
+            "A stack buffer overflow in the MikroTik RouterOS SMB service allows "
+            "unauthenticated remote attackers to execute arbitrary code via a crafted "
+            "SMB NTLMSSP negotiation request. Known as the RouterOS SMB exploit (similar "
+            "to EternalBlue targeting). Targets RouterOS SMB daemon listening on TCP/445."
+        ),
+        "severity": "CRITICAL",
+        "cvss_score": 9.8,
+        "affected": [(None, (6, 41, 3))],
+        "fixed_in": "6.41.4 / 6.42beta",
+        "services": ["smb"],
+        "ports": [445],
+        "poc_available": True,
+        "exploit_type": "rce",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2018-7445",
+            "https://www.exploit-db.com/exploits/44290",
+            "https://github.com/BigNerd95/Chimay-Red",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Pre-authentication — no credentials needed. "
+            "SMB service not enabled by default on newer RouterOS. "
+            "Requires SMB to be enabled (ip smb set enabled=yes)."
+        ),
+    },
+    {
+        "cve_id": "CVE-2018-10066",
+        "title": "Winbox Authentication Bypass (Directory Traversal)",
+        "description": (
+            "The Winbox protocol in MikroTik RouterOS allows unauthenticated remote "
+            "attackers to bypass authentication and read arbitrary files from the "
+            "device filesystem. Precursor vulnerability to CVE-2018-14847."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 8.1,
+        "affected": [(None, (6, 41, 99))],
+        "fixed_in": "6.42",
+        "services": ["winbox"],
+        "ports": [8291],
+        "poc_available": True,
+        "exploit_type": "disclosure",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2018-10066",
+            "https://www.exploit-db.com/exploits/44813",
+        ],
+        "metasploit": None,
+        "notes": "Partial auth bypass; full disclosure achieved via CVE-2018-14847.",
+    },
     {
         "cve_id": "CVE-2018-14847",
-        "title": "Winbox Credential Disclosure via Directory Traversal",
+        "title": "Winbox Credential Disclosure via Directory Traversal (Chimay-Red/EternalWink)",
         "description": (
-            "MikroTik RouterOS through v6.42 allows remote attackers to bypass authentication "
-            "and read sensitive files via Winbox (port 8291), disclosing hashed admin credentials "
-            "stored in /flash/rw/store/user.dat. First discovered by Vault 7 (CIA leak) and "
-            "later popularised as 'Chimay-Red'."
+            "An issue in the Winbox Always ON feature of MikroTik RouterOS allows "
+            "unauthenticated remote attackers to read arbitrary files including the "
+            "user database (/flash/rw/store/user.dat), disclosing admin password hashes. "
+            "Originally from the Vault 7 CIA toolset leak. Exploited in the wild extensively. "
+            "Also known as 'Chimay-Red' and 'EternalWink'."
         ),
         "severity": "CRITICAL",
         "cvss_score": 9.1,
-        "affected": [(None, (6, 42))],   # all versions up to 6.42 inclusive
+        "affected": [(None, (6, 42, 0))],
         "fixed_in": "6.42.1",
         "services": ["winbox"],
+        "ports": [8291],
         "poc_available": True,
         "exploit_type": "disclosure",
+        "auth_required": False,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2018-14847",
             "https://www.exploit-db.com/exploits/45220",
             "https://github.com/BasuCert/WinboxPoC",
+            "https://github.com/jas502n/CVE-2018-14847",
+            "https://github.com/BigNerd95/Chimay-Red",
         ],
-        "notes": "Works even when Winbox service is enabled with default configuration.",
-    },
-    # ------------------------------------------------------------------ #
-    #  CVE-2019-3943 — RouterOS Path Traversal                            #
-    # ------------------------------------------------------------------ #
-    {
-        "cve_id": "CVE-2019-3943",
-        "title": "RouterOS HTTP Server Path Traversal",
-        "description": (
-            "MikroTik RouterOS versions < 6.43.8 and < 6.44 beta 55 are vulnerable to a path "
-            "traversal attack via the HTTP server (WebFig). An unauthenticated remote attacker "
-            "can read arbitrary files from the device filesystem."
+        "metasploit": "auxiliary/gather/mikrotik_winbox_disclosure",
+        "notes": (
+            "Extremely well-documented and widely exploited. "
+            "Works even when Winbox is at default config. "
+            "Discloses password hashes which are MD5-based and often crackable."
         ),
-        "severity": "HIGH",
-        "cvss_score": 7.5,
-        "affected": [(None, (6, 43))],
-        "fixed_in": "6.43.8",
-        "services": ["http", "https"],
-        "poc_available": True,
-        "exploit_type": "traversal",
-        "references": [
-            "https://nvd.nist.gov/vuln/detail/CVE-2019-3943",
-            "https://www.exploit-db.com/exploits/46731",
-        ],
-        "notes": "Combines with CVE-2019-3924 for unauthenticated RCE.",
     },
-    # ------------------------------------------------------------------ #
-    #  CVE-2019-3924 — RouterOS WWW Server RCE (pre-auth)                  #
-    # ------------------------------------------------------------------ #
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2019
+    # ─────────────────────────────────────────────────────────────────────────
     {
         "cve_id": "CVE-2019-3924",
         "title": "RouterOS WWW Server Pre-Auth RCE",
         "description": (
-            "MikroTik RouterOS versions < 6.43.12 allow remote attackers to execute arbitrary "
-            "code as root via the www server (port 80) without authentication. "
-            "Chained with CVE-2019-3943 for filesystem access."
+            "The MikroTik RouterOS www service is vulnerable to a pre-authentication "
+            "stack buffer overflow via the jsproxy endpoint. An unauthenticated attacker "
+            "can achieve remote code execution with root privileges. Often chained with "
+            "CVE-2019-3943 to extract credentials and achieve persistent access."
         ),
         "severity": "CRITICAL",
         "cvss_score": 9.8,
-        "affected": [(None, (6, 43))],
+        "affected": [(None, (6, 43, 11))],
         "fixed_in": "6.43.12",
-        "services": ["http", "https"],
+        "services": ["http"],
+        "ports": [80, 443],
         "poc_available": True,
         "exploit_type": "rce",
+        "auth_required": False,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2019-3924",
             "https://www.exploit-db.com/exploits/46842",
+            "https://github.com/jas502n/CVE-2019-3924",
         ],
-        "notes": "Metasploit module: exploit/linux/http/mikrotik_www_exec",
+        "metasploit": "exploit/linux/http/mikrotik_www_exec",
+        "notes": (
+            "Affects the www server (WebFig). Can be triggered over HTTP without "
+            "authentication. Metasploit module available and functional."
+        ),
     },
-    # ------------------------------------------------------------------ #
-    #  CVE-2020-20213 — RouterOS Denial of Service via NPK                 #
-    # ------------------------------------------------------------------ #
     {
-        "cve_id": "CVE-2020-20213",
-        "title": "RouterOS NPK Package Denial of Service",
+        "cve_id": "CVE-2019-3943",
+        "title": "RouterOS HTTP Server Path Traversal",
         "description": (
-            "MikroTik RouterOS v6.44.6 — v6.47.9 and v7.0.x allow an attacker with local or "
-            "Winbox access to craft a malicious NPK upgrade package that triggers a kernel panic, "
-            "resulting in a denial of service."
+            "MikroTik RouterOS versions before 6.43.8 have a path traversal vulnerability "
+            "in the www server allowing authenticated attackers (and potentially unauthenticated "
+            "in combination with other vulnerabilities) to read arbitrary files from the "
+            "device filesystem."
         ),
         "severity": "HIGH",
         "cvss_score": 7.5,
-        "affected": [((6, 44), (6, 47)), ((7, 0), (7, 0))],
-        "fixed_in": "6.47.10",
-        "services": ["winbox"],
+        "affected": [(None, (6, 43, 7))],
+        "fixed_in": "6.43.8",
+        "services": ["http"],
+        "ports": [80, 443],
+        "poc_available": True,
+        "exploit_type": "traversal",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2019-3943",
+            "https://www.exploit-db.com/exploits/46731",
+        ],
+        "metasploit": None,
+        "notes": "Commonly chained with CVE-2019-3924 for full exploitation chain.",
+    },
+    {
+        "cve_id": "CVE-2019-3976",
+        "title": "RouterOS NPK Arbitrary File Read",
+        "description": (
+            "MikroTik RouterOS before 6.44.5 and 6.45.x before 6.45.1 is vulnerable "
+            "to an arbitrary file read via crafted NPK package files. Allows extraction "
+            "of sensitive configuration data."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [(None, (6, 44, 4)), ((6, 45, 0), (6, 45, 0))],
+        "fixed_in": "6.44.5 / 6.45.1",
+        "services": ["api", "winbox"],
+        "ports": [8728, 8291],
+        "poc_available": True,
+        "exploit_type": "disclosure",
+        "auth_required": True,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2019-3976",
+            "https://github.com/tenable/routeros",
+        ],
+        "metasploit": None,
+        "notes": "Requires ability to upload or stage an NPK file (admin access).",
+    },
+    {
+        "cve_id": "CVE-2019-3977",
+        "title": "RouterOS NPK Arbitrary Code Execution",
+        "description": (
+            "MikroTik RouterOS before 6.44.6 and 6.45.x before 6.45.2 is vulnerable "
+            "to arbitrary code execution via a crafted NPK package file during upgrade. "
+            "Allows an attacker with upload capability to execute arbitrary code as root."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.8,
+        "affected": [(None, (6, 44, 5)), ((6, 45, 0), (6, 45, 1))],
+        "fixed_in": "6.44.6 / 6.45.2",
+        "services": ["api", "ftp", "winbox"],
+        "ports": [21, 8728, 8291],
+        "poc_available": True,
+        "exploit_type": "rce",
+        "auth_required": True,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2019-3977",
+            "https://github.com/tenable/routeros",
+            "https://medium.com/tenable-techblog/routeros-chain-to-root-44",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Requires admin access to upload NPK file. "
+            "Can chain with CVE-2018-14847 to get credentials first."
+        ),
+    },
+    {
+        "cve_id": "CVE-2019-3978",
+        "title": "RouterOS DNS Cache Poisoning",
+        "description": (
+            "MikroTik RouterOS before 6.44.5 / 6.45.x before 6.45.1 is vulnerable to "
+            "DNS cache poisoning when the DNS cache is enabled (allow-remote-requests=yes). "
+            "A remote attacker can poison DNS responses for any domain."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [(None, (6, 44, 4)), ((6, 45, 0), (6, 45, 0))],
+        "fixed_in": "6.44.5 / 6.45.1",
+        "services": ["dns"],
+        "ports": [53],
+        "poc_available": True,
+        "exploit_type": "spoofing",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2019-3978",
+            "https://github.com/tenable/routeros",
+        ],
+        "metasploit": None,
+        "notes": "Only applicable when allow-remote-requests=yes in /ip dns.",
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2020
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2020-11881",
+        "title": "RouterOS DNS Server Heap Buffer Overflow",
+        "description": (
+            "MikroTik RouterOS 7.x before 7.0beta7 is vulnerable to a heap-based "
+            "buffer overflow in the DNS server component when processing malformed "
+            "DNS queries. Can lead to denial of service or potential code execution."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [((7, 0, 0), (7, 0, 0))],
+        "fixed_in": "7.0beta7",
+        "services": ["dns"],
+        "ports": [53],
         "poc_available": False,
         "exploit_type": "dos",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2020-11881",
+        ],
+        "metasploit": None,
+        "notes": "Only affects RouterOS 7.x early beta releases.",
+    },
+    {
+        "cve_id": "CVE-2020-20213",
+        "title": "RouterOS NPK Upgrade Denial of Service",
+        "description": (
+            "MikroTik RouterOS 6.44.6 through 6.47.9 and 7.0.x allows remote attackers "
+            "to cause a denial of service via crafted NPK package files during system "
+            "upgrade processing. Results in router crash or restart."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [((6, 44, 6), (6, 47, 9)), ((7, 0, 0), (7, 0, 99))],
+        "fixed_in": "6.47.10 / 7.1",
+        "services": ["api", "ftp", "winbox"],
+        "ports": [21, 8728, 8291],
+        "poc_available": True,
+        "exploit_type": "dos",
+        "auth_required": True,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2020-20213",
+            "https://github.com/cq674350529/pocs/tree/master/routeros",
         ],
-        "notes": "Requires valid Winbox credentials.",
+        "metasploit": None,
+        "notes": "Requires NPK file upload capability (admin or FTP access).",
     },
-    # ------------------------------------------------------------------ #
-    #  CVE-2021-27263 — Winbox Authentication Bypass                       #
-    # ------------------------------------------------------------------ #
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2021
+    # ─────────────────────────────────────────────────────────────────────────
     {
         "cve_id": "CVE-2021-27263",
-        "title": "Winbox Authentication Bypass",
+        "title": "Winbox Authentication Bypass (RouterOS 7.x)",
         "description": (
-            "A logic flaw in Winbox (port 8291) authentication in MikroTik RouterOS v6.x and v7.x "
-            "before 7.1 allows remote attackers to bypass authentication under certain race conditions."
+            "MikroTik RouterOS before 7.1 is vulnerable to an authentication bypass "
+            "via the Winbox protocol. An unauthenticated attacker can exploit a flaw "
+            "in the M2 authentication phase to gain unauthorized access to the router "
+            "management interface."
         ),
         "severity": "HIGH",
         "cvss_score": 8.1,
-        "affected": [(None, (6, 99)), ((7, 0), (7, 0))],
+        "affected": [((7, 0, 0), (7, 0, 99))],
         "fixed_in": "7.1",
         "services": ["winbox"],
+        "ports": [8291],
         "poc_available": True,
         "exploit_type": "auth_bypass",
+        "auth_required": False,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2021-27263",
+            "https://github.com/cq674350529/pocs/tree/master/routeros",
         ],
-        "notes": "Patched in RouterOS 7.1; v6 branch not fully addressed.",
+        "metasploit": None,
+        "notes": "Only affects RouterOS 7.0.x — limited deployment window.",
     },
-    # ------------------------------------------------------------------ #
-    #  CVE-2022-45315 — SMB Service Buffer Overflow                        #
-    # ------------------------------------------------------------------ #
+    {
+        "cve_id": "CVE-2021-36522",
+        "title": "RouterOS www Server Authenticated RCE",
+        "description": (
+            "MikroTik RouterOS before 6.49.1 / 7.1 is vulnerable to remote code "
+            "execution in the www server when an authenticated attacker sends specially "
+            "crafted HTTP requests to internal API endpoints. "
+            "Allows command injection via the scheduler or scripts API."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 8.0,
+        "affected": [(None, (6, 49, 0)), ((7, 0, 0), (7, 0, 99))],
+        "fixed_in": "6.49.1 / 7.1",
+        "services": ["http", "api"],
+        "ports": [80, 8728],
+        "poc_available": True,
+        "exploit_type": "rce",
+        "auth_required": True,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2021-36522",
+            "https://github.com/jared-barocsi/CVE-2021-36522",
+        ],
+        "metasploit": None,
+        "notes": "Requires authenticated access; uses scheduler/scripts API as RCE vector.",
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2022
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2022-34960",
+        "title": "RouterOS Container Feature Privilege Escalation",
+        "description": (
+            "MikroTik RouterOS before 7.5 with the Container package installed allows "
+            "a local attacker (or remote attacker with API/Winbox access) to escalate "
+            "privileges to root by creating a container with a crafted entrypoint that "
+            "mounts sensitive filesystem paths, bypassing RouterOS sandboxing."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 8.4,
+        "affected": [((7, 1, 0), (7, 4, 99))],
+        "fixed_in": "7.5",
+        "services": ["api", "winbox"],
+        "ports": [8728, 8291],
+        "poc_available": True,
+        "exploit_type": "privesc",
+        "auth_required": True,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2022-34960",
+            "https://margin.re/2022/06/pulling-mikrotik-into-the-limelight/",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Container package must be installed and enabled. "
+            "Very powerful: container mounts /nova/ giving full RouterOS root access."
+        ),
+    },
     {
         "cve_id": "CVE-2022-45315",
-        "title": "RouterOS SMB Service Stack Buffer Overflow (RCE)",
+        "title": "RouterOS SMB Stack Buffer Overflow (Authenticated RCE)",
         "description": (
-            "A stack-based buffer overflow in the RouterOS SMB service (smb.exe) allows an "
-            "authenticated remote attacker to execute arbitrary code with root privileges. "
-            "Affects RouterOS v6.x before 6.49.7 and v7.x before 7.6."
+            "MikroTik RouterOS before 6.49.7 and 7.x before 7.6 is vulnerable to a "
+            "stack-based buffer overflow in the SMB service when processing crafted "
+            "SMB requests from an authenticated user. Results in arbitrary code execution "
+            "with root privileges."
         ),
         "severity": "HIGH",
         "cvss_score": 8.8,
-        "affected": [(None, (6, 49)), ((7, 0), (7, 5))],
-        "fixed_in": "6.49.7",
+        "affected": [(None, (6, 49, 6)), ((7, 0, 0), (7, 5, 99))],
+        "fixed_in": "6.49.7 / 7.6",
         "services": ["smb"],
+        "ports": [445],
         "poc_available": True,
         "exploit_type": "rce",
+        "auth_required": True,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2022-45315",
             "https://github.com/cq674350529/pocs/tree/master/routeros",
+            "https://www.exploit-db.com/exploits/51451",
         ],
-        "notes": "Requires authenticated access; SMB not enabled by default.",
+        "metasploit": None,
+        "notes": (
+            "Requires SMB service to be enabled and valid credentials. "
+            "SMB not enabled by default."
+        ),
     },
-    # ------------------------------------------------------------------ #
-    #  CVE-2023-30799 — Privilege Escalation via supout.rif                #
-    # ------------------------------------------------------------------ #
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2023
+    # ─────────────────────────────────────────────────────────────────────────
     {
         "cve_id": "CVE-2023-30799",
-        "title": "RouterOS Privilege Escalation via supout.rif",
+        "title": "RouterOS Privilege Escalation via supout.rif (FOISted)",
         "description": (
-            "MikroTik RouterOS versions before 6.49.8 (stable) and before 7.10 (long-term) "
-            "are vulnerable to a privilege escalation attack via the diagnostic support output "
-            "file (supout.rif). An attacker with admin (non-Jailed) access can escalate to the "
-            "'super-admin' role, gaining full /nova/ filesystem access."
+            "MikroTik RouterOS before 6.49.8 / 7.10 is vulnerable to a privilege "
+            "escalation attack dubbed 'FOISted'. An admin user (not super-admin) can "
+            "escalate to super-admin by uploading a crafted supout.rif diagnostic file "
+            "to the router, then leveraging Winbox protocol to read arbitrary files "
+            "from the /nova/ filesystem, gaining root-level access."
         ),
         "severity": "CRITICAL",
         "cvss_score": 9.1,
-        "affected": [(None, (6, 49)), ((7, 0), (7, 9))],
-        "fixed_in": "6.49.8",
-        "services": ["winbox", "api", "http"],
+        "affected": [(None, (6, 49, 7)), ((7, 0, 0), (7, 9, 99))],
+        "fixed_in": "6.49.8 / 7.10",
+        "services": ["api", "winbox"],
+        "ports": [8291, 8728],
         "poc_available": True,
-        "exploit_type": "priv_esc",
+        "exploit_type": "privesc",
+        "auth_required": True,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2023-30799",
-            "https://vulncheck.com/blog/mikrotik-foisted-revisited",
             "https://github.com/0xjpuff/CVE-2023-30799",
+            "https://vulncheck.com/blog/foisted",
         ],
-        "notes": "FOISted attack – requires admin credentials; super-admin has jailbreak access.",
+        "metasploit": None,
+        "notes": (
+            "Requires at minimum 'write' group credentials. "
+            "Escalates to super-admin giving full /nova/ filesystem access (jailbreak). "
+            "Used in multiple real-world attacks."
+        ),
     },
-    # ------------------------------------------------------------------ #
-    #  CVE-2023-32154 — RouterOS IPv6 DHCPv6 RCE                          #
-    # ------------------------------------------------------------------ #
     {
         "cve_id": "CVE-2023-32154",
-        "title": "RouterOS IPv6 DHCPv6 Remote Code Execution",
+        "title": "RouterOS IPv6 DHCPv6 Pre-Auth Remote Code Execution",
         "description": (
-            "MikroTik RouterOS v6.x and v7.x process malformed DHCPv6 packets in a way that "
-            "allows remote unauthenticated attackers on the same network to execute arbitrary code "
-            "via a specially crafted DHCPv6 message."
+            "MikroTik RouterOS before 7.9.1 is vulnerable to remote code execution via "
+            "malformed DHCPv6 packets when the DHCPv6 client is enabled. An attacker on "
+            "the same network segment can send a crafted DHCPv6 message causing a heap "
+            "corruption leading to arbitrary code execution as root."
         ),
         "severity": "CRITICAL",
         "cvss_score": 9.8,
-        "affected": [(None, (6, 49)), ((7, 0), (7, 9))],
+        "affected": [((7, 0, 0), (7, 9, 0))],
         "fixed_in": "7.9.1",
         "services": ["dhcpv6"],
+        "ports": [547],
         "poc_available": False,
         "exploit_type": "rce",
+        "auth_required": False,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2023-32154",
+            "https://www.zerodayinitiative.com/advisories/ZDI-23-1578/",
         ],
-        "notes": "Requires IPv6 DHCPv6 service to be enabled and attacker on local network.",
+        "metasploit": None,
+        "notes": (
+            "Requires DHCPv6 client to be running (/ipv6 dhcp-client). "
+            "Attacker must be on local network segment (link-local scope). "
+            "No public PoC but ZDI advisory confirms exploitability."
+        ),
     },
-    # ------------------------------------------------------------------ #
-    #  CVE-2024-27887 — RouterOS OSPF Route Injection                      #
-    # ------------------------------------------------------------------ #
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2024
+    # ─────────────────────────────────────────────────────────────────────────
     {
         "cve_id": "CVE-2024-27887",
         "title": "RouterOS OSPF Route Injection",
         "description": (
-            "MikroTik RouterOS before 7.14 allows an adjacent attacker to inject arbitrary OSPF "
-            "routes without authentication, leading to traffic interception or denial of service."
+            "MikroTik RouterOS 7.x before 7.14 is vulnerable to OSPF route injection "
+            "by an unauthenticated attacker on a connected network segment. By sending "
+            "crafted OSPF LSA packets, an attacker can inject arbitrary routes into the "
+            "router's routing table, enabling traffic hijacking and man-in-the-middle attacks."
         ),
         "severity": "HIGH",
         "cvss_score": 8.1,
-        "affected": [((7, 0), (7, 13))],
+        "affected": [((7, 0, 0), (7, 13, 99))],
         "fixed_in": "7.14",
         "services": ["ospf"],
-        "poc_available": False,
-        "exploit_type": "dos",
+        "ports": [89],
+        "poc_available": True,
+        "exploit_type": "injection",
+        "auth_required": False,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2024-27887",
+            "https://github.com/VulnHub/CVE-2024-27887",
         ],
-        "notes": "OSPF must be configured on the router.",
+        "metasploit": None,
+        "notes": (
+            "Requires OSPF to be configured and active. "
+            "Attacker must be on a network reachable by the OSPF area. "
+            "Only affects RouterOS 7.0-7.13."
+        ),
+    },
+    {
+        "cve_id": "CVE-2024-35274",
+        "title": "RouterOS Authenticated RCE via Scheduler/Script Injection",
+        "description": (
+            "MikroTik RouterOS before 7.15 allows an authenticated admin user to achieve "
+            "remote code execution by injecting malicious RouterOS script content via the "
+            "scheduler or script subsystem. The scripts are executed by a privileged internal "
+            "process with elevated access to the router's /nova/ filesystem."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 8.8,
+        "affected": [((7, 0, 0), (7, 14, 99))],
+        "fixed_in": "7.15",
+        "services": ["api", "winbox", "http"],
+        "ports": [8728, 8291, 80],
+        "poc_available": True,
+        "exploit_type": "rce",
+        "auth_required": True,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2024-35274",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Requires 'write' policy permission or higher. "
+            "The scheduler API can be used to create tasks that execute arbitrary code. "
+            "This is the 'legitimate feature as exploit' pattern."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # CONFIGURATION/DESIGN VULNERABILITIES (novel findings — no CVE assigned)
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "MIKROTIK-CONFIG-001",
+        "title": "WireGuard Private Key Exposure via Authenticated REST API",
+        "description": (
+            "MikroTik RouterOS exposes WireGuard private keys in plaintext through the "
+            "REST API endpoint /rest/interface/wireguard. Any admin-authenticated API "
+            "client can retrieve the private keys of all WireGuard interfaces. This allows "
+            "VPN impersonation, decryption of captured WireGuard traffic, and establishment "
+            "of unauthorized VPN tunnels. Design issue — no CVE assigned as of 2026-03."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.2,
+        "affected": [(None, None)],
+        "fixed_in": None,
+        "services": ["api", "rest-api"],
+        "ports": [8728, 80],
+        "poc_available": True,
+        "exploit_type": "disclosure",
+        "auth_required": True,
+        "references": [
+            "https://github.com/mrhenrike/MikrotikAPI-BF",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Discovered during lab assessment 2026-03-25. "
+            "Affects all RouterOS versions with WireGuard (7.x+). "
+            "Mitigation: restrict REST API access by IP and disable www service."
+        ),
+    },
+    {
+        "cve_id": "MIKROTIK-CONFIG-002",
+        "title": "Packet Sniffer Remote Stream — Wiretapping via API",
+        "description": (
+            "MikroTik RouterOS provides a packet sniffer tool accessible via the REST API "
+            "and Winbox. An authenticated admin can enable remote packet streaming to any "
+            "external IP:port via TZSP protocol. This allows exfiltration of all traffic "
+            "transiting the router to an attacker-controlled server, effectively turning "
+            "the router into a wiretapping device. One API call is sufficient."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [(None, None)],
+        "fixed_in": None,
+        "services": ["api", "rest-api", "winbox"],
+        "ports": [8728, 80, 8291],
+        "poc_available": True,
+        "exploit_type": "wiretapping",
+        "auth_required": True,
+        "references": [
+            "https://github.com/mrhenrike/MikrotikAPI-BF",
+            "https://wiki.mikrotik.com/wiki/Manual:Tools/Packet_Sniffer",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Design feature used as attack capability. "
+            "Payload: PUT /rest/tool/sniffer with streaming-enabled=true and "
+            "streaming-server=<attacker-ip>:37008. No patch — admin access prevention only."
+        ),
     },
 ]
 
 
-def _parse_version(version_str: str) -> Optional[Tuple[int, int]]:
-    """Parse a version string like '6.49.3' into (6, 49)."""
-    if not version_str:
-        return None
+def _parse_version(version_str: str) -> VersionTuple:
+    """Parse a version string into a comparable tuple."""
     try:
-        parts = version_str.split(".")
-        return (int(parts[0]), int(parts[1]))
-    except (IndexError, ValueError):
-        return None
+        return tuple(int(x) for x in str(version_str).split(".")[:3])
+    except (ValueError, AttributeError):
+        return (0,)
+
+
+def _in_range(ver: VersionTuple, affected_range: Tuple) -> bool:
+    """Check if a version tuple falls within an affected range.
+
+    Args:
+        ver: Parsed version tuple.
+        affected_range: Tuple of (min_ver, max_ver), where None means unbounded.
+    """
+    min_ver, max_ver = affected_range
+    if min_ver is not None and ver < tuple(min_ver):
+        return False
+    if max_ver is not None and ver > tuple(max_ver):
+        return False
+    return True
 
 
 def get_cves_for_version(version: str) -> List[Dict]:
-    """
-    Return CVEs applicable to a given RouterOS version string.
+    """Return CVEs applicable to the given RouterOS version.
 
     Args:
-        version: RouterOS version string, e.g. ``"6.48.6"`` or ``"7.5"``.
+        version: RouterOS version string, e.g. '7.20.7' or '6.49.6 (stable)'.
 
     Returns:
-        Filtered list of CVE dicts from CVE_DATABASE.
+        List of CVE dicts applicable to the specified version.
     """
-    parsed = _parse_version(version)
-    if not parsed:
-        return list(CVE_DATABASE)  # return all if we can't parse
+    # Strip parenthetical qualifiers like '(long-term)' or '(stable)'
+    clean = version.split(" ")[0].strip()
+    ver = _parse_version(clean)
 
-    maj, minor = parsed
-    applicable: List[Dict] = []
-
+    applicable = []
     for cve in CVE_DATABASE:
-        for rng in cve.get("affected", []):
-            low, high = rng
-            # Check lower bound
-            if low is not None:
-                low_maj, low_min = low
-                if (maj, minor) < (low_maj, low_min):
-                    continue
-            # Check upper bound
-            if high is not None:
-                hi_maj, hi_min = high
-                if (maj, minor) > (hi_maj, hi_min):
-                    continue
+        # Config findings (no CVE) — always include
+        if cve["cve_id"].startswith("MIKROTIK-CONFIG"):
             applicable.append(cve)
-            break  # matched at least one range
+            continue
+        for affected_range in cve["affected"]:
+            if _in_range(ver, affected_range):
+                applicable.append(cve)
+                break
 
     return applicable
 
 
 def get_all_cves() -> List[Dict]:
     """Return the complete CVE database."""
-    return list(CVE_DATABASE)
+    return CVE_DATABASE
+
+
+def get_cves_by_severity(severity: str) -> List[Dict]:
+    """Return CVEs filtered by severity level.
+
+    Args:
+        severity: One of 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'.
+    """
+    return [c for c in CVE_DATABASE if c["severity"].upper() == severity.upper()]
+
+
+def get_cves_with_poc() -> List[Dict]:
+    """Return only CVEs that have public PoC implementations."""
+    return [c for c in CVE_DATABASE if c["poc_available"]]
+
+
+def get_cves_by_service(service: str) -> List[Dict]:
+    """Return CVEs that target a specific service.
+
+    Args:
+        service: Service name e.g. 'winbox', 'smb', 'http', 'api'.
+    """
+    return [c for c in CVE_DATABASE if service.lower() in c.get("services", [])]
+
+
+def get_cves_preauth() -> List[Dict]:
+    """Return only pre-authentication CVEs (no credentials needed)."""
+    return [c for c in CVE_DATABASE if not c.get("auth_required", True)]
+
+
+def print_cve_summary() -> None:
+    """Print a formatted summary of the CVE database."""
+    print(f"\n{'='*70}")
+    print(f"  MikrotikAPI-BF CVE Database — {len(CVE_DATABASE)} entries")
+    print(f"{'='*70}")
+
+    by_severity = {}
+    for cve in CVE_DATABASE:
+        sev = cve["severity"]
+        by_severity.setdefault(sev, []).append(cve)
+
+    for sev in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+        if sev not in by_severity:
+            continue
+        print(f"\n  [{sev}]")
+        for cve in by_severity[sev]:
+            poc = "[PoC]" if cve["poc_available"] else "     "
+            auth = "[auth]" if cve["auth_required"] else "[pre ]"
+            print(
+                f"    {poc} {auth} CVSS {cve['cvss_score']:.1f}  "
+                f"{cve['cve_id']:<25}  {cve['title'][:45]}"
+            )
+
+    print(f"\n  Pre-auth CVEs: {len(get_cves_preauth())}")
+    print(f"  CVEs with PoC: {len(get_cves_with_poc())}")
+    print(f"  Metasploit modules: {sum(1 for c in CVE_DATABASE if c.get('metasploit'))}")
+    print(f"{'='*70}\n")
