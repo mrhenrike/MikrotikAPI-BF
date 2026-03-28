@@ -173,9 +173,14 @@ MikrotikAPI-BF/
 ```
 
 ## ⚠️ Legal Notice and Responsible Use
+
+<!-- LEGAL-NOTICE-UG-MRH -->
+
 - Use only on systems you own or have explicit, written authorization to test.
 - Your tests will likely be logged; coordinate with stakeholders.
 - Respect rate limits, user privacy, and applicable laws.
+- **No warranty** — Provided **AS IS** under [MIT License](LICENSE); no commercial, financial, or fitness guarantees. **No liability** for misuse, damages, or third-party claims — **use at your own risk**.
+- **Attribution & contributions** — Keep copyright notices; **pull requests** and **issues** are welcome.
 
 ## 🔧 Troubleshooting (Quick)
 - Python 3.13+ may deprecate stdlib modules (e.g., `telnetlib`); prefer 3.12.x.
@@ -201,4 +206,4 @@ MikrotikAPI-BF/
 - GitHub: https://github.com/mrhenrike/MikrotikAPI-BF
 - Issues: https://github.com/mrhenrike/MikrotikAPI-BF/issues
 
-Licensed under MIT. See `LICENSE`.
+Licensed under MIT — see [`LICENSE`](LICENSE).
