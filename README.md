@@ -1,9 +1,10 @@
-# 🔐 MikrotikAPI-BF v2.1
+﻿# MikrotikAPI-BF v3.1.0
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.1-red.svg)](docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.1.0-red.svg)](docs/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
+[![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 
 Advanced CLI toolkit for security testing of Mikrotik RouterOS and CHR. It performs credential testing against multiple entry points (RouterOS API/REST-API) with optional post-login validation on network services (FTP/SSH/Telnet), includes robust session persistence, progress/ETA, export, stealth, and fingerprinting.
 
@@ -51,16 +52,16 @@ Advanced CLI toolkit for security testing of Mikrotik RouterOS and CHR. It perfo
 ### One-liners
 ```bash
 # Basic
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -U admin -P 123456
+python mikrotikapi-bf.py -t 192.168.1.1 -U admin -P 123456
 
 # With wordlists (provide your own, not tracked in repo)
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
+python mikrotikapi-bf.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
 
 # With post-login validation
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
 
 # Full pentest-style run
-python mikrotikapi-bf-v2.1.py \
+python mikrotikapi-bf.py \
   -t 192.168.1.1 \
   -u wordlists/users.lst \
   -p wordlists/passwords.lst \
@@ -74,7 +75,7 @@ python mikrotikapi-bf-v2.1.py \
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 pip install -r requirements.txt
-python mikrotikapi-bf-v2.1.py --help
+python mikrotikapi-bf.py --help
 ```
 
 ## 🧭 Services Tested and Why Winbox/WebFig Are Not
@@ -160,16 +161,39 @@ Common flags:
 - `--progress` — progress bar with ETA.
 - `--export json,csv,xml,txt | --export-all` — reporting.
 
-## 📁 Project Layout
+## Project Layout
 
 ```
 MikrotikAPI-BF/
-├── mikrotikapi-bf-v2.1.py
-├── _api.py  _log.py  _session.py  _export.py  _progress.py  _stealth.py  _fingerprint.py  _wordlists.py
+├── mikrotikapi-bf.py             # Main entry point (v3.1.0)
+├── requirements.txt
+├── core/                         # Core engine modules
+│   ├── api.py                    # RouterOS binary API protocol
+│   ├── cli.py                    # CLI argument parsing
+│   ├── export.py                 # JSON/CSV/XML/TXT export
+│   ├── log.py                    # Logging subsystem
+│   ├── progress.py               # Progress bar + ETA
+│   ├── retry.py                  # Retry logic with backoff
+│   └── session.py                # Persistent session management
+├── modules/                      # Feature modules
+│   ├── discovery.py              # Network discovery
+│   ├── fingerprint.py            # Device fingerprinting
+│   ├── proxy.py                  # Proxy/SOCKS support
+│   ├── reports.py                # Report generation
+│   ├── stealth.py                # Fibonacci delays + UA rotation
+│   └── wordlists.py              # Smart wordlist engine
+├── xpl/                          # Exploit/CVE integration
+│   ├── cve_db.py                 # CVE database
+│   ├── exploits.py               # Exploit dispatcher
+│   ├── nvd_shodan.py             # NVD API + Shodan integration
+│   └── scanner.py                # Vulnerability scanner
 ├── docs/
-│   ├── README.md  API_REFERENCE.md  INSTALLATION.md  USAGE_EXAMPLES.md  index.html  CHANGELOG.md  FEATURES.md  QUICKSTART.md  VERBOSE_GUIDE.md
-├── requirements.txt  install-v2.1.sh
-└── .gitignore
+│   ├── README.md  API_REFERENCE.md  INSTALLATION.md  USAGE_EXAMPLES.md
+│   ├── CHANGELOG.md  FEATURES.md  QUICKSTART.md  VERBOSE_GUIDE.md  index.html
+└── examples/
+    ├── example_basic.sh  example_discovery.sh  example_stealth.sh
+    ├── example_validation.sh  example_wordlist.sh
+    ├── usernames.txt  passwords.txt  combos.txt
 ```
 
 ## ⚠️ Legal Notice and Responsible Use
@@ -187,19 +211,25 @@ MikrotikAPI-BF/
 - For connection timeouts: check routing, firewall, and service ports.
 - For REST-API TLS issues: use `--ssl` and confirm certificates where appropriate.
 
-## 📚 Documentation
+## Documentation
+- [GitHub Wiki](https://github.com/mrhenrike/MikrotikAPI-BF/wiki) — complete step-by-step guides (en-us + pt-br)
 - [Full Documentation](docs/README.md)
 - [API Reference](docs/API_REFERENCE.md)
 - [Installation Guide](docs/INSTALLATION.md)
 - [Usage Examples](docs/USAGE_EXAMPLES.md)
 - [HTML Docs](docs/index.html)
 
-## 🆕 What’s New in v2.1
-- Persistent sessions (resume, ETA, duplicate avoidance)
+## What's New in v3.1.0
+- Modular architecture: `core/`, `modules/`, `xpl/` packages
+- CVE/NVD integration via `xpl/` exploit and scanner modules
+- Shodan integration for fingerprinting context
+- Proxy/SOCKS5 support via `modules/proxy.py`
+- Retry logic with configurable backoff (`core/retry.py`)
+- Full persistent sessions (resume, ETA, duplicate avoidance)
 - Stealth mode (Fibonacci delays, UA rotation)
-- Advanced fingerprinting
+- Advanced fingerprinting and risk scoring
 - Post-login validation for FTP/SSH/Telnet
-- Multi-format export and improved progress UI
+- Multi-format export (JSON, CSV, XML, TXT)
 - Removed unreliable Winbox/WebFig testing
 
 ## Support
