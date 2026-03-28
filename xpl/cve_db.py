@@ -536,7 +536,7 @@ CVE_DATABASE: List[Dict] = [
         ),
         "severity": "HIGH",
         "cvss_score": 7.2,
-        "affected": [(None, None)],
+        "affected": [((7, 0, 0), None)],
         "fixed_in": None,
         "services": ["api", "rest-api"],
         "ports": [8728, 80],
@@ -549,7 +549,7 @@ CVE_DATABASE: List[Dict] = [
         "metasploit": None,
         "notes": (
             "Discovered during lab assessment 2026-03-25. "
-            "Affects all RouterOS versions with WireGuard (7.x+). "
+            "WireGuard only available in RouterOS 7.x+ — not applicable to 6.x. "
             "Mitigation: restrict REST API access by IP and disable www service."
         ),
     },
@@ -624,10 +624,7 @@ def get_cves_for_version(version: str) -> List[Dict]:
 
     applicable = []
     for cve in CVE_DATABASE:
-        # Config findings (no CVE) — always include
-        if cve["cve_id"].startswith("MIKROTIK-CONFIG"):
-            applicable.append(cve)
-            continue
+        # Config/design findings: apply range check normally (not auto-include)
         for affected_range in cve["affected"]:
             if _in_range(ver, affected_range):
                 applicable.append(cve)

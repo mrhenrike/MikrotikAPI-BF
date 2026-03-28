@@ -1,0 +1,103 @@
+# MikrotikAPI-BF Configuration File
+# Copy this file to config.yaml and customize
+
+# Target configuration
+target:
+  host: "192.168.88.1"
+  api_port: 8728
+  rest_port: 8729
+  http_port: 80
+  ssl_port: 443
+  use_ssl: false
+
+# Attack configuration
+attack:
+  # Delay between attempts in seconds
+  delay: 5
+  
+  # Number of concurrent threads (max: 15)
+  threads: 2
+  
+  # Maximum retry attempts for failed connections
+  max_retries: 3
+  
+  # Initial retry delay (exponential backoff)
+  retry_delay: 1
+
+# Credentials
+credentials:
+  # Single username/password
+  username: "admin"
+  password: ""
+  
+  # Or use wordlists
+  userlist: null  # Path to user wordlist
+  passlist: null  # Path to password wordlist
+  
+  # Or use combo dictionary (user:pass format)
+  dictionary: null  # Path to combo file
+
+# Post-login validation
+validation:
+  enabled: false
+  services:
+    ftp:
+      enabled: false
+      port: 21
+    ssh:
+      enabled: false
+      port: 22
+    telnet:
+      enabled: false
+      port: 23
+
+# Proxy configuration (for stealth operations)
+proxy:
+  enabled: false
+  # Supported: socks5, socks4, http
+  # Format: protocol://host:port
+  url: "socks5://127.0.0.1:9050"
+  # url: "http://proxy.example.com:8080"
+
+# Output configuration
+output:
+  # Verbosity level: 0=normal, 1=verbose, 2=very_verbose
+  verbosity: 0
+  
+  # Show progress bar
+  progress_bar: true
+  
+  # Export results
+  export:
+    enabled: true
+    directory: "results"
+    formats:
+      - json
+      - csv
+      - txt
+      # - xml
+
+# Discovery mode
+discovery:
+  enabled: false
+  network: "192.168.1.0/24"  # CIDR notation
+  # Or use IP range
+  # start_ip: "192.168.1.1"
+  # end_ip: "192.168.1.254"
+  threads: 50
+  timeout: 2
+
+# Advanced options
+advanced:
+  # Circuit breaker to prevent cascading failures
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5
+    timeout: 60
+  
+  # User agent for HTTP requests
+  user_agent: "MikrotikAPI-BF/1.16"
+  
+  # Connection timeout
+  timeout: 5
+
