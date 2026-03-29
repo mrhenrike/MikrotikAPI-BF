@@ -1,13 +1,13 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "mikrotikapi-bf"
-dynamic = ["version"]
+version = "3.5.4"
 description = "RouterOS Attack & Exploitation Framework — credential brute-force, CVE scanner, MAC-Server, decoders"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
 authors = [
   { name = "André Henrique", email = "mrhenrike@users.noreply.github.com" }
 ]
@@ -23,7 +23,6 @@ classifiers = [
   "Environment :: Console",
   "Intended Audience :: Information Technology",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.8",
@@ -64,24 +63,21 @@ Changelog      = "https://github.com/mrhenrike/MikrotikAPI-BF/releases"
 
 [project.scripts]
 # After `pip install mikrotikapi-bf`, these commands become available:
-mikrotikapi-bf = "mikrotikapi_bf.cli:main"
-mikrotik-bf    = "mikrotikapi_bf.cli:main"   # shorter alias
+mikrotikapi-bf         = "mikrotikapi_bf.cli:main"
+mikrotik-bf            = "mikrotikapi_bf.cli:main"
+mikrotikapi-install-nse = "mikrotikapi_bf.nse_installer:install_nse_cli"
 
 [tool.setuptools]
 # Include non-Python files in the package
 include-package-data = true
 
-[tool.setuptools.dynamic]
-version = { attr = "version.__version__" }
 
 [tool.setuptools.packages.find]
-# Auto-discover Python packages
 where = ["."]
 include = ["core*", "modules*", "xpl*", "mikrotikapi_bf*"]
-exclude = ["tests*", "docs*", ".log*"]
+exclude = ["tests*", "docs*", ".log*", "dist*", "build*"]
 
 [tool.setuptools.package-data]
-# Include NSE scripts, examples, wordlists, configs
 "*" = [
   "nse/*.nse",
   "nse/README.md",
@@ -91,4 +87,5 @@ exclude = ["tests*", "docs*", ".log*"]
   "config.yaml.example",
   ".env.example",
   "version.py",
+  "setup.py",
 ]

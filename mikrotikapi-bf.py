@@ -1039,6 +1039,15 @@ def _build_parser() -> argparse.ArgumentParser:
         help="List sections in a RouterOS supout.rif diagnostic file.",
     )
 
+    # NSE installer (v3.5.4+)
+    p.add_argument(
+        "--install-nse",
+        action="store_true",
+        help="Copy bundled Nmap NSE scripts to the Nmap scripts directory "
+             "(auto-detects on Windows, Linux, macOS). "
+             "Also available as: mikrotikapi-install-nse",
+    )
+
     # MAC Server / Layer-2 features (v3.3.0+)
     l2 = p.add_argument_group(
         "MAC Server / Layer-2 (v3.3.0+)",
@@ -1486,6 +1495,15 @@ def main() -> None:
     if args.interactive:
         cli = PentestCLI()
         cli.start()
+        sys.exit(0)
+
+    # ── NSE install (v3.5.4+) ─────────────────────────────────────
+    if getattr(args, "install_nse", False):
+        try:
+            from mikrotikapi_bf.nse_installer import install_nse
+            install_nse(verbose=True)
+        except Exception as _nse_exc:
+            print(f"\n  [install-nse] Error: {_nse_exc}")
         sys.exit(0)
 
     # ── Offline decoder modes (v3.5.0+) ──────────────────────────
