@@ -5,42 +5,23 @@ local table     = require "table"
 
 description = [[
 Connects to the MikroTik RouterOS binary API (TCP/8728 or TCP/8729),
-authenticates with provided credentials, and retrieves system information:
-  - RouterOS version
-  - Board name, architecture
-  - CPU model and load
-  - Memory and disk usage
-  - Uptime
-  - Installed packages
-  - Configured users and groups
-  - Open IP services (ports)
+authenticates with provided credentials, and retrieves system information.
 
-No credentials → attempts unauthenticated info gathering (version from
-API hello, pre-auth fingerprint).
-
-References:
-  - https://github.com/mrhenrike/MikrotikAPI-BF
-  - https://wiki.mikrotik.com/wiki/Manual:API
+Key fix: Nmap socket receive_bytes(n) returns (status_bool, data_string)
+AND may return more than n bytes. We receive all data at once and parse
+the RouterOS binary protocol entirely in-memory (no per-byte socket reads).
 ]]
 
 ---
 -- @usage
---   nmap -p 8728 --script mikrotik-api-info <target>
---   nmap -p 8728 --script mikrotik-api-info --script-args creds.global='admin:pass' <target>
---   nmap -p 8728 --script mikrotik-api-info --script-args mikrotik-api-info.user=admin,mikrotik-api-info.pass=secret <target>
+--   nmap -p 8728 -sT -Pn --script mikrotik-api-info --script-args "mikrotik-api-info.user=admin,mikrotik-api-info.pass=pass" <target>
 --
 -- @output
--- PORT     STATE SERVICE
--- 8728/tcp open  routeros-api
 -- | mikrotik-api-info:
--- |   version: RouterOS 7.20.7 (long-term)
+-- |   version: 7.20.7 (long-term)
 -- |   board: CHR DigitalOcean Droplet
--- |   architecture: x86_64
 -- |   cpu-load: 1%
--- |   uptime: 4d5h11m
--- |   free-memory: 278MB / 512MB
--- |   users: admin (group=full)
--- |_  services: ftp:21, ssh:22, telnet:23, www:80, api:8728, winbox:8291
+-- |_  firewall-rules: 0 -- WARNING: NO FIREWALL RULES
 
 author = "Andre Henrique <@mrhenrike>"
 license = "Same as Nmap -- See https://nmap.org/book/man-legal.html"
@@ -48,78 +29,109 @@ categories = {"discovery", "safe", "auth"}
 
 portrule = shortport.port_or_service({8728, 8729}, {"routeros-api", "mikrotik-api"})
 
--- ── RouterOS binary protocol helpers ─────────────────────────────────────────
+-- ── RouterOS binary protocol — in-memory parser ──────────────────────────────
 
-local function encode_length(len)
-  if len < 0x80 then return string.char(len)
-  elseif len < 0x4000 then
-    len = len | 0x8000
-    return string.char((len >> 8) & 0xFF, len & 0xFF)
-  else
-    len = len | 0xC00000
-    return string.char((len >> 16) & 0xFF, (len >> 8) & 0xFF, len & 0xFF)
-  end
+local function enc_len(n)
+  if n < 0x80 then return string.char(n) end
+  if n < 0x4000 then n = n | 0x8000; return string.char((n>>8)&0xFF, n&0xFF) end
+  n = n | 0xC00000; return string.char((n>>16)&0xFF,(n>>8)&0xFF,n&0xFF)
 end
 
-local function read_length(sock)
-  local b0 = sock:receive_bytes(1)
-  if not b0 then return nil end
-  local c0 = string.byte(b0)
-  if c0 < 0x80 then return c0
-  elseif c0 < 0xC0 then
-    local b1 = sock:receive_bytes(1)
-    if not b1 then return nil end
-    return ((c0 & 0x3F) << 8) | string.byte(b1)
-  else
-    local rest = sock:receive_bytes(3)
-    if not rest then return nil end
-    local b = {string.byte(rest, 1, 3)}
-    return ((c0 & 0x1F) << 24) | (b[1] << 16) | (b[2] << 8) | b[3]
-  end
+-- Build binary RouterOS sentence
+local function make_pkt(words)
+  local t = {}
+  for _, w in ipairs(words) do t[#t+1] = enc_len(#w) .. w end
+  t[#t+1] = "\x00"
+  return table.concat(t)
 end
 
-local function send_sentence(sock, words)
-  local out = {}
-  for _, w in ipairs(words) do out[#out+1] = encode_length(#w) .. w end
-  out[#out+1] = "\x00"
-  return sock:send(table.concat(out))
-end
-
-local function read_sentence(sock)
+-- Parse RouterOS binary buffer into list of sentences
+-- Each sentence is a list of word strings; sentences separated by empty-word (0x00)
+local function parse_buf(buf)
+  local sentences = {}
   local words = {}
-  while true do
-    local len = read_length(sock)
-    if not len then return nil end
-    if len == 0 then break end
-    local word = sock:receive_bytes(len)
-    if not word then return nil end
-    words[#words+1] = word
-  end
-  return words
-end
+  local pos = 1
+  local buflen = #buf
 
-local function parse_props(sentences)
-  local props = {}
-  for _, sent in ipairs(sentences) do
-    for _, w in ipairs(sent) do
-      if w:sub(1,1) == "=" then
-        local k, v = w:match("^=([^=]+)=(.*)")
-        if k then props[k] = v end
-      end
+  while pos <= buflen do
+    local c0 = string.byte(buf, pos)
+    local len, skip
+    if c0 < 0x80 then
+      len = c0; skip = 1
+    elseif c0 < 0xC0 then
+      if pos + 1 > buflen then break end
+      len = ((c0 & 0x3F) << 8) | string.byte(buf, pos+1); skip = 2
+    else
+      if pos + 3 > buflen then break end
+      local b1,b2,b3 = string.byte(buf, pos+1, pos+3)
+      len = ((c0 & 0x1F) << 24) | (b1 << 16) | (b2 << 8) | b3; skip = 4
+    end
+    pos = pos + skip
+
+    if len == 0 then
+      -- End of sentence
+      sentences[#sentences+1] = words
+      words = {}
+    else
+      if pos + len - 1 > buflen then break end  -- incomplete
+      local word = string.sub(buf, pos, pos + len - 1)
+      words[#words+1] = word
+      pos = pos + len
     end
   end
-  return props
+  -- Flush remaining words
+  if #words > 0 then sentences[#sentences+1] = words end
+  return sentences
 end
 
-local function collect_all(sock, cmd)
-  send_sentence(sock, cmd)
+-- Send words and get response parsed into sentences
+local function api_call(sock, words)
+  local pkt = make_pkt(words)
+  local ok, err = sock:send(pkt)
+  if not ok then return nil, "send: "..(err or "?") end
+
+  -- Collect all response data (receive_bytes returns (status, data))
+  local buf = ""
+  local deadline = nmap.clock_ms() + 8000
+  while nmap.clock_ms() < deadline do
+    local status, chunk = sock:receive_bytes(4096)
+    if status and chunk and type(chunk) == "string" and #chunk > 0 then
+      buf = buf .. chunk
+      -- Check if we have !done or !trap in current buffer
+      if buf:find("\x05!done") or buf:find("\x05!trap") or buf:find("\x06!fatal") then
+        -- Wait briefly for any trailing data
+        stdnse.sleep(0.05)
+        local s2, c2 = sock:receive_bytes(1024)
+        if s2 and c2 and #c2 > 0 then buf = buf .. c2 end
+        break
+      end
+    else
+      stdnse.sleep(0.05)
+    end
+  end
+
+  return parse_buf(buf)
+end
+
+-- Extract key=value pairs from a sentence
+local function props_from_sentence(sentence)
+  local p = {}
+  for _, w in ipairs(sentence) do
+    if w:sub(1,1) == "=" then
+      local k, v = w:match("^=([^=]+)=(.*)")
+      if k then p[k] = v end
+    end
+  end
+  return p
+end
+
+-- Get all !re rows as list of prop tables
+local function get_rows(sentences)
   local rows = {}
-  while true do
-    local s = read_sentence(sock)
-    if not s then break end
-    if s[1] == "!done" then break end
-    if s[1] == "!re" then rows[#rows+1] = s end
-    if s[1] == "!trap" then break end
+  for _, sent in ipairs(sentences) do
+    if sent[1] == "!re" then
+      rows[#rows+1] = props_from_sentence(sent)
+    end
   end
   return rows
 end
@@ -127,91 +139,109 @@ end
 -- ── Authentication ────────────────────────────────────────────────────────────
 
 local function login(sock, user, pass)
-  send_sentence(sock, {"/login", "=name=" .. user, "=password=" .. pass})
-  local r = read_sentence(sock)
-  if not r then return false end
+  -- RouterOS 7.x: single-round plaintext
+  local sentences, err = api_call(sock, {"/login", "=name="..user, "=password="..pass})
+  if not sentences then return false, "no response: "..(err or "?") end
 
-  if r[1] == "!done" then
-    local challenge
-    for _, w in ipairs(r) do
-      if w:sub(1,5) == "=ret=" then challenge = w:sub(6) end
+  -- Check response
+  for _, sent in ipairs(sentences) do
+    if sent[1] == "!done" then
+      -- Check for 6.x challenge
+      local challenge
+      for _, w in ipairs(sent) do
+        if w:sub(1,5) == "=ret=" then challenge = w:sub(6) end
+      end
+      if challenge then
+        -- 6.x MD5
+        local ok2, openssl = pcall(require, "openssl")
+        if not ok2 then return false, "6.x auth requires OpenSSL. Use Python tool instead." end
+        local ok3, digest = pcall(openssl.md5, "\x00"..pass..stdnse.fromhex(challenge))
+        if not ok3 then return false, "OpenSSL MD5 unavailable on this Nmap build" end
+        sentences, err = api_call(sock, {"/login","=name="..user,"=response=00"..stdnse.tohex(digest)})
+        if not sentences then return false, "no response to 6.x auth" end
+        for _, s in ipairs(sentences) do
+          if s[1] == "!done" then return true end
+        end
+        return false, "6.x auth rejected"
+      end
+      return true  -- 7.x success
+    elseif sent[1] == "!trap" then
+      local msg = "invalid credentials"
+      for _, w in ipairs(sent) do
+        if w:sub(1,9) == "=message=" then msg = w:sub(10) end
+      end
+      return false, msg
     end
-    if challenge then
-      -- 6.x MD5 challenge
-      local md5 = require "openssl".md5
-      local ch = stdnse.fromhex(challenge)
-      local hash = stdnse.tohex(md5("\x00" .. pass .. ch))
-      send_sentence(sock, {"/login", "=name=" .. user, "=response=00" .. hash})
-      r = read_sentence(sock)
-      if not r then return false end
-    end
-    return r[1] == "!done"
   end
-  return false
+  return false, "unexpected response"
 end
 
--- ── Main action ───────────────────────────────────────────────────────────────
+-- ── Main ──────────────────────────────────────────────────────────────────────
 
 action = function(host, port)
-  local use_ssl = port.number == 8729
-  local timeout = 8000
   local user = stdnse.get_script_args("mikrotik-api-info.user") or "admin"
   local pass = stdnse.get_script_args("mikrotik-api-info.pass") or ""
 
   local sock = nmap.new_socket()
-  sock:set_timeout(timeout)
-  local ok = use_ssl and sock:connect(host, port, "ssl") or sock:connect(host, port)
-  if not ok then return "Could not connect" end
+  sock:set_timeout(10000)
 
-  local authed = login(sock, user, pass)
+  if not sock:connect(host, port) then return "Connect failed" end
+
+  local authed, auth_err = login(sock, user, pass)
   if not authed then
     sock:close()
-    return "Authentication failed (wrong credentials or no auth)"
+    return "Auth failed ("..user.."): "..(auth_err or "?")
   end
 
   local output = stdnse.output_table()
 
   -- System resource
-  local rows = collect_all(sock, {"/system/resource/print"})
-  if rows[1] then
-    local p = parse_props(rows)
-    output["version"]      = p["version"] or "?"
-    output["board"]        = p["board-name"] or "?"
-    output["architecture"] = p["architecture-name"] or "?"
-    output["platform"]     = p["platform"] or "?"
-    output["cpu-load"]     = (p["cpu-load"] or "?") .. "%"
-    output["uptime"]       = p["uptime"] or "?"
-    local free = math.floor((tonumber(p["free-memory"] or 0)) / 1048576)
-    local total = math.floor((tonumber(p["total-memory"] or 0)) / 1048576)
-    output["free-memory"]  = free .. "MB / " .. total .. "MB"
+  local s = api_call(sock, {"/system/resource/print"})
+  if s then
+    local rows = get_rows(s)
+    if rows[1] then
+      local p = rows[1]
+      output["version"]      = p["version"] or "?"
+      output["board"]        = p["board-name"] or "?"
+      output["architecture"] = p["architecture-name"] or "?"
+      output["cpu-load"]     = (p["cpu-load"] or "?") .. "%"
+      output["uptime"]       = p["uptime"] or "?"
+      local fm = math.floor((tonumber(p["free-memory"] or 0))/1048576)
+      local tm = math.floor((tonumber(p["total-memory"] or 0))/1048576)
+      output["memory"]       = fm .. " MB free / " .. tm .. " MB total"
+    end
   end
 
   -- Users
-  rows = collect_all(sock, {"/user/print"})
-  local users = {}
-  for _, r in ipairs(rows) do
-    local p = parse_props({r})
-    if p["name"] then
-      users[#users+1] = p["name"] .. " (group=" .. (p["group"] or "?") .. ")"
+  s = api_call(sock, {"/user/print"})
+  if s then
+    local users = {}
+    for _, p in ipairs(get_rows(s)) do
+      if p["name"] then users[#users+1] = p["name"].." (group="..(p["group"] or "?")..")" end
     end
+    if #users > 0 then output["users"] = table.concat(users, ", ") end
   end
-  if #users > 0 then output["users"] = table.concat(users, ", ") end
 
-  -- IP services
-  rows = collect_all(sock, {"/ip/service/print"})
-  local svcs = {}
-  for _, r in ipairs(rows) do
-    local p = parse_props({r})
-    if p["name"] and p["disabled"] ~= "true" then
-      svcs[#svcs+1] = p["name"] .. ":" .. (p["port"] or "?")
+  -- IP Services
+  s = api_call(sock, {"/ip/service/print"})
+  if s then
+    local seen, svcs = {}, {}
+    for _, p in ipairs(get_rows(s)) do
+      if p["name"] and p["disabled"] ~= "true" then
+        local entry = p["name"]..":" ..(p["port"] or "?")
+        if not seen[entry] then seen[entry]=true; svcs[#svcs+1]=entry end
+      end
     end
+    if #svcs > 0 then output["services"] = table.concat(svcs, ", ") end
   end
-  if #svcs > 0 then output["services"] = table.concat(svcs, ", ") end
 
-  -- Firewall filter count
-  rows = collect_all(sock, {"/ip/firewall/filter/print"})
-  output["firewall-rules"] = #rows .. " filter rule(s)"
-  if #rows == 0 then output["firewall-rules"] = "0 - WARNING: NO FIREWALL RULES" end
+  -- Firewall count
+  s = api_call(sock, {"/ip/firewall/filter/print"})
+  local fw = s and #get_rows(s) or 0
+  output["firewall-rules"] = fw .. " rule(s)"
+  if fw == 0 then
+    output["firewall-rules"] = "0 -- WARNING: NO FIREWALL RULES (all mgmt ports exposed!)"
+  end
 
   sock:close()
   return output

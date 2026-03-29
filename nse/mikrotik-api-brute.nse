@@ -66,7 +66,7 @@ end
 --- Decode a RouterOS variable-length prefix from socket data.
 local function read_length(sock)
   local b0, err = sock:receive_bytes(1)
-  if not b0 then return nil, err end
+  if not b0 or type(b0) ~= "string" or #b0 == 0 then return nil, err end
   local c0 = string.byte(b0)
   if c0 < 0x80 then
     return c0
@@ -219,3 +219,4 @@ action = function(host, port)
   local status, result = engine:start()
   return result
 end
+
