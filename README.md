@@ -108,57 +108,102 @@ You should expect throttling and evidence in logs during testing. Prefer stealth
 
 ## 🗺️ Attack Surface Mapping
 
-Understanding where MikrotikAPI-BF operates within the Mikrotik ecosystem is crucial for effective security testing. The following diagram illustrates the complete attack surface of Mikrotik RouterOS devices:
+Understanding where MikrotikAPI-BF operates within the Mikrotik RouterOS ecosystem. The diagrams below show the full attack surface, coverage status per vector, and per target.
+
+### Full Attack Surface — Coverage Status (v3.4.0)
 
 <div align="center">
 
-![Mikrotik Ecosystem Attack Surface](img/mikrotik_eco.png)
+![MikrotikAPI-BF Full Attack Surface Map](img/mikrotik_full_attack_surface.png)
 
-*Mikrotik RouterOS Ecosystem Map - Attack Surface Visualization*
+*Complete RouterOS attack surface with MikrotikAPI-BF coverage indicators (✓ covered / ✗ not yet covered)*
 
 </div>
 
-### 🎯 **Our Tool's Focus Areas**
+---
 
-**Access Vectors (Orange boxes in diagram):**
-- **`api`** - RouterOS API (TCP 8728) - Binary protocol for automation
-- **`web`** - REST-API endpoints (TCP 80/443) - HTTP/HTTPS with Basic Auth
-- **`ssh`** - Secure Shell (TCP 22) - Encrypted remote access
-- **`telnet`** - Unencrypted remote access (TCP 23) - Legacy protocol
-- **`ftp`** - File Transfer Protocol (TCP 21) - File management
+### 🟠 Access Vectors — Coverage Detail
 
-**Access Targets (Blue boxes in diagram):**
-- Network services and daemons bound to the CPU
-- Management interfaces and authentication systems
-- **NOT** internal storage or removable media (those require physical access)
+<div align="center">
 
-### 🔍 **Why These Attacks Are Possible**
+![Access Vectors Coverage](img/mikrotik_access_vectors.png)
 
-1. **Network Exposure**: These services are intentionally exposed for management and automation
-2. **Authentication Endpoints**: Each service provides interactive login capabilities
-3. **Legacy Support**: Many services remain enabled for backward compatibility
-4. **Automation Requirements**: API/REST endpoints are needed for device management
+*Orange boxes = Access Vectors. Green ✓ = tool covers this vector. Red ✗ = not yet covered.*
 
-### 🛡️ **How to Defend Against These Attacks**
+</div>
+
+| Access Vector | Port(s) | Tool Coverage | How |
+|--------------|---------|--------------|-----|
+| **telnet** | TCP/23 | ✅ Covered | Post-login validation (`--validate telnet`) |
+| **ssh** | TCP/22 | ✅ Covered | Post-login validation + EDB-28056 (ROSSSH heap) |
+| **web** (WebFig/REST) | TCP/80, 443 | ✅ Covered | REST API brute-force + 10+ CVE/EDB exploits |
+| **winbox** | TCP/8291 | ✅ Covered | CVE-2018-14847, CVE-2018-10066, CVE-2021-27263 |
+| **ftp** | TCP/21 | ✅ Covered | Post-login validation + CVE-2019-3976/3977 + EDB-44450 |
+| **samba** (SMB) | TCP/445 | ✅ Covered | CVE-2018-7445, CVE-2022-45315 |
+| **mactel** (MAC-Telnet) | TCP/20561 | ✅ Covered | `modules/mac_server.py` — v3.3.0+ MNDP + brute |
+| **dude** | TCP/2210 | ❌ Not covered | The Dude monitoring client — no PoC implemented |
+| **setup** (Netinstall) | UDP/5000 | ❌ Not covered | Netinstall / Flashfig boot — physical/LAN access |
+| **netboot** | TFTP/69 | ❌ Not covered | Network boot vector — physical LAN requirement |
+| **btest** | TCP/2000 | ❌ Not covered | Bandwidth Test server — protocol not implemented |
+| **dhcp** | UDP/67-68 | ❌ Not covered | DHCP server attack surface — out of current scope |
+| **console** | RS-232 | ❌ Not covered | Physical serial console — requires physical access |
+| **Woobm-USB** | USB | ❌ Not covered | USB-based recovery — requires physical access |
+
+**Coverage: 7 / 14 Access Vectors (50%) — network-accessible vectors fully covered**
+
+---
+
+### 🔵 Access Targets — Coverage Detail
+
+<div align="center">
+
+![Access Targets Coverage](img/mikrotik_access_targets.png)
+
+*Blue/cyan boxes = Access Targets. Green ✓ = covered. Red ✗ = not yet covered.*
+
+</div>
+
+| Access Target | Component | Coverage | CVEs / Notes |
+|--------------|-----------|---------|--------------|
+| **filesystem** | `/flash/rw/store/` | ⚠️ Partial | CVE-2018-14847 reads `user.dat`; CVE-2019-3943 path traversal |
+| **supout.rif** | Diagnostic file | ✅ Covered | CVE-2023-30799 (FOISted) — priv escalation via supout upload |
+| **.npk** | Package files | ✅ Covered | CVE-2019-3977/3976 — arbitrary exec/read via NPK |
+| **.backup** | Config backup | ❌ Not covered | No exploit for backup file extraction/abuse |
+| **FLASH** | Internal flash | ❌ Not covered | Requires direct physical or filesystem access |
+| **NAND** | NAND storage | ❌ Not covered | Low-level, requires physical access |
+| **HDD** | Hard disk (CHR) | ❌ Not covered | CHR-specific — no direct exploit path yet |
+| **kvm** | Virtual machine | ❌ Not covered | KVM hypervisor attack — no PoC in scope |
+
+---
+
+### 🔍 Why These Attacks Are Possible
+
+1. **Network Exposure** — Management services intentionally exposed (API, REST, Winbox, Telnet)
+2. **No Rate-Limiting** — RouterOS API (TCP 8728/8729) has no built-in brute-force protection (VUID 375660)
+3. **Legacy Protocol Support** — Telnet, FTP, SMBv1 remain enabled for backward compatibility
+4. **Filesystem Access** — Pre-auth file reads (CVE-2018-14847) expose credential databases
+5. **Layer-2 Exposure** — MAC-Server/MNDP reveals devices with no IP assignment
+
+### 🛡️ Defensive Mitigations
 
 **Immediate Actions:**
-- **Disable unused services** (telnet, ftp if not needed)
-- **Restrict management access** to specific networks using firewall rules
-- **Enable strong authentication** (SSH keys, complex passwords)
-- **Implement rate limiting** and account lockouts
+- Disable unused services: `/ip service disable telnet,ftp,api`
+- Restrict access by IP: `/ip service set api address=10.0.0.0/8`
+- Change default API port and enable TLS (`api-ssl`)
+- Enable strong authentication (SSH keys, complex passwords ≥ 20 chars)
+- Disable MAC-Server: `/tool mac-server set allowed-interface-list=none`
 
 **Advanced Defenses:**
-- **Network segmentation** - Isolate management interfaces
-- **VPN access only** - Require VPN connection for management
-- **Multi-factor authentication** where supported
-- **Regular security updates** and credential rotation
-- **Monitoring and logging** - Watch for brute-force attempts
+- Rate-limit firewall rules on management ports
+- VPN-only management access
+- Disable Winbox if REST API suffices (or restrict to mgmt VLAN)
+- Monitor `/log print` for repeated auth failures
+- Regular RouterOS updates (subscribe to https://mikrotik.com/download)
 
 **Modern CHR Defenses:**
-- Session controls and request limits
-- Per-source rate limiting and temporary lockouts
-- Extensive logging of authentication failures
-- WAF/IPS protection for HTTP endpoints
+- Session controls and per-source rate limiting
+- Extensive logging of auth failures (`/system logging add topics=info,error`)
+- WAF/IPS in front of HTTP management endpoints
 
 ## 📄 CLI Essentials
 
