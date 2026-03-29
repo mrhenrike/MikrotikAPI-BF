@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Author: André Henrique (LinkedIn/X: @mrhenrike)
-# Version: 3.5.0
+# Version: see version.py (canonical source)
 
 """
 RouterOS Credential & File Decoder — MikrotikAPI-BF
@@ -617,3 +617,4 @@ class SupoutDecoder:
                     "password": "(from supout — encrypted/blank)",
                 })
         return users
+

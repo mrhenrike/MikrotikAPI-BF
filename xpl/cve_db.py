@@ -4,7 +4,7 @@ Includes ALL publicly disclosed MikroTik vulnerabilities with CVSS scores,
 affected version ranges, PoC availability, and remediation notes.
 
 Author: André Henrique (LinkedIn/X: @mrhenrike)
-Version: 3.1.0
+Version: see version.py (canonical source)
 """
 from typing import Dict, List, Optional, Tuple
 
@@ -870,3 +870,4 @@ def print_cve_summary() -> None:
     print(f"  CVEs with PoC: {len(get_cves_with_poc())}")
     print(f"  Metasploit modules: {sum(1 for c in CVE_DATABASE if c.get('metasploit'))}")
     print(f"{'='*70}\n")
+

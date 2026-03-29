@@ -5,7 +5,7 @@ Supports two display modes:
   - all:           all CVEs regardless of version (for training/research)
 
 Author: André Henrique (LinkedIn/X: @mrhenrike)
-Version: 3.1.0
+Version: see version.py (canonical source)
 """
 import logging
 from typing import Dict, List, Optional
@@ -308,3 +308,4 @@ class ExploitScanner:
             refs = cve.get("references", [])[:2]
             for ref in refs:
                 print(f"    {_DIM}{ref}{_RST}")
+

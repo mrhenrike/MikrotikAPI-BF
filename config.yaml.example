@@ -14,13 +14,13 @@ target:
 attack:
   # Delay between attempts in seconds
   delay: 5
-  
+
   # Number of concurrent threads (max: 15)
   threads: 2
-  
+
   # Maximum retry attempts for failed connections
   max_retries: 3
-  
+
   # Initial retry delay (exponential backoff)
   retry_delay: 1
 
@@ -29,11 +29,11 @@ credentials:
   # Single username/password
   username: "admin"
   password: ""
-  
+
   # Or use wordlists
   userlist: null  # Path to user wordlist
   passlist: null  # Path to password wordlist
-  
+
   # Or use combo dictionary (user:pass format)
   dictionary: null  # Path to combo file
 
@@ -63,10 +63,10 @@ proxy:
 output:
   # Verbosity level: 0=normal, 1=verbose, 2=very_verbose
   verbosity: 0
-  
+
   # Show progress bar
   progress_bar: true
-  
+
   # Export results
   export:
     enabled: true
@@ -94,10 +94,9 @@ advanced:
     enabled: true
     failure_threshold: 5
     timeout: 60
-  
+
   # User agent for HTTP requests
-  user_agent: "MikrotikAPI-BF/1.16"
-  
+  user_agent: "MikrotikAPI-BF/3.5.1"
+
   # Connection timeout
   timeout: 5
-

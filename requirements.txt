@@ -1,4 +1,5 @@
-# MikrotikAPI-BF v3.0 — Python 3.8+ requirements
+# MikrotikAPI-BF — Python 3.8+ requirements
+# Version: see version.py
 # Install: pip install -r requirements.txt
 
 # ── Core HTTP / networking ─────────────────────────────────────────────────
@@ -19,3 +20,7 @@ PyYAML>=6.0
 
 # ── HTML parsing (fingerprinting) ─────────────────────────────────────────
 beautifulsoup4>=4.12.0
+
+# ── Environment variables (optional, for .env support) ────────────────────
+# Load .env automatically when running the tool
+python-dotenv>=1.0.0
