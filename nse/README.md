@@ -37,13 +37,28 @@ nmap --script ./nse/mikrotik-routeros-version.nse <target>
 
 ## Scripts
 
+### Custom Scripts (mrhenrike/MikrotikAPI-BF)
+
 | Script | Ports | Category | Description |
 |--------|-------|----------|-------------|
 | `mikrotik-routeros-version.nse` | 80,443,888,8291,8728,8729 | discovery | Fingerprint RouterOS version from multiple vectors |
-| `mikrotik-api-brute.nse` | 8728,8729 | brute | Brute-force RouterOS API credentials |
+| `mikrotik-api-brute.nse` | 8728,8729 | brute | Full RouterOS API brute-force (6.x MD5 + 7.x plaintext) |
 | `mikrotik-default-creds.nse` | 8728,8729,80,443 | auth | Test default/empty credentials on all interfaces |
 | `mikrotik-api-info.nse` | 8728,8729 | discovery | Authenticated info dump (users, services, firewall) |
-| `mikrotik-winbox-cve-2018-14847.nse` | 8291 | vuln | Check for Winbox credential disclosure (Chimay-Red) |
+| `mikrotik-winbox-cve-2018-14847.nse` | 8291 | vuln | Winbox credential disclosure (Chimay-Red / CVE-2018-14847) |
+
+### Official Nmap Scripts (bundled for convenience)
+
+| Script | Ports | Category | Source | Description |
+|--------|-------|----------|--------|-------------|
+| `mikrotik-routeros-brute.nse` | 8291 | brute | [Nmap official](https://nmap.org/nsedoc/scripts/mikrotik-routeros-brute.html) | RouterOS 6.x Winbox protocol brute-force |
+| `mikrotik-routeros-username-brute.nse` | 8291 | brute | [Nmap official](https://nmap.org/nsedoc/scripts/mikrotik-routeros-username-brute.html) | Winbox username enumeration |
+
+### Community Scripts
+
+| Script | Ports | Category | Source | Description |
+|--------|-------|----------|--------|-------------|
+| `broadcast-mndp-discover.nse` | UDP/5678 | broadcast | [cldrn/external-nse-script-library](https://github.com/cldrn/external-nse-script-library) | MikroTik MNDP neighbor discovery broadcast |
 
 ---
 
