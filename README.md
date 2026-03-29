@@ -1,12 +1,14 @@
-﻿# MikrotikAPI-BF v3.1.0
+# MikrotikAPI-BF v3.2.0
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.1.0-red.svg)](docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.2.0-red.svg)](docs/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 
 Advanced CLI toolkit for security testing of Mikrotik RouterOS and CHR. It performs credential testing against multiple entry points (RouterOS API/REST-API) with optional post-login validation on network services (FTP/SSH/Telnet), includes robust session persistence, progress/ETA, export, stealth, and fingerprinting.
+
+**Portuguese (pt-BR):** [README.pt-BR.md](README.pt-BR.md) · **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## ✨ Key Features
 
@@ -165,7 +167,7 @@ Common flags:
 
 ```
 MikrotikAPI-BF/
-├── mikrotikapi-bf.py             # Main entry point (v3.1.0)
+├── mikrotikapi-bf.py             # Main entry point (v3.2.0)
 ├── requirements.txt
 ├── core/                         # Core engine modules
 │   ├── api.py                    # RouterOS binary API protocol
@@ -219,7 +221,8 @@ MikrotikAPI-BF/
 - [Usage Examples](docs/USAGE_EXAMPLES.md)
 - [HTML Docs](docs/index.html)
 
-## What's New in v3.1.0
+## What's New in v3.2.0
+- Credential matrix workflows, CVE scan export enhancements, WebFig fingerprint context (see `docs/CHANGELOG.md`)
 - Modular architecture: `core/`, `modules/`, `xpl/` packages
 - CVE/NVD integration via `xpl/` exploit and scanner modules
 - Shodan integration for fingerprinting context
