@@ -1,8 +1,8 @@
-# MikrotikAPI-BF v3.5.3
+# MikrotikAPI-BF v3.5.4
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.5.3-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.5.3)
+[![Version](https://img.shields.io/badge/version-3.5.4-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.5.4)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 [![PyPI](https://img.shields.io/badge/pip-mikrotikapi--bf-blue)](https://pypi.org/project/mikrotikapi-bf/)
@@ -52,7 +52,7 @@ Based on [mikrotik-tools](https://github.com/0ki/mikrotik-tools) by Kirils Solov
 - **`--decode-supout`** — list sections in `supout.rif` diagnostic files
 - **`--analyze-npk`** — NPK package analyzer (CVE-2019-3977 vector)
 
-### 🗺️ Nmap NSE Scripts (v3.5.3+)
+### 🗺️ Nmap NSE Scripts (v3.5.4+)
 Five Lua scripts in `nse/` for Nmap integration:
 - `mikrotik-routeros-version.nse` — fingerprint RouterOS from HTTP/API/Winbox
 - `mikrotik-api-brute.nse` — full API brute-force (6.x MD5 + 7.x plaintext auth)
@@ -147,7 +147,7 @@ nmap -p 8728 --script mikrotik-api-brute \
 
 ## 🗺️ Attack Surface Mapping
 
-### Full Attack Surface — Coverage Status (v3.5.3)
+### Full Attack Surface — Coverage Status (v3.5.4)
 
 ![MikrotikAPI-BF Full Attack Surface Map](img/mikrotik_full_attack_surface.png)
 
@@ -322,7 +322,7 @@ nmap -p 8728 --script mikrotik-api-brute \
 ```
 MikrotikAPI-BF/
 ├── version.py                    # Canonical version source (edit to bump)
-├── mikrotikapi-bf.py             # Main entry point (v3.5.3)
+├── mikrotikapi-bf.py             # Main entry point (v3.5.4)
 ├── pyproject.toml                # pip package definition
 ├── requirements.txt
 ├── .env.example                  # Environment variable template (safe to commit)
@@ -330,7 +330,7 @@ MikrotikAPI-BF/
 ├── mikrotikapi_bf/               # pip installable package
 │   ├── __init__.py
 │   └── cli.py                    # Entry point for `mikrotikapi-bf` command
-├── nse/                          # Nmap NSE scripts (v3.5.3+)
+├── nse/                          # Nmap NSE scripts (v3.5.4+)
 │   ├── README.md
 │   ├── mikrotik-api-brute.nse
 │   ├── mikrotik-api-info.nse
@@ -346,7 +346,7 @@ MikrotikAPI-BF/
 │   ├── retry.py                  # Retry + backoff
 │   └── session.py                # Persistent session management
 ├── modules/                      # Feature modules
-│   ├── decoder.py                # RouterOS file decoder: user.dat/.backup/supout.rif (v3.5.0)
+│   ├── decoder.py                # RouterOS file decoder: user.dat/.backup/supout.rif (v3.5.4)
 │   ├── discovery.py              # Network discovery
 │   ├── fingerprint.py            # Device fingerprinting (Shodan + REST)
 │   ├── mac_server.py             # Layer-2 MNDP discovery + MAC-Telnet (v3.3.0)
@@ -357,7 +357,7 @@ MikrotikAPI-BF/
 ├── xpl/                          # Exploit/CVE engine
 │   ├── cve_db.py                 # CVE database (40 exploits)
 │   ├── exploits.py               # 40 exploit classes
-│   ├── npk_decoder.py            # NPK package analyzer (v3.5.0)
+│   ├── npk_decoder.py            # NPK package analyzer (v3.5.4)
 │   ├── nvd_shodan.py             # NVD API + Shodan integration
 │   └── scanner.py                # Vulnerability scanner
 ├── img/                          # Attack surface diagrams
@@ -421,8 +421,20 @@ add chain=input action=drop
 
 ## 📋 What's New
 
-### v3.5.3 (current)
-- **5 Nmap NSE scripts** in `nse/` — RouterOS version, API brute, default creds, info dump, Winbox CVE-2018-14847
+### v3.5.4 (current)
+- **NSE auto-installer** — `mikrotikapi_bf/nse_installer.py` copies NSE scripts to Nmap on Windows/Linux/macOS automatically during `pip install` or `pip install --upgrade`
+- **`--install-nse`** flag and `mikrotikapi-install-nse` entry point for manual NSE installation
+- **3 more official Nmap MikroTik scripts** bundled: `mikrotik-routeros-brute.nse`, `mikrotik-routeros-username-brute.nse`, `broadcast-mndp-discover.nse`
+- **300-thread support** — `--threads N` (up to 300) with mandatory `--high-threads` disclaimer for values > 15
+- **`setup.py` post-install hook** — NSE scripts installed automatically on pip install
+- **`pyproject.toml` fixed** — proper `setuptools.build_meta` backend; package builds and passes `twine check`
+- **GitHub Actions** — `.github/workflows/publish-pypi.yml` + `publish-testpypi.yml` with OIDC trusted publishing
+- **PyPI-ready** — `dist/mikrotikapi_bf-3.5.4-py3-none-any.whl` built and validated
+- **Printer NSE scripts** — collected in `dev/Printers/` (12 scripts: HP, Xerox, Lexmark, CUPS, PJL, SNMP)
+- **VINCE VUID 375660** — comprehensive technical update prepared: CVSS 9.8, CWE-307, PoC tool ref, Shodan Brazil scale (19,424 devices), expired 90-day deadline notice
+
+### v3.5.3
+- **5 Nmap NSE scripts** in `nse/`: `mikrotik-routeros-version`, `mikrotik-api-brute`, `mikrotik-default-creds`, `mikrotik-api-info`, `mikrotik-winbox-cve-2018-14847`
 - **pip install support** — `pyproject.toml` + `mikrotikapi_bf/` entry point package
 - **`mikrotikapi-bf --nse-path`** — prints installed NSE scripts directory for Nmap
 
@@ -434,7 +446,7 @@ add chain=input action=drop
 ### v3.5.1
 - Fix: syntax error in CVE-2025-6563 XSS payload
 - Credits & Acknowledgements section (13 contributors)
-- Comprehensive wiki guides en-US + pt-BR (40+ CLI flags)
+- Comprehensive wiki guides en-US + pt-BR (40+ CLI flags documented)
 
 ### v3.5.0
 - `modules/decoder.py` — Python 3 port of [mikrotik-tools](https://github.com/0ki/mikrotik-tools): `UserDatDecoder`, `BackupDecoder`, `SupoutDecoder`, `MTDatDecoder`
@@ -499,3 +511,4 @@ add chain=input action=drop
 - **Security reports:** See [SECURITY.md](SECURITY.md)
 
 Licensed under MIT — see [`LICENSE`](LICENSE).
+
