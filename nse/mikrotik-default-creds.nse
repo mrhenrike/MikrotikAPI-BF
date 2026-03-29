@@ -76,7 +76,7 @@ end
 
 local function read_length(sock)
   local b0 = sock:receive_bytes(1)
-  if not b0 then return nil end
+  if not b0 or type(b0) ~= "string" or #b0 == 0 then return nil end
   local c0 = string.byte(b0)
   if c0 < 0x80 then return c0
   elseif c0 < 0xC0 then
@@ -215,3 +215,4 @@ action = function(host, port)
   end
   return output
 end
+
