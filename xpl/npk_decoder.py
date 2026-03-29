@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Author: André Henrique (LinkedIn/X: @mrhenrike)
-# Version: 3.5.0
+# Version: see version.py (canonical source)
 
 """
 NPK Package Decoder & Analyzer — MikrotikAPI-BF
@@ -319,3 +319,4 @@ class NPKSecurityAnalyzer:
         )
 
         return {"vulnerable": vulnerable, "evidence": evidence, "details": analysis}
+

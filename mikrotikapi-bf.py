@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Author: André Henrique (LinkedIn/X: @mrhenrike)
-# Version: 3.1.0
+# Version: see version.py (canonical source — never hardcode here)
 
 """
 MikrotikAPI-BF — RouterOS Attack & Exploitation Framework
@@ -17,6 +17,13 @@ Quick start:
 """
 
 import sys
+
+# ── Load .env if present (python-dotenv, optional dep) ───────────────────
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=False)  # .env values do NOT override existing env vars
+except ImportError:
+    pass  # python-dotenv not installed; .env not loaded (install with: pip install python-dotenv)
 
 # ── Python version guard (3.8+ required, no upper cap) ────────────────────
 _MIN = (3, 8)
@@ -87,7 +94,7 @@ MikrotikFingerprinter = _mods["MikrotikFingerprinter"]
 SmartWordlistManager  = _mods["SmartWordlistManager"]
 ProxyManager          = _mods["ProxyManager"]
 
-_VERSION = "3.5.1"
+from version import _VERSION  # canonical source — edit version.py to bump
 
 # ── Telnet fallback (removed from stdlib in Python 3.13) ─────────────────
 

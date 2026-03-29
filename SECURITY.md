@@ -14,9 +14,9 @@ Older releases are unsupported — upgrade to the current version.
 
 | Version | Status | Security fixes |
 | ------- | ------ | -------------- |
-| **3.4.x** (current) | :white_check_mark: Active | Yes |
-| 3.3.x | :x: EOL | No — upgrade to 3.4.x |
-| 3.2.x and below | :x: EOL | No — upgrade to 3.4.x |
+| **3.5.x** (current) | :white_check_mark: Active | Yes |
+| 3.4.x | :x: EOL | No — upgrade to 3.5.x |
+| 3.3.x and below | :x: EOL | No — upgrade to 3.5.x |
 
 ---
 

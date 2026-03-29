@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Author: André Henrique (LinkedIn/X: @mrhenrike)
-# Version: 3.3.0
+# Version: see version.py (canonical source)
 
 """
 MAC Server Discovery & Brute-force — MikrotikAPI-BF
@@ -424,3 +424,4 @@ class MACServerBrute:
                     time.sleep(self.delay)
 
         return results
+
