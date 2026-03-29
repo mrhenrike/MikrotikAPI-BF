@@ -1,16 +1,22 @@
-# MikrotikAPI-BF v3.2.0
+# MikrotikAPI-BF v3.3.0
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.2.0-red.svg)](docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.3.0-red.svg)](docs/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 
-Advanced CLI toolkit for security testing of Mikrotik RouterOS and CHR. It performs credential testing against multiple entry points (RouterOS API/REST-API) with optional post-login validation on network services (FTP/SSH/Telnet), includes robust session persistence, progress/ETA, export, stealth, and fingerprinting.
+Advanced CLI toolkit for security testing of Mikrotik RouterOS and CHR. It performs credential testing against multiple entry points (RouterOS API/REST-API) with optional post-login validation on network services (FTP/SSH/Telnet), includes robust session persistence, progress/ETA, export, stealth, fingerprinting, and — since v3.3.0 — Layer-2 MAC-Server discovery/brute and an expanded CVE exploit coverage.
 
 **Portuguese (pt-BR):** [README.pt-BR.md](README.pt-BR.md) · **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## ✨ Key Features
+
+### 🌐 MAC-Server / Layer-2 Discovery (v3.3.0+)
+- **MNDP broadcast** (UDP 20561) — discovers all Mikrotik devices on the local L2 segment, including those with no IP assigned
+- **MAC-Telnet brute-force** (TCP 20561) — tests credentials against discovered devices using Mikrotik's proprietary MAC-Telnet protocol
+- **CVE-2018-14847-MAC** exploit — runs Winbox credential disclosure against MNDP-discovered devices
+- **Layer-2 only**: these features require the attacker to be on the same VLAN/switch as the targets
 
 ### 🔐 Authentication Targets
 - **RouterOS API** (TCP 8728) — proprietary binary protocol
@@ -163,11 +169,30 @@ Common flags:
 - `--progress` — progress bar with ETA.
 - `--export json,csv,xml,txt | --export-all` — reporting.
 
+### MAC-Server (Layer-2) flags (v3.3.0+)
+- `--mac-discover` — broadcast MNDP to find Mikrotik devices on the local segment.
+- `--mac-brute` — brute-force credentials via MAC-Telnet against discovered devices.
+- `--mac-scan-cve` — run CVE-2018-14847-MAC against all MNDP-discovered devices.
+- `--mac-iface-ip <IP>` — local IP to bind for MNDP broadcast (default: 0.0.0.0).
+
+```bash
+# Layer-2 discovery only
+python mikrotikapi-bf.py --mac-discover
+
+# Discover + brute-force via MAC-Telnet
+python mikrotikapi-bf.py --mac-discover --mac-brute -d wordlists/combos.lst
+
+# Discover + exploit CVE-2018-14847 via MAC
+python mikrotikapi-bf.py --mac-scan-cve
+```
+
+> **Layer-2 constraint:** MNDP and MAC-Telnet operate within a single broadcast domain only. They cannot traverse Layer-3 routers. You must be on the same VLAN or switch segment as the targets.
+
 ## Project Layout
 
 ```
 MikrotikAPI-BF/
-├── mikrotikapi-bf.py             # Main entry point (v3.2.0)
+├── mikrotikapi-bf.py             # Main entry point (v3.3.0)
 ├── requirements.txt
 ├── core/                         # Core engine modules
 │   ├── api.py                    # RouterOS binary API protocol
@@ -180,6 +205,7 @@ MikrotikAPI-BF/
 ├── modules/                      # Feature modules
 │   ├── discovery.py              # Network discovery
 │   ├── fingerprint.py            # Device fingerprinting
+│   ├── mac_server.py             # Layer-2 MNDP discovery + MAC-Telnet brute (v3.3.0)
 │   ├── proxy.py                  # Proxy/SOCKS support
 │   ├── reports.py                # Report generation
 │   ├── stealth.py                # Fibonacci delays + UA rotation
@@ -221,8 +247,46 @@ MikrotikAPI-BF/
 - [Usage Examples](docs/USAGE_EXAMPLES.md)
 - [HTML Docs](docs/index.html)
 
-## What's New in v3.2.0
-- Credential matrix workflows, CVE scan export enhancements, WebFig fingerprint context (see `docs/CHANGELOG.md`)
+## What's New in v3.3.0
+
+**MAC-Server / Layer-2 support (new in v3.3.0):**
+- `modules/mac_server.py` — MNDP broadcast discovery + MAC-Telnet credential brute-force
+- `--mac-discover` flag — finds all Mikrotik devices on the local L2 segment (even without IP)
+- `--mac-brute` flag — brute-forces credentials via MAC-Telnet (TCP 20561)
+- `--mac-scan-cve` flag — runs CVE-2018-14847 payload against MNDP-discovered devices
+- `Exploit_CVE_2018_14847_MAC` — dedicated MAC-based variant of the Winbox credential exploit
+- 5 new CVE exploit classes: CVE-2020-20215, CVE-2021-41987, CVE-2023-30800, CVE-2024-2169 + MAC-14847
+- CVE database expanded to 22 entries + 2 design-flaw findings
+
+**CVE Coverage (all versions, 22 CVEs):**
+
+| CVE | Title | CVSS | Auth | PoC | Fixed in |
+|-----|-------|------|------|-----|----------|
+| CVE-2018-7445 | SMB Stack Buffer Overflow (Pre-Auth RCE) | 9.8 | No | Yes | 6.41.4 |
+| CVE-2018-10066 | Winbox Auth Bypass / Directory Traversal | 8.1 | No | Yes | 6.42 |
+| CVE-2018-14847 | Winbox Credential Disclosure (Chimay-Red) | 9.1 | No | Yes | 6.42.1 |
+| CVE-2018-14847-MAC | Winbox Credential Disclosure via MNDP/MAC | 9.1 | No | Yes | 6.42.1 |
+| CVE-2019-3924 | WWW Pre-Auth RCE (jsproxy) | 9.8 | No | Yes | 6.43.8 |
+| CVE-2019-3943 | HTTP Path Traversal | 8.8 | No | Yes | 6.43.8 |
+| CVE-2019-3976 | NPK Arbitrary File Read | 6.5 | Yes | Yes | 6.45.7 |
+| CVE-2019-3977 | NPK Arbitrary Code Execution | 7.5 | Yes | Yes | 6.45.7 |
+| CVE-2019-3978 | DNS Cache Poisoning | 7.5 | No | Yes | 6.45.7 |
+| CVE-2020-20215 | RouterOS MPLS Out-of-Bounds Write (DoS) | 7.5 | No | Yes | 6.47 |
+| CVE-2021-27263 | Winbox Auth Bypass (RouterOS 7.0.x) | 7.5 | No | Yes | 7.1 |
+| CVE-2021-36522 | www Server Authenticated RCE via Scheduler | 8.8 | Yes | Yes | 6.49.3 |
+| CVE-2021-41987 | RADIUS Client Stack Buffer Overflow | 8.1 | No | Yes | 6.49.1 / 7.1 |
+| CVE-2022-34960 | Container Feature Privilege Escalation | 8.8 | Yes | Yes | 7.6 |
+| CVE-2022-45315 | SMB Authenticated Stack Buffer Overflow | 8.8 | Yes | Yes | 6.49.7 / 7.6 |
+| CVE-2023-30799 | Privilege Escalation via supout.rif (FOISted) | 9.1 | Yes | Yes | 6.49.9 / 7.10 |
+| CVE-2023-30800 | WWW Service Stack-Based Buffer Overflow (Pre-Auth) | 8.2 | No | Yes | 6.49.9 / 7.10 |
+| CVE-2024-27887 | OSPF Route Injection | 7.5 | No | Yes | — |
+| CVE-2024-2169 | BFD Protocol Reflection / Amplification Loop | 7.5 | No | Yes | Mitigate |
+| CVE-2024-35274 | Authenticated RCE via Scheduler/Script Injection | 8.8 | Yes | Yes | Pending |
+| MIKROTIK-CONFIG-001 | WireGuard Private Key Exposure via REST API | — | Yes | Yes | Design |
+| MIKROTIK-CONFIG-002 | Packet Sniffer Remote Streaming (Wiretapping) | — | Yes | Yes | Design |
+
+**Previous v3.2.0:**
+- Credential matrix workflows, CVE scan export enhancements, WebFig fingerprint context
 - Modular architecture: `core/`, `modules/`, `xpl/` packages
 - CVE/NVD integration via `xpl/` exploit and scanner modules
 - Shodan integration for fingerprinting context
@@ -233,7 +297,6 @@ MikrotikAPI-BF/
 - Advanced fingerprinting and risk scoring
 - Post-login validation for FTP/SSH/Telnet
 - Multi-format export (JSON, CSV, XML, TXT)
-- Removed unreliable Winbox/WebFig testing
 
 ## Support
 - GitHub: https://github.com/mrhenrike/MikrotikAPI-BF

@@ -583,6 +583,183 @@ CVE_DATABASE: List[Dict] = [
             "streaming-server=<attacker-ip>:37008. No patch — admin access prevention only."
         ),
     },
+    # ─────────────────────────────────────────────────────────────────────────
+    # CVE-2018-14847-MAC variant (Layer-2 MNDP/MAC-server delivery)
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2018-14847-MAC",
+        "title": "Winbox Credential Disclosure via MAC-Server/MNDP (Layer-2)",
+        "description": (
+            "Extension of CVE-2018-14847 leveraging MNDP (MikroTik Neighbor Discovery "
+            "Protocol) on UDP port 20561 to discover devices in the local Layer-2 segment, "
+            "including switches and APs with no IP assigned. The same Winbox file-read "
+            "payload is then sent to each discovered device's IP:8291. "
+            "Particularly useful against unconfigured or factory-reset hardware. "
+            "LAYER-2 ONLY: cannot traverse Layer-3 routers."
+        ),
+        "severity": "CRITICAL",
+        "cvss_score": 9.1,
+        "affected": [(None, (6, 42, 0))],
+        "fixed_in": "6.42.1",
+        "services": ["winbox", "mac-server"],
+        "ports": [20561, 8291],
+        "poc_available": True,
+        "exploit_type": "disclosure",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2018-14847",
+            "https://github.com/BasuCert/WinboxPoC/blob/master/MACServerExploit.py",
+            "https://blog.mikrotik.com/security/winbox-vulnerability.html",
+            "https://blog.n0p.me/2018/05/2018-05-21-winbox-bug-dissection/",
+            "https://mikrotik.com/supportsec/winbox-vulnerability/",
+            "https://wiki.mikrotik.com/wiki/MNDP",
+        ],
+        "metasploit": "auxiliary/gather/mikrotik_winbox_disclosure",
+        "notes": (
+            "Layer-2 constraint: attacker must be on the same VLAN/switch segment. "
+            "Same fix as CVE-2018-14847 (RouterOS 6.42.1+). "
+            "Disable MAC-Server if not needed: /ip neighbor discovery-settings set discover-interface-list=none. "
+            "Disable MAC-Winbox-Server: /tool mac-server set allowed-interface-list=none."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2020
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2020-20215",
+        "title": "RouterOS MPLS Out-of-Bounds Write (Denial of Service)",
+        "description": (
+            "MikroTik RouterOS before 6.47 contains an out-of-bounds write vulnerability "
+            "in the MPLS implementation. A specially crafted MPLS packet can cause the "
+            "router to crash, resulting in a denial-of-service condition. "
+            "Affects all RouterOS builds with MPLS enabled before 6.47."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [(None, (6, 46, 99))],
+        "fixed_in": "6.47",
+        "services": ["mpls"],
+        "ports": [],
+        "poc_available": True,
+        "exploit_type": "dos",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2020-20215",
+            "https://mikrotik.com/download/changelogs",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Affects RouterOS < 6.47 (all stable/long-term builds). "
+            "Disable MPLS if not in use: /mpls set enabled=no. "
+            "Update to 6.47+ to patch."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2021
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2021-41987",
+        "title": "RADIUS Client Stack-Based Buffer Overflow",
+        "description": (
+            "A stack-based buffer overflow in the RADIUS client of MikroTik RouterOS "
+            "before 6.49.1 and 7.1 allows a malicious RADIUS server to crash the router "
+            "or potentially execute arbitrary code by returning a crafted Access-Accept "
+            "packet with an oversized attribute. Requires the router to have RADIUS "
+            "authentication enabled and configured to reach the attacker-controlled server."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 8.1,
+        "affected": [(None, (6, 49, 0)), ((7, 0, 0), (7, 0, 99))],
+        "fixed_in": "6.49.1 / 7.1",
+        "services": ["radius"],
+        "ports": [1812, 1813],
+        "poc_available": True,
+        "exploit_type": "rce",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2021-41987",
+            "https://mikrotik.com/download/changelogs",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Requires: (1) RADIUS enabled on router, (2) attacker controls RADIUS server. "
+            "Exploitation: MitM the RADIUS server or compromise it; return crafted packet. "
+            "Mitigation: update to 6.49.1+ / 7.1+; use only trusted RADIUS servers; "
+            "isolate management network."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2023
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2023-30800",
+        "title": "WWW Service Stack-Based Buffer Overflow (Pre-Auth DoS/RCE)",
+        "description": (
+            "A stack-based buffer overflow in the MikroTik RouterOS www HTTP service "
+            "allows a remote unauthenticated attacker to crash the web management service "
+            "or potentially execute arbitrary code by sending an HTTP request with an "
+            "oversized cookie header (>= 8192 bytes). Related to and distinct from "
+            "CVE-2023-30799 (FOISted). Affects RouterOS and RouterOS CHR."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 8.2,
+        "affected": [(None, (6, 49, 8)), ((7, 0, 0), (7, 9, 99))],
+        "fixed_in": "6.49.9 / 7.10 (pending)",
+        "services": ["http", "www"],
+        "ports": [80, 443],
+        "poc_available": True,
+        "exploit_type": "dos",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2023-30800",
+            "https://vulncheck.com/advisories/vc-advisory-VCSA-0085",
+            "https://github.com/mrhenrike/MikrotikAPI-BF",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Pre-authentication — no credentials needed. "
+            "Send HTTP GET with Cookie: header >= 8192 bytes. "
+            "Mitigation: disable www service if not needed (/ip service disable www); "
+            "restrict www access by IP (/ip service set www address=<mgmt-net>)."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2024
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2024-2169",
+        "title": "BFD Protocol Reflection / Amplification Loop (DoS)",
+        "description": (
+            "MikroTik RouterOS and other BFD implementations may be abused for "
+            "Bidirectional Forwarding Detection (BFD) reflection/amplification attacks. "
+            "An attacker can spoof the source address of a BFD Control packet, causing "
+            "the router to send amplified responses to the spoofed victim IP. "
+            "This enables reflection-based volumetric DDoS amplification (BFD echo loop). "
+            "No authentication is required; BFD operates at the network layer."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [(None, None)],
+        "fixed_in": "Requires BFD with authentication (MD5/SHA-1) or BFD isolation; "
+                    "no single RouterOS patch — protocol-level mitigation required",
+        "services": ["bfd"],
+        "ports": [3784, 3785],
+        "poc_available": True,
+        "exploit_type": "dos",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2024-2169",
+            "https://blog.bfd-vulnerability.com/cve-2024-2169/",
+            "https://www.cisecurity.org/advisory/cve-2024-2169",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Protocol-level flaw. Mitigation: (1) enable BFD authentication; "
+            "(2) filter BFD packets (UDP 3784/3785) at network edge; "
+            "(3) disable BFD if not required in network design. "
+            "Affects all RouterOS versions with BFD enabled."
+        ),
+    },
 ]
 
 
