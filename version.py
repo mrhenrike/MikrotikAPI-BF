@@ -21,7 +21,7 @@ Versioning scheme: MAJOR.MINOR.PATCH
 """
 
 # ── Canonical version tuple ───────────────────────────────────────────────────
-VERSION: tuple = (3, 5, 2)
+VERSION: tuple = (3, 5, 3)
 
 MAJOR: int = VERSION[0]
 MINOR: int = VERSION[1]
@@ -51,4 +51,5 @@ def version_info() -> str:
 
 if __name__ == "__main__":
     print(__version__)
+
 

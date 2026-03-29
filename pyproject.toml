@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "mikrotikapi-bf"
+dynamic = ["version"]
+description = "RouterOS Attack & Exploitation Framework — credential brute-force, CVE scanner, MAC-Server, decoders"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+  { name = "André Henrique", email = "mrhenrike@users.noreply.github.com" }
+]
+maintainers = [
+  { name = "André Henrique", email = "mrhenrike@users.noreply.github.com" }
+]
+keywords = [
+  "mikrotik", "routeros", "brute-force", "security", "pentest",
+  "cve", "exploit", "iot", "nmap", "nse", "network-security"
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+  "Topic :: System :: Networking :: Monitoring",
+]
+requires-python = ">=3.8"
+dependencies = [
+  "requests>=2.28.0",
+  "urllib3>=1.26.0",
+  "colorama>=0.4.6",
+  "paramiko>=2.7.0",
+  "PySocks>=1.7.1",
+  "PyYAML>=6.0",
+  "beautifulsoup4>=4.12.0",
+  "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+  "pytest-cov",
+  "black",
+  "isort",
+  "flake8",
+]
+
+[project.urls]
+Homepage       = "https://github.com/mrhenrike/MikrotikAPI-BF"
+Repository     = "https://github.com/mrhenrike/MikrotikAPI-BF"
+Documentation  = "https://github.com/mrhenrike/MikrotikAPI-BF/wiki"
+"Bug Tracker"  = "https://github.com/mrhenrike/MikrotikAPI-BF/issues"
+Changelog      = "https://github.com/mrhenrike/MikrotikAPI-BF/releases"
+
+[project.scripts]
+# After `pip install mikrotikapi-bf`, these commands become available:
+mikrotikapi-bf = "mikrotikapi_bf.cli:main"
+mikrotik-bf    = "mikrotikapi_bf.cli:main"   # shorter alias
+
+[tool.setuptools]
+# Include non-Python files in the package
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { attr = "version.__version__" }
+
+[tool.setuptools.packages.find]
+# Auto-discover Python packages
+where = ["."]
+include = ["core*", "modules*", "xpl*", "mikrotikapi_bf*"]
+exclude = ["tests*", "docs*", ".log*"]
+
+[tool.setuptools.package-data]
+# Include NSE scripts, examples, wordlists, configs
+"*" = [
+  "nse/*.nse",
+  "nse/README.md",
+  "examples/*.sh",
+  "examples/*.txt",
+  "examples/README.md",
+  "config.yaml.example",
+  ".env.example",
+  "version.py",
+]
