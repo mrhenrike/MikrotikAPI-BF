@@ -382,8 +382,34 @@ See [GitHub Wiki — EDB Exploit Coverage](https://github.com/mrhenrike/Mikrotik
 - Post-login validation for FTP/SSH/Telnet
 - Multi-format export (JSON, CSV, XML, TXT)
 
+## 🙏 Credits & Acknowledgements
+
+This project builds on the work of many in the security research community:
+
+| Contributor | Contribution | Link |
+|-------------|-------------|------|
+| **Federico Massa & Ramiro Caire** | MKBRUTUS — original RouterOS API brute-force concept | [mkbrutusproject/MKBRUTUS](https://github.com/mkbrutusproject/MKBRUTUS) |
+| **Kirils Solovjovs** (@KirilsSolovjovs) | mikrotik-tools: user.dat decoder, backup decoder, NPK format research, supout.rif decoder — all ported to Python 3 in `modules/decoder.py` + `xpl/npk_decoder.py` | [0ki/mikrotik-tools](https://github.com/0ki/mikrotik-tools) |
+| **Dmitriusan** | Bug fixes: empty `read_sentence()` list + socket timeout retry (issue #3 — superseded by v3.x architecture) | [Dmitriusan/MikrotikAPI-BF](https://github.com/Dmitriusan/MikrotikAPI-BF) |
+| **alina0x** | Multi-target scanning concept via `ips.txt` — implemented as `--target-list / -T` in v3.5.0 | [alina0x/mikrotik-multithread-bf](https://github.com/alina0x/mikrotik-multithread-bf) |
+| **rafathasan** | Autosave + session resume improvements — superseded by `--resume` session management | [rafathasan/MikrotikAPI-BF-Improved](https://github.com/rafathasan/MikrotikAPI-BF-Improved) |
+| **sajadmirave** | Connection check before brute-force (PR #4) | [sajadmirave/MikrotikAPI-BF](https://github.com/sajadmirave/MikrotikAPI-BF) |
+| **BasuCert** | WinboxPoC / MACServerExploit.py — MAC-server attack reference for `CVE-2018-14847-MAC` | [BasuCert/WinboxPoC](https://github.com/BasuCert/WinboxPoC) |
+| **Jacob Baines** (Tenable Research) | Tenable RouterOS research — CVE-2019-3924, CVE-2019-3943, CVE-2019-3976/3977/3978 | [tenable/routeros](https://github.com/tenable/routeros) |
+| **BigNerd95 / Lorenzo Santina** | Chimay-Red Stack Clash PoC (EDB-44283/44284) | [BigNerd95/Chimay-Red](https://github.com/BigNerd95/Chimay-Red) |
+| **ShadOS** | SNMP DoS + SNMP write PoC (EDB-31102, EDB-6366/CVE-2008-6976) | Exploit-DB |
+| **FarazPajohan** | FTP/ICMP/ARP/RouterBoard DoS PoCs (EDB-44450, EDB-43317, EDB-41752, EDB-41601) | Exploit-DB |
+| **kingcope** | ROSSSH sshd heap corruption (EDB-28056) | Exploit-DB |
+| **xis_one** | Syslog Server Windows BoF DoS Metasploit module (EDB-24968) | Exploit-DB |
+| **hyp3rlinx** | DNSmasq/Mikrotik SQL Injection (EDB-39817) | Exploit-DB |
+| **Prak Sokchea** | RouterOS 7.19.1 WebFig XSS (EDB-52366) | Exploit-DB |
+| **0xjpuff** | CVE-2023-30799 (FOISted) PoC reference | [0xjpuff/CVE-2023-30799](https://github.com/0xjpuff/CVE-2023-30799) |
+
+MikroTik RouterOS ecosystem diagram adapted from **Kirils Solovjovs' research** presented at Balccon 2017.
+
 ## Support
 - GitHub: https://github.com/mrhenrike/MikrotikAPI-BF
 - Issues: https://github.com/mrhenrike/MikrotikAPI-BF/issues
+- Wiki: https://github.com/mrhenrike/MikrotikAPI-BF/wiki
 
 Licensed under MIT — see [`LICENSE`](LICENSE).

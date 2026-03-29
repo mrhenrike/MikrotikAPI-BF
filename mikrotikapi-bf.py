@@ -87,7 +87,7 @@ MikrotikFingerprinter = _mods["MikrotikFingerprinter"]
 SmartWordlistManager  = _mods["SmartWordlistManager"]
 ProxyManager          = _mods["ProxyManager"]
 
-_VERSION = "3.5.0"
+_VERSION = "3.5.1"
 
 # ── Telnet fallback (removed from stdlib in Python 3.13) ─────────────────
 
