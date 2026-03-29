@@ -1,8 +1,8 @@
-# MikrotikAPI-BF v3.3.0
+# MikrotikAPI-BF v3.4.0
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.3.0-red.svg)](docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.4.0-red.svg)](docs/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 
@@ -247,6 +247,30 @@ MikrotikAPI-BF/
 - [Usage Examples](docs/USAGE_EXAMPLES.md)
 - [HTML Docs](docs/index.html)
 
+## What's New in v3.4.0
+
+**13 new Exploit-DB public PoC exploits (from Exploit-DB Mikrotik entry list):**
+
+| EDB ID | Title | Verified | Type |
+|--------|-------|----------|------|
+| [EDB-31102](https://www.exploit-db.com/exploits/31102) | RouterOS 3.x SNMP SET DoS | ✓ | Hardware/DoS |
+| [EDB-6366](https://www.exploit-db.com/exploits/6366) | RouterOS 3.x SNMP Unauthorized Write | ✓ | Hardware/Remote |
+| [EDB-44283](https://www.exploit-db.com/exploits/44283)/[44284](https://www.exploit-db.com/exploits/44284) | Chimay-Red Stack Clash RCE (MIPSBE+x86) | — | Hardware/RCE |
+| [EDB-44450](https://www.exploit-db.com/exploits/44450) | FTP Daemon DoS | — | Hardware/DoS |
+| [EDB-43317](https://www.exploit-db.com/exploits/43317) | ICMP DoS (6.40.5) | — | Hardware/DoS |
+| [EDB-41752](https://www.exploit-db.com/exploits/41752) | RouterBoard DoS (6.38.5) | — | Hardware/DoS |
+| [EDB-41601](https://www.exploit-db.com/exploits/41601) | ARP Table Overflow DoS | — | Hardware/DoS |
+| [EDB-28056](https://www.exploit-db.com/exploits/28056) | ROSSSH sshd Heap Corruption | — | Hardware/Remote |
+| [EDB-24968](https://www.exploit-db.com/exploits/24968) | Syslog Server v1.15 BoF DoS | ✓ | Windows/DoS |
+| [EDB-18817](https://www.exploit-db.com/exploits/18817) | Generic Router DoS | — | Hardware/DoS |
+| [EDB-52366](https://www.exploit-db.com/exploits/52366) | RouterOS 7.19.1 WebFig XSS | — | Multiple/Remote |
+| [EDB-48474](https://www.exploit-db.com/exploits/48474) | Router Monitoring System SQLi | — | WebApp |
+| [EDB-39817](https://www.exploit-db.com/exploits/39817) | DNSmasq/Mikrotik SQLi | — | PHP/WebApp |
+
+Total exploit registry: **35 entries** (22 CVEs + 2 design + 13 EDB PoCs).
+
+See [GitHub Wiki — EDB Exploit Coverage](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/EDB-Exploit-Coverage) for full PoC usage guide.
+
 ## What's New in v3.3.0
 
 **MAC-Server / Layer-2 support (new in v3.3.0):**
@@ -258,32 +282,47 @@ MikrotikAPI-BF/
 - 5 new CVE exploit classes: CVE-2020-20215, CVE-2021-41987, CVE-2023-30800, CVE-2024-2169 + MAC-14847
 - CVE database expanded to 22 entries + 2 design-flaw findings
 
-**CVE Coverage (all versions, 22 CVEs):**
+**Full Exploit Coverage (35 entries — 22 CVEs + 2 design findings + 13 Exploit-DB PoCs):**
 
-| CVE | Title | CVSS | Auth | PoC | Fixed in |
-|-----|-------|------|------|-----|----------|
-| CVE-2018-7445 | SMB Stack Buffer Overflow (Pre-Auth RCE) | 9.8 | No | Yes | 6.41.4 |
-| CVE-2018-10066 | Winbox Auth Bypass / Directory Traversal | 8.1 | No | Yes | 6.42 |
-| CVE-2018-14847 | Winbox Credential Disclosure (Chimay-Red) | 9.1 | No | Yes | 6.42.1 |
-| CVE-2018-14847-MAC | Winbox Credential Disclosure via MNDP/MAC | 9.1 | No | Yes | 6.42.1 |
-| CVE-2019-3924 | WWW Pre-Auth RCE (jsproxy) | 9.8 | No | Yes | 6.43.8 |
-| CVE-2019-3943 | HTTP Path Traversal | 8.8 | No | Yes | 6.43.8 |
-| CVE-2019-3976 | NPK Arbitrary File Read | 6.5 | Yes | Yes | 6.45.7 |
-| CVE-2019-3977 | NPK Arbitrary Code Execution | 7.5 | Yes | Yes | 6.45.7 |
-| CVE-2019-3978 | DNS Cache Poisoning | 7.5 | No | Yes | 6.45.7 |
-| CVE-2020-20215 | RouterOS MPLS Out-of-Bounds Write (DoS) | 7.5 | No | Yes | 6.47 |
-| CVE-2021-27263 | Winbox Auth Bypass (RouterOS 7.0.x) | 7.5 | No | Yes | 7.1 |
-| CVE-2021-36522 | www Server Authenticated RCE via Scheduler | 8.8 | Yes | Yes | 6.49.3 |
-| CVE-2021-41987 | RADIUS Client Stack Buffer Overflow | 8.1 | No | Yes | 6.49.1 / 7.1 |
-| CVE-2022-34960 | Container Feature Privilege Escalation | 8.8 | Yes | Yes | 7.6 |
-| CVE-2022-45315 | SMB Authenticated Stack Buffer Overflow | 8.8 | Yes | Yes | 6.49.7 / 7.6 |
-| CVE-2023-30799 | Privilege Escalation via supout.rif (FOISted) | 9.1 | Yes | Yes | 6.49.9 / 7.10 |
-| CVE-2023-30800 | WWW Service Stack-Based Buffer Overflow (Pre-Auth) | 8.2 | No | Yes | 6.49.9 / 7.10 |
-| CVE-2024-27887 | OSPF Route Injection | 7.5 | No | Yes | — |
-| CVE-2024-2169 | BFD Protocol Reflection / Amplification Loop | 7.5 | No | Yes | Mitigate |
-| CVE-2024-35274 | Authenticated RCE via Scheduler/Script Injection | 8.8 | Yes | Yes | Pending |
-| MIKROTIK-CONFIG-001 | WireGuard Private Key Exposure via REST API | — | Yes | Yes | Design |
-| MIKROTIK-CONFIG-002 | Packet Sniffer Remote Streaming (Wiretapping) | — | Yes | Yes | Design |
+| ID | Title | Auth | EDB | Notes |
+|----|-------|------|-----|-------|
+| CVE-2018-7445 | SMB Stack Buffer Overflow (Pre-Auth RCE) | No | [44290](https://www.exploit-db.com/exploits/44290) | < 6.41.4 |
+| CVE-2018-10066 | Winbox Auth Bypass / Directory Traversal | No | [44813](https://www.exploit-db.com/exploits/44813) | < 6.42 |
+| CVE-2018-14847 | Winbox Credential Disclosure (Chimay-Red) | No | [45220](https://www.exploit-db.com/exploits/45220) | < 6.42.1 |
+| CVE-2018-14847-MAC | Winbox Credential via MNDP (Layer-2) | No | — | < 6.42.1 |
+| CVE-2019-3924 | WWW Firewall/NAT Bypass (jsproxy) | No | [46444](https://www.exploit-db.com/exploits/46444) ✓ | < 6.43.12 |
+| CVE-2019-3943 | HTTP Path Traversal | No | [46731](https://www.exploit-db.com/exploits/46731) | < 6.43.8 |
+| CVE-2019-3976 | NPK Arbitrary File Read | Yes | — | < 6.45.7 |
+| CVE-2019-3977 | NPK Arbitrary Code Execution | Yes | — | < 6.45.7 |
+| CVE-2019-3978 | DNS Cache Poisoning | No | [47566](https://www.exploit-db.com/exploits/47566) | < 6.45.7 |
+| CVE-2020-20215 | MPLS Out-of-Bounds Write (DoS) | Yes | — | < 6.47 |
+| CVE-2021-27263 | Winbox Auth Bypass (RouterOS 7.0.x) | No | — | 7.0.x |
+| CVE-2021-36522 | www Authenticated RCE via Scheduler | Yes | — | < 6.49.3 |
+| CVE-2021-41987 | RADIUS Client Stack Buffer Overflow | No | — | < 6.49.1 / 7.1 |
+| CVE-2022-34960 | Container Feature Privilege Escalation | Yes | — | < 7.6 |
+| CVE-2022-45315 | SMB Authenticated Stack Buffer Overflow | Yes | [51451](https://www.exploit-db.com/exploits/51451) | < 6.49.7 |
+| CVE-2023-30799 | Privilege Escalation via supout.rif (FOISted) | Yes | — | < 6.49.9 |
+| CVE-2023-30800 | WWW Stack-Based Buffer Overflow (Pre-Auth) | No | — | < 6.49.9 |
+| CVE-2024-27887 | OSPF Route Injection | No | — | All |
+| CVE-2024-2169 | BFD Protocol Reflection / Amplification | No | — | All |
+| CVE-2024-35274 | Authenticated RCE via Scheduler Injection | Yes | — | Pending |
+| MIKROTIK-CONFIG-001 | WireGuard Private Key Exposure | Yes | — | Design |
+| MIKROTIK-CONFIG-002 | Packet Sniffer Remote Streaming | Yes | — | Design |
+| **EDB-31102** | RouterOS 3.x SNMP SET Denial of Service | No | [31102](https://www.exploit-db.com/exploits/31102) ✓ | ≤ 3.2 |
+| **EDB-6366** | RouterOS 3.x SNMP Unauthorized Write | No | [6366](https://www.exploit-db.com/exploits/6366) ✓ | ≤ 3.13 |
+| **EDB-44283/44284** | Chimay-Red Stack Clash RCE (MIPSBE+x86) | No | [44283](https://www.exploit-db.com/exploits/44283)/[44284](https://www.exploit-db.com/exploits/44284) | < 6.38.4 |
+| **EDB-44450** | FTP Daemon Denial of Service | No | [44450](https://www.exploit-db.com/exploits/44450) | 6.41.4 |
+| **EDB-43317** | ICMP Denial of Service | Yes | [43317](https://www.exploit-db.com/exploits/43317) | 6.40.5 |
+| **EDB-41752** | RouterBoard Denial of Service | Yes | [41752](https://www.exploit-db.com/exploits/41752) | 6.38.5 |
+| **EDB-41601** | ARP Table Overflow Denial of Service | No | [41601](https://www.exploit-db.com/exploits/41601) | All |
+| **EDB-28056** | ROSSSH sshd Remote Heap Corruption | No | [28056](https://www.exploit-db.com/exploits/28056) | Multiple |
+| **EDB-24968** | Syslog Server for Windows 1.15 BoF DoS | No | [24968](https://www.exploit-db.com/exploits/24968) ✓ | Win app |
+| **EDB-18817** | Generic Router Denial of Service | No | [18817](https://www.exploit-db.com/exploits/18817) | Multiple |
+| **EDB-52366** | RouterOS 7.19.1 WebFig Reflected XSS | No | [52366](https://www.exploit-db.com/exploits/52366) | 7.19.1 |
+| **EDB-48474** | Router Monitoring System 1.2.3 SQL Injection | No | [48474](https://www.exploit-db.com/exploits/48474) | Web app |
+| **EDB-39817** | DNSmasq/Mikrotik Web Interface SQL Injection | No | [39817](https://www.exploit-db.com/exploits/39817) | Web app |
+
+> ✓ = EDB Verified | All PoCs are detection-only; no destructive payloads.
 
 **Previous v3.2.0:**
 - Credential matrix workflows, CVE scan export enhancements, WebFig fingerprint context
