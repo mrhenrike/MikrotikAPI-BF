@@ -1,94 +1,93 @@
-# MikrotikAPI-BF v3.5.1
+# MikrotikAPI-BF v3.5.3
 
-[Python Version](https://www.python.org/downloads/)
-[License](LICENSE)
-[Version](docs/CHANGELOG.md)
-[Platform](README.md)
-[Wiki](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
+[![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-3.5.3-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.5.3)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
+[![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
+[![PyPI](https://img.shields.io/badge/pip-mikrotikapi--bf-blue)](https://pypi.org/project/mikrotikapi-bf/)
+[![CodeQL](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml/badge.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml)
 
-Advanced CLI toolkit for security testing of Mikrotik RouterOS and CHR. It performs credential testing against multiple entry points (RouterOS API/REST-API) with optional post-login validation on network services (FTP/SSH/Telnet), includes robust session persistence, progress/ETA, export, stealth, fingerprinting, and — since v3.3.0 — Layer-2 MAC-Server discovery/brute and an expanded CVE exploit coverage.
+**RouterOS Attack & Exploitation Framework** — credential brute-force, **40 CVE/EDB PoC exploits**, MAC-Server Layer-2 discovery, offline credential decoders, NPK analyzer, CVE scanner, Nmap NSE scripts, multi-target, stealth, REST/API/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF vectors.
 
-**Portuguese (pt-BR):** [README.pt-BR.md](README.pt-BR.md) · **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+**Portuguese (pt-BR):** [README.pt-BR.md](README.pt-BR.md) · **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · **Security:** [SECURITY.md](SECURITY.md)
+
+---
 
 ## ✨ Key Features
 
-### 🌐 MAC-Server / Layer-2 Discovery (v3.3.0+)
+### 🔐 Authentication & Brute-Force
+- **RouterOS API** (TCP 8728/8729) — full binary protocol implementation (6.x MD5 challenge + 7.x plaintext)
+- **REST API** over HTTP/HTTPS (TCP 80/443) — Basic Auth brute-force
+- **MAC-Telnet** (TCP 20561) — Layer-2 proprietary protocol (no IP needed)
+- **Multi-target** (`--target-list / -T`) — scan from file, sequential engine per target
+- **Threading** — up to 15 workers (`--threads N`)
 
-- **MNDP broadcast** (UDP 20561) — discovers all Mikrotik devices on the local L2 segment, including those with no IP assigned
-- **MAC-Telnet brute-force** (TCP 20561) — tests credentials against discovered devices using Mikrotik's proprietary MAC-Telnet protocol
-- **CVE-2018-14847-MAC** exploit — runs Winbox credential disclosure against MNDP-discovered devices
-- **Layer-2 only**: these features require the attacker to be on the same VLAN/switch as the targets
+### 🔍 CVE Scanner & Exploit Engine
+- **40 exploit classes** — 22 CVEs + 2 design findings + 13 Exploit-DB PoCs + 5 new CVEs
+- **Pre-auth exploits** — Winbox (CVE-2018-14847, CVE-2018-10066), HTTP traversal, SNMP, SMB, BFD, OSPF, DNS
+- **Post-auth exploits** — Scheduler RCE, Container escalation, FOISted, WireGuard key extraction, packet sniffer wiretapping
+- **Version-aware** — CVE database maps applicability to detected RouterOS version
+- **`--scan-cve`** — standalone CVE scan (no brute-force needed)
 
-### 🔐 Authentication Targets
+### 🌐 Winbox CVE Coverage (TCP 8291)
+- **CVE-2018-14847** — Credential disclosure (Chimay-Red / EternalWink) — pre-auth file read
+- **CVE-2018-10066** — Authentication bypass / directory traversal
+- **CVE-2021-27263** — Auth bypass (RouterOS 7.0.x)
+- **CVE-2018-14847-MAC** — Same exploit delivered via MNDP Layer-2 discovery
+- **NSE script** — `nse/mikrotik-winbox-cve-2018-14847.nse` (Nmap integration)
 
-- **RouterOS API** (TCP 8728) — proprietary binary protocol
-- **REST-API** over **HTTP/HTTPS** (TCP 80/443) — Basic Auth
-- Full TLS support for HTTPS
+> ℹ️ Winbox **credential brute-force** via the proprietary Winbox GUI protocol is not implemented (no reliable portable auth library). Use API port 8728 for brute-force. All **Winbox CVE exploits** (pre-auth file read, bypass) are fully implemented.
 
-### 🛡️ Post-Login Service Validation
+### 🛰️ MAC-Server / Layer-2 Discovery (v3.3.0+)
+- **MNDP broadcast** (UDP 20561) — discovers devices even without IP
+- **MAC-Telnet brute-force** (TCP 20561) — proprietary MAC-Telnet auth
+- **CVE-2018-14847-MAC** — Winbox credential disclosure via MNDP-discovered devices
+- **L2 constraint** — requires same broadcast domain
 
-- **FTP** (TCP 21)
-- **SSH** (TCP 22)
-- **Telnet** (TCP 23)
-- Custom ports supported per service (e.g., `--validate ssh=2222`)
+### 🔓 Offline Credential Decoders (v3.5.0+)
+Based on [mikrotik-tools](https://github.com/0ki/mikrotik-tools) by Kirils Solovjovs, ported to Python 3:
+- **`--decode-userdat`** — decode `user.dat` after CVE-2018-14847 extraction (XOR with MD5 key)
+- **`--decode-backup`** — extract `.backup` archive + auto-decode credentials
+- **`--decode-supout`** — list sections in `supout.rif` diagnostic files
+- **`--analyze-npk`** — NPK package analyzer (CVE-2019-3977 vector)
 
-### 🔄 Persistent Sessions
+### 🗺️ Nmap NSE Scripts (v3.5.3+)
+Five Lua scripts in `nse/` for Nmap integration:
+- `mikrotik-routeros-version.nse` — fingerprint RouterOS from HTTP/API/Winbox
+- `mikrotik-api-brute.nse` — full API brute-force (6.x MD5 + 7.x plaintext auth)
+- `mikrotik-default-creds.nse` — test default/empty creds on all interfaces
+- `mikrotik-api-info.nse` — authenticated info dump (users, services, firewall)
+- `mikrotik-winbox-cve-2018-14847.nse` — Winbox credential disclosure check
 
-- Resume from the last attempt, JtR-like behavior
-- Duplicate test avoidance for the same target/services/wordlist
-- ETA calculation based on average attempt time
-- Session listing and inspection
+### 🎯 Wordlists
+- Compatible with [mrhenrike/WordListsForHacking](https://github.com/mrhenrike/WordListsForHacking)
+- Includes `labs_mikrotik_pass.lst` (MikroTik-specific), `labs_passwords.lst`, `labs_users.lst`
+- Smart wordlist engine with target-informed combinations
 
-### 🥷 Stealth Mode
+### 🔄 Sessions, Stealth & Export
+- **Persistent sessions** — resume interrupted attacks (`--resume`)
+- **Stealth mode** — Fibonacci delays, User-Agent rotation (`--stealth`)
+- **Progress bar** — ETA and speed display (`--progress`)
+- **Export** — JSON, CSV, XML, TXT (`--export-all`)
+- **Proxy** — SOCKS5/HTTP proxy support (`--proxy socks5://...`)
 
-- Fibonacci-based randomized delays
-- User-Agent rotation and randomized headers
-- Jitter to avoid timing signatures
-
-### 🔍 Fingerprinting
-
-- RouterOS version, device model, open ports, services
-- Basic risk scoring and observations for exposure
-
-### 📊 Progress & Export
-
-- Deterministic progress bar with ETA and speed
-- Export in JSON, CSV, XML and TXT
-
-### 🎯 Smart Wordlists
-
-- Target-informed combinations, BR-focused lists supported locally by the user
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Python 3.8–3.12 (3.12.x recommended)
-- Windows, Linux, or macOS
-
-### One-liners
+### Install via pip
 
 ```bash
-# Basic
-python mikrotikapi-bf.py -t 192.168.1.1 -U admin -P 123456
+pip install git+https://github.com/mrhenrike/MikrotikAPI-BF.git
+# or (when on PyPI):
+pip install mikrotikapi-bf
 
-# With wordlists (provide your own, not tracked in repo)
-python mikrotikapi-bf.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
-
-# With post-login validation
-python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
-
-# Full pentest-style run
-python mikrotikapi-bf.py \
-  -t 192.168.1.1 \
-  -u wordlists/users.lst \
-  -p wordlists/passwords.lst \
-  --validate ftp,ssh,telnet \
-  --stealth --fingerprint --progress --export-all \
-  --threads 5 -vv
+mikrotikapi-bf --help
+mikrotikapi-bf --nse-path    # prints NSE scripts directory for Nmap
 ```
 
-### Installation
+### Install from source
 
 ```bash
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
@@ -97,377 +96,406 @@ pip install -r requirements.txt
 python mikrotikapi-bf.py --help
 ```
 
-## 🧭 Services Tested and Why Winbox/WebFig Are Not
+### One-liners
 
-### Supported services (tested correctly)
+```bash
+# Basic brute-force
+python mikrotikapi-bf.py -t 192.168.1.1 -U admin -d wordlists/passwords.lst
 
-- API (8728) — binary login via `_api.py`
-- REST-API (80/443) — HTTP Basic Auth against `/rest/system/identity`
-- FTP/SSH/Telnet — functional post-login validation using standard clients
+# Username + password lists
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst
 
-### Not supported (and why)
+# Multi-target from file
+python mikrotikapi-bf.py -T targets.lst -d passwords.lst --threads 5
 
-- **Winbox** (TCP 8291): proprietary GUI protocol; there is no reliable, legal, and portable Linux/Python library to emulate the Winbox login handshake. Previous attempts typically degenerate into port-open checks, producing false positives — therefore intentionally removed.
-- **Web Console (WebFig)**: on target CHR builds it frequently responds `406 Not Acceptable` for automated requests and/or requires dynamic flows not stable for programmatic auth. This produces false positives/negatives; therefore removed to avoid misleading results.
+# Full CVE scan (authenticated)
+python mikrotikapi-bf.py -t 192.168.1.1 --scan-cve --all-cves -U admin -P pass
 
-## 🧱 Modern CHR Defenses You Will Hit
+# Full pentest run
+python mikrotikapi-bf.py \
+  -t 192.168.1.1 \
+  -u wordlists/users.lst -p wordlists/passwords.lst \
+  --validate ftp,ssh,telnet \
+  --stealth --fingerprint --progress --export-all \
+  --threads 5 -vv
 
-- Session controls and server-side antifraud for auth flows
-- Request limits and rate-limiting per source
-- Temporary account lockouts and backoff windows
-- Extensive logging (auth failures, rate limiting, HTTP 4xx/5xx)
-- IDS/IPS/NAC and WAF-likes in front of HTTP endpoints
+# Decode user.dat after CVE-2018-14847 extraction
+python mikrotikapi-bf.py --decode-userdat user.dat --decode-useridx user.idx
 
-You should expect throttling and evidence in logs during testing. Prefer stealth mode, sensible thread counts, and authorized maintenance windows.
+# Layer-2 MAC-Server attack
+python mikrotikapi-bf.py --mac-discover --mac-brute -d passwords.lst
+```
+
+### Nmap NSE Usage
+
+```bash
+# Install NSE scripts
+cp nse/*.nse /usr/share/nmap/scripts/ && nmap --script-updatedb
+
+# Full discovery
+nmap -p 80,8291,8728 --script "mikrotik-*" 192.168.1.0/24
+
+# Check CVE-2018-14847
+nmap -p 8291 --script mikrotik-winbox-cve-2018-14847 192.168.1.1
+
+# Brute-force API
+nmap -p 8728 --script mikrotik-api-brute \
+  --script-args userdb=users.lst,passdb=passwords.lst 192.168.1.1
+```
+
+---
 
 ## 🗺️ Attack Surface Mapping
 
-Understanding where MikrotikAPI-BF operates within the Mikrotik RouterOS ecosystem. The diagrams below show the full attack surface, coverage status per vector, and per target.
+### Full Attack Surface — Coverage Status (v3.5.3)
 
-### Full Attack Surface — Coverage Status (v3.5.1)
-
-
-
-MikrotikAPI-BF Full Attack Surface Map
+![MikrotikAPI-BF Full Attack Surface Map](img/mikrotik_full_attack_surface.png)
 
 *Complete RouterOS attack surface with MikrotikAPI-BF coverage indicators (✓ covered / ✗ not yet covered)*
-
-
 
 ---
 
 ### 🟠 Access Vectors — Coverage Detail
 
+![Access Vectors Coverage](img/mikrotik_access_vectors.png)
 
+*Orange = Access Vectors. Green ✓ = covered. Red ✗ = not yet covered.*
 
-Access Vectors Coverage
+| Access Vector | Port(s) | Tool Coverage | How |
+|--------------|---------|--------------|-----|
+| **telnet** | TCP/23 | ✅ Covered | Post-login validation (`--validate telnet`) |
+| **ssh** | TCP/22 | ✅ Covered | Post-login validation + EDB-28056 (ROSSSH heap) |
+| **web** (WebFig/REST) | TCP/80, 443 | ✅ Covered | REST API brute-force + 10+ CVE/EDB exploits |
+| **winbox** | TCP/8291 | ✅ Covered | CVE-2018-14847, CVE-2018-10066, CVE-2021-27263 + NSE script |
+| **ftp** | TCP/21 | ✅ Covered | Post-login validation + CVE-2019-3976/3977 + EDB-44450 |
+| **samba** (SMB) | TCP/445 | ✅ Covered | CVE-2018-7445, CVE-2022-45315 |
+| **mactel** (MAC-Telnet) | TCP/20561 | ✅ Covered | `modules/mac_server.py` — MNDP + brute (v3.3.0+) |
+| **dude** | TCP/2210 | ❌ Not covered | The Dude monitoring client — no PoC |
+| **setup** (Netinstall) | UDP/5000 | ❌ Not covered | Physical/LAN boot vector |
+| **netboot** | TFTP/69 | ❌ Not covered | Physical LAN only |
+| **btest** | TCP/2000 | ❌ Not covered | Bandwidth Test — protocol not implemented |
+| **dhcp** | UDP/67-68 | ❌ Not covered | Out of scope |
+| **console** | RS-232 | ❌ Not covered | Physical serial access only |
+| **Woobm-USB** | USB | ❌ Not covered | Physical access only |
 
-*Orange boxes = Access Vectors. Green ✓ = tool covers this vector. Red ✗ = not yet covered.*
-
-
-
-
-| Access Vector           | Port(s)     | Tool Coverage | How                                                    |
-| ----------------------- | ----------- | ------------- | ------------------------------------------------------ |
-| **telnet**              | TCP/23      | ✅ Covered     | Post-login validation (`--validate telnet`)            |
-| **ssh**                 | TCP/22      | ✅ Covered     | Post-login validation + EDB-28056 (ROSSSH heap)        |
-| **web** (WebFig/REST)   | TCP/80, 443 | ✅ Covered     | REST API brute-force + 10+ CVE/EDB exploits            |
-| **winbox**              | TCP/8291    | ✅ Covered     | CVE-2018-14847, CVE-2018-10066, CVE-2021-27263         |
-| **ftp**                 | TCP/21      | ✅ Covered     | Post-login validation + CVE-2019-3976/3977 + EDB-44450 |
-| **samba** (SMB)         | TCP/445     | ✅ Covered     | CVE-2018-7445, CVE-2022-45315                          |
-| **mactel** (MAC-Telnet) | TCP/20561   | ✅ Covered     | `modules/mac_server.py` — v3.3.0+ MNDP + brute         |
-| **dude**                | TCP/2210    | ❌ Not covered | The Dude monitoring client — no PoC implemented        |
-| **setup** (Netinstall)  | UDP/5000    | ❌ Not covered | Netinstall / Flashfig boot — physical/LAN access       |
-| **netboot**             | TFTP/69     | ❌ Not covered | Network boot vector — physical LAN requirement         |
-| **btest**               | TCP/2000    | ❌ Not covered | Bandwidth Test server — protocol not implemented       |
-| **dhcp**                | UDP/67-68   | ❌ Not covered | DHCP server attack surface — out of current scope      |
-| **console**             | RS-232      | ❌ Not covered | Physical serial console — requires physical access     |
-| **Woobm-USB**           | USB         | ❌ Not covered | USB-based recovery — requires physical access          |
-
-
-**Coverage: 7 / 14 Access Vectors (50%) — network-accessible vectors fully covered**
+**Coverage: 7 / 14 Access Vectors (50%) — all network-accessible vectors covered**
 
 ---
 
 ### 🔵 Access Targets — Coverage Detail
 
+![Access Targets Coverage](img/mikrotik_access_targets.png)
 
+*Blue = Access Targets. Green ✓ = covered. Red ✗ = not yet covered.*
 
-Access Targets Coverage
-
-*Blue/cyan boxes = Access Targets. Green ✓ = covered. Red ✗ = not yet covered.*
-
-
-
-
-| Access Target  | Component          | Coverage      | CVEs / Notes                                                  |
-| -------------- | ------------------ | ------------- | ------------------------------------------------------------- |
-| **filesystem** | `/flash/rw/store/` | ⚠️ Partial    | CVE-2018-14847 reads `user.dat`; CVE-2019-3943 path traversal |
-| **supout.rif** | Diagnostic file    | ✅ Covered     | CVE-2023-30799 (FOISted) — priv escalation via supout upload  |
-| **.npk**       | Package files      | ✅ Covered     | CVE-2019-3977/3976 — arbitrary exec/read via NPK              |
-| **.backup**    | Config backup      | ❌ Not covered | No exploit for backup file extraction/abuse                   |
-| **FLASH**      | Internal flash     | ❌ Not covered | Requires direct physical or filesystem access                 |
-| **NAND**       | NAND storage       | ❌ Not covered | Low-level, requires physical access                           |
-| **HDD**        | Hard disk (CHR)    | ❌ Not covered | CHR-specific — no direct exploit path yet                     |
-| **kvm**        | Virtual machine    | ❌ Not covered | KVM hypervisor attack — no PoC in scope                       |
-
+| Access Target | Component | Coverage | CVEs / Notes |
+|--------------|-----------|---------|--------------|
+| **filesystem** | `/flash/rw/store/` | ⚠️ Partial | CVE-2018-14847 reads `user.dat`; CVE-2019-3943 path traversal |
+| **supout.rif** | Diagnostic file | ✅ Covered | CVE-2023-30799 (FOISted) — priv escalation via supout upload |
+| **.npk** | Package files | ✅ Covered | CVE-2019-3977/3976 — arbitrary exec/read via NPK |
+| **.backup** | Config backup | ❌ Not covered | No exploit for backup file extraction/abuse |
+| **FLASH** | Internal flash | ❌ Not covered | Requires filesystem or physical access |
+| **NAND** | NAND storage | ❌ Not covered | Low-level, physical access |
+| **HDD** | Hard disk (CHR) | ❌ Not covered | CHR-specific — no direct exploit path |
+| **kvm** | Virtual machine | ❌ Not covered | KVM hypervisor — out of scope |
 
 ---
 
-### 🔍 Why These Attacks Are Possible
+## 📄 CLI Reference (All Flags)
 
-1. **Network Exposure** — Management services intentionally exposed (API, REST, Winbox, Telnet)
-2. **No Rate-Limiting** — RouterOS API (TCP 8728/8729) has no built-in brute-force protection (VUID 375660)
-3. **Legacy Protocol Support** — Telnet, FTP, SMBv1 remain enabled for backward compatibility
-4. **Filesystem Access** — Pre-auth file reads (CVE-2018-14847) expose credential databases
-5. **Layer-2 Exposure** — MAC-Server/MNDP reveals devices with no IP assignment
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--target` | `-t` | Target IP/hostname | — |
+| `--target-list` | `-T` | File with targets (one per line) | — |
+| `--user` | `-U` | Single username | admin |
+| `--passw` | `-P` | Single password | — |
+| `--userlist` | `-u` | Username wordlist file | — |
+| `--passlist` | `-p` | Password wordlist file | — |
+| `--dictionary` | `-d` | Combo file (`user:pass`) | — |
+| `--seconds` | `-s` | Delay between attempts (s) | 5 |
+| `--threads` | — | Thread count (max 15) | 2 |
+| `--api-port` | — | RouterOS API port | 8728 |
+| `--rest-port` | — | RouterOS REST port | 8729 |
+| `--http-port` | — | HTTP port | 80 |
+| `--ssl` | — | Use HTTPS/API-SSL | false |
+| `--ssl-port` | — | HTTPS port | 443 |
+| `--validate` | — | Post-login validation (`ftp,ssh,telnet`) | — |
+| `--verbose` | `-v` | Show failed attempts | false |
+| `--verbose-all` | `-vv` | Full debug | false |
+| `--progress` | — | Progress bar + ETA | false |
+| `--stealth` | — | Stealth delays + UA rotation | false |
+| `--fingerprint` | — | Advanced device fingerprinting | false |
+| `--exploit` | — | Run exploit scanner after BF | false |
+| `--scan-cve` | — | Standalone CVE scan (no BF) | false |
+| `--all-cves` | — | Show all CVEs (ignore version) | false |
+| `--proxy` | — | Proxy URL (`socks5://...`) | — |
+| `--interactive` | — | Start interactive REPL | false |
+| `--max-retries` | — | Connection retry count | 1 |
+| `--export` | — | Formats: `json,csv,xml,txt` | — |
+| `--export-all` | — | Export to all formats | false |
+| `--export-dir` | — | Output directory | results |
+| `--resume` | — | Resume previous session | false |
+| `--force` | — | Force new session | false |
+| `--list-sessions` | — | List saved sessions | — |
+| `--mac-discover` | — | MNDP broadcast discovery | false |
+| `--mac-brute` | — | Brute via MAC-Telnet | false |
+| `--mac-scan-cve` | — | CVE-2018-14847-MAC | false |
+| `--mac-iface-ip` | — | Local IP for MNDP | 0.0.0.0 |
+| `--decode-userdat` | — | Decode `user.dat` offline | — |
+| `--decode-useridx` | — | Companion `user.idx` | — |
+| `--decode-backup` | — | Decode `.backup` archive | — |
+| `--analyze-npk` | — | Analyze NPK package | — |
+| `--decode-supout` | — | List `supout.rif` sections | — |
 
-### 🛡️ Defensive Mitigations
+> **Full guide:** [Wiki — Complete Usage Guide](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/Complete-Usage-Guide) · [pt-BR](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/Complete-Usage-Guide-pt-BR)
 
-**Immediate Actions:**
+---
 
-- Disable unused services: `/ip service disable telnet,ftp,api`
-- Restrict access by IP: `/ip service set api address=10.0.0.0/8`
-- Change default API port and enable TLS (`api-ssl`)
-- Enable strong authentication (SSH keys, complex passwords ≥ 20 chars)
-- Disable MAC-Server: `/tool mac-server set allowed-interface-list=none`
+## 🧭 Attack Surface Coverage by Service
 
-**Advanced Defenses:**
+| Service | Port | Brute-Force | CVE/Exploits | NSE Script |
+|---------|------|------------|-------------|-----------|
+| RouterOS API | TCP/8728 | ✅ Primary target | VUID 375660 | `mikrotik-api-brute.nse` |
+| REST API | TCP/80,443 | ✅ HTTP Basic Auth | CVE-2019-3924, 2019-3943, 2023-30799, 2023-30800, 2024-35274 | `mikrotik-default-creds.nse` |
+| Winbox | TCP/8291 | ⚠️ Not (no auth lib) | CVE-2018-14847, 2018-10066, 2021-27263 | `mikrotik-winbox-cve-2018-14847.nse` |
+| FTP | TCP/21 | ✅ Post-login | CVE-2019-3976, 2019-3977, EDB-44450 | — |
+| SSH | TCP/22 | ✅ Post-login | EDB-28056 (ROSSSH) | — |
+| Telnet | TCP/23 | ✅ Post-login | — | — |
+| SMB | TCP/445 | — | CVE-2018-7445, CVE-2022-45315 | — |
+| SNMP | UDP/161 | — | EDB-31102, EDB-6366 | — |
+| MAC-Telnet | TCP/20561 | ✅ L2 only | CVE-2018-14847-MAC | — |
 
-- Rate-limit firewall rules on management ports
-- VPN-only management access
-- Disable Winbox if REST API suffices (or restrict to mgmt VLAN)
-- Monitor `/log print` for repeated auth failures
-- Regular RouterOS updates (subscribe to [https://mikrotik.com/download](https://mikrotik.com/download))
+---
 
-**Modern CHR Defenses:**
+## 🔎 Full Exploit Coverage (40 entries)
 
-- Session controls and per-source rate limiting
-- Extensive logging of auth failures (`/system logging add topics=info,error`)
-- WAF/IPS in front of HTTP management endpoints
+| ID | Title | CVSS | Auth | PoC | Fixed in |
+|----|-------|------|------|-----|---------|
+| CVE-2018-7445 | SMB Stack Buffer Overflow | 9.8 | No | [EDB-44290](https://www.exploit-db.com/exploits/44290) | 6.41.4 |
+| CVE-2018-10066 | Winbox Auth Bypass | 8.1 | No | [EDB-44813](https://www.exploit-db.com/exploits/44813) | 6.42 |
+| CVE-2018-14847 | Winbox Credential Disclosure (Chimay-Red) | 9.1 | No | [EDB-45220](https://www.exploit-db.com/exploits/45220) | 6.42.1 |
+| CVE-2018-14847-MAC | Winbox via MNDP (Layer-2) | 9.1 | No | — | 6.42.1 |
+| CVE-2019-3924 | WWW Firewall/NAT Bypass | 9.8 | No | [EDB-46444](https://www.exploit-db.com/exploits/46444) ✓ | 6.43.12 |
+| CVE-2019-3943 | HTTP Path Traversal | 8.8 | No | [EDB-46731](https://www.exploit-db.com/exploits/46731) | 6.43.8 |
+| CVE-2019-3976 | NPK Arbitrary File Read | 6.5 | Yes | — | 6.45.7 |
+| CVE-2019-3977 | NPK Arbitrary Code Execution | 7.5 | Yes | — | 6.45.7 |
+| CVE-2019-3978 | DNS Cache Poisoning | 7.5 | No | [EDB-47566](https://www.exploit-db.com/exploits/47566) | 6.45.7 |
+| CVE-2019-3981 | DNS Forwarder MitM | 7.5 | No | — | 6.45.7 |
+| CVE-2020-20215 | MPLS Out-of-Bounds Write (DoS) | 7.5 | Yes | — | 6.47 |
+| CVE-2020-5720 | UDP Fragment Crash | 7.5 | Yes | — | 6.46.5 |
+| CVE-2021-27263 | Winbox Auth Bypass (7.0.x) | 7.5 | No | — | 7.1 |
+| CVE-2021-36522 | www Authenticated RCE via Scheduler | 8.8 | Yes | — | 6.49.3 |
+| CVE-2021-41987 | RADIUS Client Buffer Overflow | 8.1 | No | — | 6.49.1/7.1 |
+| CVE-2022-34960 | Container Privilege Escalation | 8.8 | Yes | — | 7.6 |
+| CVE-2022-45313 | SMB Heap Use-After-Free | 8.8 | No | — | 6.49.7/7.6 |
+| CVE-2022-45315 | SMB Authenticated Stack Overflow | 8.8 | Yes | [EDB-51451](https://www.exploit-db.com/exploits/51451) | 6.49.7 |
+| CVE-2023-30799 | FOISted — supout.rif Privilege Escalation | 9.1 | Yes | — | 6.49.9 |
+| CVE-2023-30800 | WWW Stack-Based Buffer Overflow | 8.2 | No | — | 6.49.9 |
+| CVE-2024-27887 | OSPF Route Injection | 7.5 | No | — | — |
+| CVE-2024-2169 | BFD Reflection/Amplification Loop | 7.5 | No | — | Mitigate |
+| CVE-2024-35274 | Authenticated RCE via Scheduler Injection | 8.8 | Yes | — | Pending |
+| CVE-2025-6563 | RouterOS 7.x WebFig XSS/Open Redirect | 6.1 | No | — | Pending |
+| CVE-2017-20149 | www Password Exposure | 7.5 | No | — | 6.38.5 |
+| MIKROTIK-CONFIG-001 | WireGuard Private Key Exposure | — | Yes | — | Design |
+| MIKROTIK-CONFIG-002 | Packet Sniffer Remote Streaming | — | Yes | — | Design |
+| EDB-31102 | RouterOS 3.x SNMP SET DoS | — | No | [EDB ✓](https://www.exploit-db.com/exploits/31102) | ≤ 3.2 |
+| EDB-6366 | RouterOS 3.x SNMP Unauthorized Write | — | No | [EDB ✓](https://www.exploit-db.com/exploits/6366) | ≤ 3.13 |
+| EDB-44283/44284 | Chimay-Red Stack Clash RCE (MIPSBE+x86) | 9.8 | No | [EDB](https://www.exploit-db.com/exploits/44283) | < 6.38.4 |
+| EDB-44450 | FTP Daemon DoS | — | No | [EDB](https://www.exploit-db.com/exploits/44450) | 6.41.4 |
+| EDB-43317 | ICMP DoS (6.40.5) | — | Yes | [EDB](https://www.exploit-db.com/exploits/43317) | 6.40.5 |
+| EDB-41752 | RouterBoard DoS (6.38.5) | — | Yes | [EDB](https://www.exploit-db.com/exploits/41752) | 6.38.5 |
+| EDB-41601 | ARP Table Overflow DoS | — | No | [EDB](https://www.exploit-db.com/exploits/41601) | All |
+| EDB-28056 | ROSSSH sshd Remote Heap Corruption | — | No | [EDB](https://www.exploit-db.com/exploits/28056) | Multiple |
+| EDB-24968 | Syslog Server Windows 1.15 BoF DoS | — | No | [EDB ✓](https://www.exploit-db.com/exploits/24968) | Win app |
+| EDB-18817 | Generic Router DoS | — | No | [EDB](https://www.exploit-db.com/exploits/18817) | Multiple |
+| EDB-52366 | RouterOS 7.19.1 WebFig Reflected XSS | — | No | [EDB](https://www.exploit-db.com/exploits/52366) | 7.19.1 |
+| EDB-48474 | Router Monitoring System 1.2.3 SQLi | — | No | [EDB](https://www.exploit-db.com/exploits/48474) | Web app |
+| EDB-39817 | DNSmasq/Mikrotik Web Interface SQLi | — | No | [EDB](https://www.exploit-db.com/exploits/39817) | Web app |
 
-## 📄 CLI Essentials
+> ✓ = EDB Verified | All PoCs are detection-only — no destructive payloads sent.  
+> Full guide: [Wiki — EDB Exploit Coverage](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/EDB-Exploit-Coverage)
 
-Common flags:
+---
 
-- `--validate ftp,ssh,telnet` — post-login validation with optional custom ports (`ssh=2222`).
-- `--resume | --force | --list-sessions | --session-info` — session control.
-- `--stealth` — stealth delays and header rotation.
-- `--progress` — progress bar with ETA.
-- `--export json,csv,xml,txt | --export-all` — reporting.
-
-### MAC-Server (Layer-2) flags (v3.3.0+)
-
-- `--mac-discover` — broadcast MNDP to find Mikrotik devices on the local segment.
-- `--mac-brute` — brute-force credentials via MAC-Telnet against discovered devices.
-- `--mac-scan-cve` — run CVE-2018-14847-MAC against all MNDP-discovered devices.
-- `--mac-iface-ip <IP>` — local IP to bind for MNDP broadcast (default: 0.0.0.0).
-
-```bash
-# Layer-2 discovery only
-python mikrotikapi-bf.py --mac-discover
-
-# Discover + brute-force via MAC-Telnet
-python mikrotikapi-bf.py --mac-discover --mac-brute -d wordlists/combos.lst
-
-# Discover + exploit CVE-2018-14847 via MAC
-python mikrotikapi-bf.py --mac-scan-cve
-```
-
-> **Layer-2 constraint:** MNDP and MAC-Telnet operate within a single broadcast domain only. They cannot traverse Layer-3 routers. You must be on the same VLAN or switch segment as the targets.
-
-## Project Layout
+## 📦 Project Layout
 
 ```
 MikrotikAPI-BF/
-├── mikrotikapi-bf.py             # Main entry point (v3.5.1)
+├── version.py                    # Canonical version source (edit to bump)
+├── mikrotikapi-bf.py             # Main entry point (v3.5.3)
+├── pyproject.toml                # pip package definition
 ├── requirements.txt
-├── core/                         # Core engine modules
+├── .env.example                  # Environment variable template (safe to commit)
+├── SECURITY.md                   # Vulnerability reporting policy
+├── mikrotikapi_bf/               # pip installable package
+│   ├── __init__.py
+│   └── cli.py                    # Entry point for `mikrotikapi-bf` command
+├── nse/                          # Nmap NSE scripts (v3.5.3+)
+│   ├── README.md
+│   ├── mikrotik-api-brute.nse
+│   ├── mikrotik-api-info.nse
+│   ├── mikrotik-default-creds.nse
+│   ├── mikrotik-routeros-version.nse
+│   └── mikrotik-winbox-cve-2018-14847.nse
+├── core/                         # Core engine
 │   ├── api.py                    # RouterOS binary API protocol
 │   ├── cli.py                    # CLI argument parsing
 │   ├── export.py                 # JSON/CSV/XML/TXT export
 │   ├── log.py                    # Logging subsystem
 │   ├── progress.py               # Progress bar + ETA
-│   ├── retry.py                  # Retry logic with backoff
+│   ├── retry.py                  # Retry + backoff
 │   └── session.py                # Persistent session management
 ├── modules/                      # Feature modules
+│   ├── decoder.py                # RouterOS file decoder: user.dat/.backup/supout.rif (v3.5.0)
 │   ├── discovery.py              # Network discovery
-│   ├── fingerprint.py            # Device fingerprinting
-│   ├── decoder.py                # RouterOS file decoder: user.dat, .backup, supout.rif (v3.5.0)
-│   ├── mac_server.py             # Layer-2 MNDP discovery + MAC-Telnet brute (v3.3.0)
-│   ├── proxy.py                  # Proxy/SOCKS support
+│   ├── fingerprint.py            # Device fingerprinting (Shodan + REST)
+│   ├── mac_server.py             # Layer-2 MNDP discovery + MAC-Telnet (v3.3.0)
+│   ├── proxy.py                  # Proxy/SOCKS5 support
 │   ├── reports.py                # Report generation
 │   ├── stealth.py                # Fibonacci delays + UA rotation
 │   └── wordlists.py              # Smart wordlist engine
-├── xpl/                          # Exploit/CVE integration
-│   ├── cve_db.py                 # CVE database (40 CVEs + 2 design findings)
-│   ├── exploits.py               # Exploit dispatcher (40 exploit classes)
-│   ├── npk_decoder.py            # NPK package analyzer + CVE-2019-3977 vector (v3.5.0)
+├── xpl/                          # Exploit/CVE engine
+│   ├── cve_db.py                 # CVE database (40 exploits)
+│   ├── exploits.py               # 40 exploit classes
+│   ├── npk_decoder.py            # NPK package analyzer (v3.5.0)
 │   ├── nvd_shodan.py             # NVD API + Shodan integration
 │   └── scanner.py                # Vulnerability scanner
-├── docs/
-│   ├── README.md  API_REFERENCE.md  INSTALLATION.md  USAGE_EXAMPLES.md
-│   ├── CHANGELOG.md  FEATURES.md  QUICKSTART.md  VERBOSE_GUIDE.md  index.html
+├── img/                          # Attack surface diagrams
+│   ├── mikrotik_full_attack_surface.png
+│   ├── mikrotik_access_vectors.png
+│   └── mikrotik_access_targets.png
 └── examples/
     ├── example_basic.sh  example_discovery.sh  example_stealth.sh
-    ├── example_validation.sh  example_wordlist.sh
-    ├── usernames.txt  passwords.txt  combos.txt
+    └── usernames.txt  passwords.txt  combos.txt
 ```
 
-## ⚠️ Legal Notice and Responsible Use
+---
 
+## 🧱 RouterOS Defenses You Will Encounter
 
+- Session controls and server-side anti-fraud for auth flows
+- Request limits and rate-limiting per source (when configured)
+- Temporary account lockouts and backoff windows
+- Extensive logging (auth failures, rate limiting, HTTP 4xx/5xx)
+- IDS/IPS/NAC and WAF-likes in front of HTTP endpoints
 
-- Use only on systems you own or have explicit, written authorization to test.
-- Your tests will likely be logged; coordinate with stakeholders.
-- Respect rate limits, user privacy, and applicable laws.
-- **No warranty** — Provided **AS IS** under [MIT License](LICENSE); no commercial, financial, or fitness guarantees. **No liability** for misuse, damages, or third-party claims — **use at your own risk**.
-- **Attribution & contributions** — Keep copyright notices; **pull requests** and **issues** are welcome.
+> Prefer stealth mode, sensible thread counts, and authorized maintenance windows.
 
-## 🔧 Troubleshooting (Quick)
+---
 
-- Python 3.13+ may deprecate stdlib modules (e.g., `telnetlib`); prefer 3.12.x.
-- For connection timeouts: check routing, firewall, and service ports.
-- For REST-API TLS issues: use `--ssl` and confirm certificates where appropriate.
+## 🛡️ Defensive Mitigations for RouterOS Admins
 
-## Documentation
+```routeros
+# Disable unused services
+/ip service disable telnet,ftp,api
 
-- [GitHub Wiki](https://github.com/mrhenrike/MikrotikAPI-BF/wiki) — complete step-by-step guides (en-us + pt-br)
-- [Full Documentation](docs/README.md)
-- [API Reference](docs/API_REFERENCE.md)
-- [Installation Guide](docs/INSTALLATION.md)
-- [Usage Examples](docs/USAGE_EXAMPLES.md)
-- [HTML Docs](docs/index.html)
+# Restrict API access by source IP
+/ip service set api address=10.0.0.0/8
 
-## What's New in v3.5.1 (current)
+# Disable MAC-Server (L2 exposure)
+/tool mac-server set allowed-interface-list=none
+/ip neighbor discovery-settings set discover-interface-list=none
 
-**Bugfix + Credits:**
-- Fix: Syntax error in CVE-2025-6563 XSS payload string
-- feat: Comprehensive Credits & Acknowledgements section (13 contributors)
-- docs: Complete usage guide wiki pages en-US + pt-BR (40+ CLI flags documented)
+# Add firewall to protect management ports
+/ip firewall filter
+add chain=input connection-state=established,related action=accept
+add chain=input src-address=<MGMT-NET>/24 action=accept
+add chain=input action=drop
+```
 
-## What's New in v3.5.0
+---
 
-**From fork analysis + community integration:**
-- `modules/decoder.py` — Python 3 port of [mikrotik-tools](https://github.com/0ki/mikrotik-tools) by Kirils Solovjovs:
-  - `UserDatDecoder` — decodes `user.dat` after CVE-2018-14847 extraction; password: XOR with `MD5(username+"283i4jfkai3389")*16`
-  - `BackupDecoder` — extracts `.backup` archives + auto-decodes credentials
-  - `SupoutDecoder` — lists sections in `supout.rif` diagnostic files
-  - `MTDatDecoder` — full Python 3 port of `mt_dat_decoder.py` MTConfig class
-- `xpl/npk_decoder.py` — NPK package analyzer (18 part types from NPK format spec)
-- `--target-list` / `-T` — multi-target scan from file (from [alina0x](https://github.com/alina0x/mikrotik-multithread-bf))
-- `--decode-userdat`, `--decode-backup`, `--analyze-npk`, `--decode-supout` — offline decoder CLI flags
-- 5 new CVE exploit classes: CVE-2019-3981, CVE-2020-5720, CVE-2022-45313, CVE-2017-20149, CVE-2025-6563
-- **Total exploit registry: 40 entries** (22 CVEs + 2 design + 13 EDB + 5 new CVEs)
-- Lab validation: full CVE scan against RouterOS 7.20.7 CHR — 8 vulnerabilities confirmed
+## 📖 Documentation
 
-## What's New in v3.4.0
+| Resource | Link |
+|----------|------|
+| **GitHub Wiki (en-US)** | [Complete Usage Guide](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/Complete-Usage-Guide) |
+| **GitHub Wiki (pt-BR)** | [Guia Completo](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/Complete-Usage-Guide-pt-BR) |
+| **EDB Exploit Coverage** | [Wiki — EDB-Exploit-Coverage](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/EDB-Exploit-Coverage) |
+| **NSE Scripts Guide** | [nse/README.md](nse/README.md) |
+| **Security Policy** | [SECURITY.md](SECURITY.md) |
+| **Changelog** | [Releases](https://github.com/mrhenrike/MikrotikAPI-BF/releases) |
+| **API Reference** | [docs/API_REFERENCE.md](docs/API_REFERENCE.md) |
 
-**13 new Exploit-DB public PoC exploits (from Exploit-DB Mikrotik entry list):**
+---
 
+## 📋 What's New
 
-| EDB ID                                                                                                    | Title                                   | Verified | Type            |
-| --------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------- | --------------- |
-| [EDB-31102](https://www.exploit-db.com/exploits/31102)                                                    | RouterOS 3.x SNMP SET DoS               | ✓        | Hardware/DoS    |
-| [EDB-6366](https://www.exploit-db.com/exploits/6366)                                                      | RouterOS 3.x SNMP Unauthorized Write    | ✓        | Hardware/Remote |
-| [EDB-44283](https://www.exploit-db.com/exploits/44283)/[44284](https://www.exploit-db.com/exploits/44284) | Chimay-Red Stack Clash RCE (MIPSBE+x86) | —        | Hardware/RCE    |
-| [EDB-44450](https://www.exploit-db.com/exploits/44450)                                                    | FTP Daemon DoS                          | —        | Hardware/DoS    |
-| [EDB-43317](https://www.exploit-db.com/exploits/43317)                                                    | ICMP DoS (6.40.5)                       | —        | Hardware/DoS    |
-| [EDB-41752](https://www.exploit-db.com/exploits/41752)                                                    | RouterBoard DoS (6.38.5)                | —        | Hardware/DoS    |
-| [EDB-41601](https://www.exploit-db.com/exploits/41601)                                                    | ARP Table Overflow DoS                  | —        | Hardware/DoS    |
-| [EDB-28056](https://www.exploit-db.com/exploits/28056)                                                    | ROSSSH sshd Heap Corruption             | —        | Hardware/Remote |
-| [EDB-24968](https://www.exploit-db.com/exploits/24968)                                                    | Syslog Server v1.15 BoF DoS             | ✓        | Windows/DoS     |
-| [EDB-18817](https://www.exploit-db.com/exploits/18817)                                                    | Generic Router DoS                      | —        | Hardware/DoS    |
-| [EDB-52366](https://www.exploit-db.com/exploits/52366)                                                    | RouterOS 7.19.1 WebFig XSS              | —        | Multiple/Remote |
-| [EDB-48474](https://www.exploit-db.com/exploits/48474)                                                    | Router Monitoring System SQLi           | —        | WebApp          |
-| [EDB-39817](https://www.exploit-db.com/exploits/39817)                                                    | DNSmasq/Mikrotik SQLi                   | —        | PHP/WebApp      |
+### v3.5.3 (current)
+- **5 Nmap NSE scripts** in `nse/` — RouterOS version, API brute, default creds, info dump, Winbox CVE-2018-14847
+- **pip install support** — `pyproject.toml` + `mikrotikapi_bf/` entry point package
+- **`mikrotikapi-bf --nse-path`** — prints installed NSE scripts directory for Nmap
 
+### v3.5.2
+- **`version.py`** — single source of truth for version (all modules import from here)
+- **`.env.example`** — safe template committed; `.env` stays in `.gitignore`
+- **`python-dotenv`** — `.env` loaded automatically at startup
 
-Total exploit registry: **35 entries** (22 CVEs + 2 design + 13 EDB PoCs).
+### v3.5.1
+- Fix: syntax error in CVE-2025-6563 XSS payload
+- Credits & Acknowledgements section (13 contributors)
+- Comprehensive wiki guides en-US + pt-BR (40+ CLI flags)
 
-See [GitHub Wiki — EDB Exploit Coverage](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/EDB-Exploit-Coverage) for full PoC usage guide.
+### v3.5.0
+- `modules/decoder.py` — Python 3 port of [mikrotik-tools](https://github.com/0ki/mikrotik-tools): `UserDatDecoder`, `BackupDecoder`, `SupoutDecoder`, `MTDatDecoder`
+- `xpl/npk_decoder.py` — NPK package analyzer (18 part types)
+- `--target-list / -T` — multi-target scanning from file
+- `--decode-userdat`, `--decode-backup`, `--analyze-npk`, `--decode-supout`
+- 5 new CVEs: CVE-2019-3981, CVE-2020-5720, CVE-2022-45313, CVE-2017-20149, CVE-2025-6563
+- **Total: 40 exploit classes** | Lab validation on RouterOS 7.20.7 — 8 vulnerabilities confirmed
 
-## What's New in v3.3.0
+### v3.4.0
+- 13 Exploit-DB public PoC exploits (full EDB Mikrotik list coverage)
+- Complete CVE/EDB coverage table in README
 
-**MAC-Server / Layer-2 support (new in v3.3.0):**
+### v3.3.0
+- MAC-Server / Layer-2: MNDP discovery, MAC-Telnet brute, CVE-2018-14847-MAC
+- 5 new CVE exploit classes
+- Attack surface diagrams (3 images)
 
-- `modules/mac_server.py` — MNDP broadcast discovery + MAC-Telnet credential brute-force
-- `--mac-discover` flag — finds all Mikrotik devices on the local L2 segment (even without IP)
-- `--mac-brute` flag — brute-forces credentials via MAC-Telnet (TCP 20561)
-- `--mac-scan-cve` flag — runs CVE-2018-14847 payload against MNDP-discovered devices
-- `Exploit_CVE_2018_14847_MAC` — dedicated MAC-based variant of the Winbox credential exploit
-- 5 new CVE exploit classes: CVE-2020-20215, CVE-2021-41987, CVE-2023-30800, CVE-2024-2169 + MAC-14847
-- CVE database expanded to 22 entries + 2 design-flaw findings
-
-**Full Exploit Coverage (35 entries — 22 CVEs + 2 design findings + 13 Exploit-DB PoCs):**
-
-
-| ID                  | Title                                         | Auth | EDB                                                                                                   | Notes          |
-| ------------------- | --------------------------------------------- | ---- | ----------------------------------------------------------------------------------------------------- | -------------- |
-| CVE-2018-7445       | SMB Stack Buffer Overflow (Pre-Auth RCE)      | No   | [44290](https://www.exploit-db.com/exploits/44290)                                                    | < 6.41.4       |
-| CVE-2018-10066      | Winbox Auth Bypass / Directory Traversal      | No   | [44813](https://www.exploit-db.com/exploits/44813)                                                    | < 6.42         |
-| CVE-2018-14847      | Winbox Credential Disclosure (Chimay-Red)     | No   | [45220](https://www.exploit-db.com/exploits/45220)                                                    | < 6.42.1       |
-| CVE-2018-14847-MAC  | Winbox Credential via MNDP (Layer-2)          | No   | —                                                                                                     | < 6.42.1       |
-| CVE-2019-3924       | WWW Firewall/NAT Bypass (jsproxy)             | No   | [46444](https://www.exploit-db.com/exploits/46444) ✓                                                  | < 6.43.12      |
-| CVE-2019-3943       | HTTP Path Traversal                           | No   | [46731](https://www.exploit-db.com/exploits/46731)                                                    | < 6.43.8       |
-| CVE-2019-3976       | NPK Arbitrary File Read                       | Yes  | —                                                                                                     | < 6.45.7       |
-| CVE-2019-3977       | NPK Arbitrary Code Execution                  | Yes  | —                                                                                                     | < 6.45.7       |
-| CVE-2019-3978       | DNS Cache Poisoning                           | No   | [47566](https://www.exploit-db.com/exploits/47566)                                                    | < 6.45.7       |
-| CVE-2020-20215      | MPLS Out-of-Bounds Write (DoS)                | Yes  | —                                                                                                     | < 6.47         |
-| CVE-2021-27263      | Winbox Auth Bypass (RouterOS 7.0.x)           | No   | —                                                                                                     | 7.0.x          |
-| CVE-2021-36522      | www Authenticated RCE via Scheduler           | Yes  | —                                                                                                     | < 6.49.3       |
-| CVE-2021-41987      | RADIUS Client Stack Buffer Overflow           | No   | —                                                                                                     | < 6.49.1 / 7.1 |
-| CVE-2022-34960      | Container Feature Privilege Escalation        | Yes  | —                                                                                                     | < 7.6          |
-| CVE-2022-45315      | SMB Authenticated Stack Buffer Overflow       | Yes  | [51451](https://www.exploit-db.com/exploits/51451)                                                    | < 6.49.7       |
-| CVE-2023-30799      | Privilege Escalation via supout.rif (FOISted) | Yes  | —                                                                                                     | < 6.49.9       |
-| CVE-2023-30800      | WWW Stack-Based Buffer Overflow (Pre-Auth)    | No   | —                                                                                                     | < 6.49.9       |
-| CVE-2024-27887      | OSPF Route Injection                          | No   | —                                                                                                     | All            |
-| CVE-2024-2169       | BFD Protocol Reflection / Amplification       | No   | —                                                                                                     | All            |
-| CVE-2024-35274      | Authenticated RCE via Scheduler Injection     | Yes  | —                                                                                                     | Pending        |
-| MIKROTIK-CONFIG-001 | WireGuard Private Key Exposure                | Yes  | —                                                                                                     | Design         |
-| MIKROTIK-CONFIG-002 | Packet Sniffer Remote Streaming               | Yes  | —                                                                                                     | Design         |
-| **EDB-31102**       | RouterOS 3.x SNMP SET Denial of Service       | No   | [31102](https://www.exploit-db.com/exploits/31102) ✓                                                  | ≤ 3.2          |
-| **EDB-6366**        | RouterOS 3.x SNMP Unauthorized Write          | No   | [6366](https://www.exploit-db.com/exploits/6366) ✓                                                    | ≤ 3.13         |
-| **EDB-44283/44284** | Chimay-Red Stack Clash RCE (MIPSBE+x86)       | No   | [44283](https://www.exploit-db.com/exploits/44283)/[44284](https://www.exploit-db.com/exploits/44284) | < 6.38.4       |
-| **EDB-44450**       | FTP Daemon Denial of Service                  | No   | [44450](https://www.exploit-db.com/exploits/44450)                                                    | 6.41.4         |
-| **EDB-43317**       | ICMP Denial of Service                        | Yes  | [43317](https://www.exploit-db.com/exploits/43317)                                                    | 6.40.5         |
-| **EDB-41752**       | RouterBoard Denial of Service                 | Yes  | [41752](https://www.exploit-db.com/exploits/41752)                                                    | 6.38.5         |
-| **EDB-41601**       | ARP Table Overflow Denial of Service          | No   | [41601](https://www.exploit-db.com/exploits/41601)                                                    | All            |
-| **EDB-28056**       | ROSSSH sshd Remote Heap Corruption            | No   | [28056](https://www.exploit-db.com/exploits/28056)                                                    | Multiple       |
-| **EDB-24968**       | Syslog Server for Windows 1.15 BoF DoS        | No   | [24968](https://www.exploit-db.com/exploits/24968) ✓                                                  | Win app        |
-| **EDB-18817**       | Generic Router Denial of Service              | No   | [18817](https://www.exploit-db.com/exploits/18817)                                                    | Multiple       |
-| **EDB-52366**       | RouterOS 7.19.1 WebFig Reflected XSS          | No   | [52366](https://www.exploit-db.com/exploits/52366)                                                    | 7.19.1         |
-| **EDB-48474**       | Router Monitoring System 1.2.3 SQL Injection  | No   | [48474](https://www.exploit-db.com/exploits/48474)                                                    | Web app        |
-| **EDB-39817**       | DNSmasq/Mikrotik Web Interface SQL Injection  | No   | [39817](https://www.exploit-db.com/exploits/39817)                                                    | Web app        |
-
-
-> ✓ = EDB Verified | All PoCs are detection-only; no destructive payloads.
-
-**Previous v3.2.0:**
-
-- Credential matrix workflows, CVE scan export enhancements, WebFig fingerprint context
-- Modular architecture: `core/`, `modules/`, `xpl/` packages
-- CVE/NVD integration via `xpl/` exploit and scanner modules
-- Shodan integration for fingerprinting context
-- Proxy/SOCKS5 support via `modules/proxy.py`
-- Retry logic with configurable backoff (`core/retry.py`)
-- Full persistent sessions (resume, ETA, duplicate avoidance)
-- Stealth mode (Fibonacci delays, UA rotation)
-- Advanced fingerprinting and risk scoring
-- Post-login validation for FTP/SSH/Telnet
-- Multi-format export (JSON, CSV, XML, TXT)
+---
 
 ## 🙏 Credits & Acknowledgements
 
-This project builds on the work of many in the security research community:
+| Contributor | Contribution | Link |
+|-------------|-------------|------|
+| **Federico Massa & Ramiro Caire** | MKBRUTUS — original RouterOS API brute-force concept | [mkbrutusproject/MKBRUTUS](https://github.com/mkbrutusproject/MKBRUTUS) |
+| **Kirils Solovjovs** (@KirilsSolovjovs) | mikrotik-tools: user.dat decoder, backup decoder, NPK format research — ported to Python 3 | [0ki/mikrotik-tools](https://github.com/0ki/mikrotik-tools) |
+| **Dmitriusan** | Empty `read_sentence()` fix + socket timeout retry (issue #3) | [Dmitriusan/MikrotikAPI-BF](https://github.com/Dmitriusan/MikrotikAPI-BF) |
+| **alina0x** | Multi-target scanning via `ips.txt` → `--target-list / -T` | [alina0x/mikrotik-multithread-bf](https://github.com/alina0x/mikrotik-multithread-bf) |
+| **rafathasan** | Autosave + session resume improvements | [rafathasan/MikrotikAPI-BF-Improved](https://github.com/rafathasan/MikrotikAPI-BF-Improved) |
+| **sajadmirave** | Connection check before brute-force (PR #4) | [sajadmirave/MikrotikAPI-BF](https://github.com/sajadmirave/MikrotikAPI-BF) |
+| **BasuCert** | WinboxPoC / MACServerExploit.py — MAC-server attack reference | [BasuCert/WinboxPoC](https://github.com/BasuCert/WinboxPoC) |
+| **Jacob Baines** (Tenable) | CVE-2019-3924, CVE-2019-3943, CVE-2019-3976/3977/3978 | [tenable/routeros](https://github.com/tenable/routeros) |
+| **BigNerd95 / Lorenzo Santina** | Chimay-Red Stack Clash PoC (EDB-44283/44284) | [BigNerd95/Chimay-Red](https://github.com/BigNerd95/Chimay-Red) |
+| **ShadOS** | SNMP DoS + SNMP write PoC (EDB-31102, EDB-6366) | Exploit-DB |
+| **FarazPajohan** | FTP/ICMP/ARP/RouterBoard DoS PoCs | Exploit-DB |
+| **kingcope** | ROSSSH sshd heap corruption (EDB-28056) | Exploit-DB |
+| **xis_one** | Syslog Server BoF DoS Metasploit module (EDB-24968) | Exploit-DB |
+| **hyp3rlinx** | DNSmasq/Mikrotik SQL Injection (EDB-39817) | Exploit-DB |
+| **Prak Sokchea** | RouterOS 7.19.1 WebFig XSS (EDB-52366) | Exploit-DB |
+| **0xjpuff** | CVE-2023-30799 (FOISted) PoC reference | [0xjpuff/CVE-2023-30799](https://github.com/0xjpuff/CVE-2023-30799) |
 
+*RouterOS ecosystem diagram adapted from Kirils Solovjovs' research — Balccon 2017.*
 
-| Contributor                             | Contribution                                                                                                                                                      | Link                                                                                        |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Federico Massa & Ramiro Caire**       | MKBRUTUS — original RouterOS API brute-force concept                                                                                                              | [mkbrutusproject/MKBRUTUS](https://github.com/mkbrutusproject/MKBRUTUS)                     |
-| **Kirils Solovjovs** (@KirilsSolovjovs) | mikrotik-tools: user.dat decoder, backup decoder, NPK format research, supout.rif decoder — all ported to Python 3 in `modules/decoder.py` + `xpl/npk_decoder.py` | [0ki/mikrotik-tools](https://github.com/0ki/mikrotik-tools)                                 |
-| **Dmitriusan**                          | Bug fixes: empty `read_sentence()` list + socket timeout retry (issue #3 — superseded by v3.x architecture)                                                       | [Dmitriusan/MikrotikAPI-BF](https://github.com/Dmitriusan/MikrotikAPI-BF)                   |
-| **alina0x**                             | Multi-target scanning concept via `ips.txt` — implemented as `--target-list / -T` in v3.5.0                                                                       | [alina0x/mikrotik-multithread-bf](https://github.com/alina0x/mikrotik-multithread-bf)       |
-| **rafathasan**                          | Autosave + session resume improvements — superseded by `--resume` session management                                                                              | [rafathasan/MikrotikAPI-BF-Improved](https://github.com/rafathasan/MikrotikAPI-BF-Improved) |
-| **sajadmirave**                         | Connection check before brute-force (PR #4)                                                                                                                       | [sajadmirave/MikrotikAPI-BF](https://github.com/sajadmirave/MikrotikAPI-BF)                 |
-| **BasuCert**                            | WinboxPoC / MACServerExploit.py — MAC-server attack reference for `CVE-2018-14847-MAC`                                                                            | [BasuCert/WinboxPoC](https://github.com/BasuCert/WinboxPoC)                                 |
-| **Jacob Baines** (Tenable Research)     | Tenable RouterOS research — CVE-2019-3924, CVE-2019-3943, CVE-2019-3976/3977/3978                                                                                 | [tenable/routeros](https://github.com/tenable/routeros)                                     |
-| **BigNerd95 / Lorenzo Santina**         | Chimay-Red Stack Clash PoC (EDB-44283/44284)                                                                                                                      | [BigNerd95/Chimay-Red](https://github.com/BigNerd95/Chimay-Red)                             |
-| **ShadOS**                              | SNMP DoS + SNMP write PoC (EDB-31102, EDB-6366/CVE-2008-6976)                                                                                                     | Exploit-DB                                                                                  |
-| **FarazPajohan**                        | FTP/ICMP/ARP/RouterBoard DoS PoCs (EDB-44450, EDB-43317, EDB-41752, EDB-41601)                                                                                    | Exploit-DB                                                                                  |
-| **kingcope**                            | ROSSSH sshd heap corruption (EDB-28056)                                                                                                                           | Exploit-DB                                                                                  |
-| **xis_one**                             | Syslog Server Windows BoF DoS Metasploit module (EDB-24968)                                                                                                       | Exploit-DB                                                                                  |
-| **hyp3rlinx**                           | DNSmasq/Mikrotik SQL Injection (EDB-39817)                                                                                                                        | Exploit-DB                                                                                  |
-| **Prak Sokchea**                        | RouterOS 7.19.1 WebFig XSS (EDB-52366)                                                                                                                            | Exploit-DB                                                                                  |
-| **0xjpuff**                             | CVE-2023-30799 (FOISted) PoC reference                                                                                                                            | [0xjpuff/CVE-2023-30799](https://github.com/0xjpuff/CVE-2023-30799)                         |
+---
 
+## ⚠️ Legal Notice
 
-MikroTik RouterOS ecosystem diagram adapted from **Kirils Solovjovs' research** presented at Balccon 2017.
+<!-- LEGAL-NOTICE-UG-MRH -->
 
-## Support
+- **Use** — For education, research, and **explicitly authorized** security testing only. Do not use against systems without formal written permission.
+- **No warranty** — Provided **AS IS** under [MIT License](LICENSE). No fitness guarantees.
+- **No liability** — Author(s) not liable for misuse, damages, or third-party claims. **Use at your own risk.**
+- **Attribution** — Keep copyright notices. Pull requests and issues are welcome.
 
-- GitHub: [https://github.com/mrhenrike/MikrotikAPI-BF](https://github.com/mrhenrike/MikrotikAPI-BF)
-- Issues: [https://github.com/mrhenrike/MikrotikAPI-BF/issues](https://github.com/mrhenrike/MikrotikAPI-BF/issues)
-- Wiki: [https://github.com/mrhenrike/MikrotikAPI-BF/wiki](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
+---
 
-Licensed under MIT — see `[LICENSE](LICENSE)`.
+## 💬 Support
+
+- **GitHub:** [https://github.com/mrhenrike/MikrotikAPI-BF](https://github.com/mrhenrike/MikrotikAPI-BF)
+- **Issues:** [https://github.com/mrhenrike/MikrotikAPI-BF/issues](https://github.com/mrhenrike/MikrotikAPI-BF/issues)
+- **Wiki:** [https://github.com/mrhenrike/MikrotikAPI-BF/wiki](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
+- **Security reports:** See [SECURITY.md](SECURITY.md)
+
+Licensed under MIT — see [`LICENSE`](LICENSE).
