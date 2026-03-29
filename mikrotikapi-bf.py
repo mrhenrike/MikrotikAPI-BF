@@ -559,7 +559,7 @@ class BruteforceEngine:
         self.ssl_port = ssl_port
         self.use_ssl = use_ssl
         self.delay = delay
-        self.max_workers = min(max_workers, 15)
+        self.max_workers = min(max(1, max_workers), 300)
         self.verbose = verbose
         self.verbose_all = verbose_all
         self.validate_services = validate_services or {}
@@ -951,7 +951,17 @@ def _build_parser() -> argparse.ArgumentParser:
     timing.add_argument("-s", "--seconds", type=float, default=5, metavar="N",
                         help="Delay between attempts (default: 5)")
     timing.add_argument("--threads", type=int, default=2, metavar="N",
-                        help="Thread count (default: 2, max: 15)")
+                        help="Thread count (default: 2, max: 300). "
+                             "Values > 15 require --high-threads acknowledgement. "
+                             "High counts stress CPU/RAM and the target network.")
+    timing.add_argument(
+        "--high-threads",
+        action="store_true",
+        help="Acknowledge the risk disclaimer for --threads > 15 (up to 300 max). "
+             "High thread counts may exhaust local RAM/CPU, saturate the target's "
+             "API service, generate noisy logs, and trigger network-level blocks. "
+             "USE AT YOUR OWN RISK on authorized targets only.",
+    )
 
     # Ports
     ports = p.add_argument_group("Ports & Protocol")
@@ -1705,6 +1715,42 @@ def main() -> None:
         parser.error("Target (-t) is required. Use --interactive for REPL mode.")
 
     log = Log(verbose=args.verbose, verbose_all=args.verbose_all)
+
+    # ── Thread count validation & high-thread disclaimer ──────────────
+    _req_threads = args.threads
+    _high_threads_ack = getattr(args, "high_threads", False)
+    _MAX_SAFE    = 15
+    _MAX_ALLOWED = 300
+
+    _req_threads = max(1, min(_req_threads, _MAX_ALLOWED))
+
+    if _req_threads > _MAX_SAFE and not _high_threads_ack:
+        print(
+            f"\n"
+            f"  ╔══════════════════════════════════════════════════════════════╗\n"
+            f"  ║  ⚠  HIGH THREAD COUNT WARNING — {_req_threads} threads requested          ║\n"
+            f"  ╠══════════════════════════════════════════════════════════════╣\n"
+            f"  ║  Threads > {_MAX_SAFE} may cause:                                      ║\n"
+            f"  ║  • Excessive RAM and CPU consumption on this machine        ║\n"
+            f"  ║  • API service overload or crash on the target device       ║\n"
+            f"  ║  • Network saturation and noisy logs (IDS/IPS alerts)       ║\n"
+            f"  ║  • Increased detection probability                          ║\n"
+            f"  ║                                                              ║\n"
+            f"  ║  USE AT YOUR OWN RISK on explicitly authorized targets.     ║\n"
+            f"  ║  The author is NOT liable for any damage or misuse.         ║\n"
+            f"  ╠══════════════════════════════════════════════════════════════╣\n"
+            f"  ║  To proceed, re-run with: --high-threads                    ║\n"
+            f"  ╚══════════════════════════════════════════════════════════════╝\n"
+        )
+        sys.exit(1)
+
+    if _req_threads > _MAX_SAFE:
+        log.warning(
+            f"[!] HIGH THREAD MODE: {_req_threads} threads. "
+            f"RAM/CPU impact is your responsibility. Authorized targets only."
+        )
+
+    args.threads = _req_threads
 
     # ── Service discovery ─────────────────────────────────────────────
     services_ok = _scan_services(
