@@ -26,6 +26,7 @@ from .cve_db import (
 )
 from .exploits import EXPLOIT_REGISTRY
 from .scanner import ExploitScanner
+from .offline_analyzer import OfflineArtifactAnalyzer
 
 __all__ = [
     "CVE_DATABASE",
@@ -38,4 +39,5 @@ __all__ = [
     "print_cve_summary",
     "EXPLOIT_REGISTRY",
     "ExploitScanner",
+    "OfflineArtifactAnalyzer",
 ]

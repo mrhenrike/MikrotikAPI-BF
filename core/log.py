@@ -109,19 +109,28 @@ class Log:
         green = Fore.GREEN if _HAS_COLOR else ""
         yellow = Fore.YELLOW if _HAS_COLOR else ""
         reset = Style.RESET_ALL if _HAS_COLOR else ""
+        box_width = 72
+        line_1 = f"MikrotikAPI-BF v{version} - RouterOS Attack & Exploitation Framework"
+        line_2 = "Andre Henrique - X / LinkedIn: @mrhenrike"
+        line_3 = "https://github.com/mrhenrike/MikrotikAPI-BF"
 
-        print(f"""{cyan}
-  ███╗   ███╗██╗██╗  ██╗██████╗  ██████╗ ████████╗██╗██╗  ██╗     █████╗ ██████╗ ██╗      ██████╗ ███████╗
-  ████╗ ████║██║██║ ██╔╝██╔══██╗██╔═══██╗╚══██╔══╝██║██║ ██╔╝    ██╔══██╗██╔══██╗██║     ██╔═══██╗██╔════╝
-  ██╔████╔██║██║█████╔╝ ██████╔╝██║   ██║   ██║   ██║█████╔╝     ███████║██████╔╝██║     ██║   ██║███████╗
-  ██║╚██╔╝██║██║██╔═██╗ ██╔══██╗██║   ██║   ██║   ██║██╔═██╗     ██╔══██║██╔═══╝ ██║     ██║   ██║╚════██║
-  ██║ ╚═╝ ██║██║██║  ██╗██║  ██║╚██████╔╝   ██║   ██║██║  ██╗    ██║  ██║██║     ███████╗╚██████╔╝███████║
-  ╚═╝     ╚═╝╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝ ╚══════╝
+        def _box_line(text: str) -> str:
+            return f"{green}  | {text[:box_width - 4]:<{box_width - 4}} |{reset}"
+
+        print(
+            f"""{cyan}
+___  ___ _  _                _   _  _      ___  ______  _____  ______ ______
+|  \\/  |(_)| |              | | (_)| |    / _ \\ | ___ \\|_   _| | ___ \\|  ___|
+| .  . | _ | | __ _ __  ___ | |_ _ | | __/ /_\\ \\| |_/ /  | |   | |_/ /| |_
+| |\\/| || || |/ /| '__|/ _ \\| __| || |/ /|  _  ||  __/   | |   | ___ \\|  _|
+| |  | || ||   < | |  | (_) | |_| ||   < | | | || |     _| |_  | |_/ /| |
+\\_|  |_/|_||_|\\_\\|_|   \\___/ \\__|_||_|\\_\\\\_| |_/\\_|     \\___/  \\____/ \\_|
 {reset}
-  {green}┌─────────────────────────────────────────────────────────────────────┐{reset}
-  {green}│  MikrotikAPI-BF v{version:<8}  RouterOS Attack & Exploitation Framework  │{reset}
-  {green}│  André Henrique  ·  X / LinkedIn: @mrhenrike                        │{reset}
-  {green}│  https://github.com/mrhenrike/MikrotikAPI-BF                        │{reset}
-  {green}└─────────────────────────────────────────────────────────────────────┘{reset}
-  {yellow}  ⚠  For authorized security testing only. Use responsibly.{reset}
-""")
+{green}  +{'-' * (box_width - 2)}+{reset}
+{_box_line(line_1)}
+{_box_line(line_2)}
+{_box_line(line_3)}
+{green}  +{'-' * (box_width - 2)}+{reset}
+  {yellow}[!] For authorized security testing only. Use responsibly.{reset}
+"""
+        )

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to publish (e.g. 3.5.4)"
+        description: "Version to publish (e.g. 3.6.0)"
         required: true
 
 jobs:
@@ -40,3 +40,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           print-hash: true
+

@@ -34,6 +34,7 @@ if sys.version_info[:2] < _MIN:
 
 import argparse
 import concurrent.futures
+import json
 import socket
 import struct
 import threading
@@ -988,6 +989,26 @@ def _build_parser() -> argparse.ArgumentParser:
     feat.add_argument("--exploit",      action="store_true", help="Run exploit/CVE scanner after BF")
     feat.add_argument("--scan-cve",     action="store_true", help="Fingerprint target and run all applicable CVE PoCs")
     feat.add_argument("--all-cves",     action="store_true", help="Show ALL CVEs regardless of version (with --scan-cve)")
+    feat.add_argument("--timing-oracle", action="store_true", help="Run timing oracle test (length + char probe)")
+    feat.add_argument("--privesc-test", action="store_true", help="Run low-impact privilege escalation test matrix")
+    feat.add_argument("--cli-timing", action="store_true", help="Run multi-channel CLI timing collection")
+    feat.add_argument("--timing-samples", type=int, default=100, metavar="N", help="Samples per candidate (default: 100)")
+    feat.add_argument(
+        "--timing-charset",
+        choices=["alphanum", "printable", "full"],
+        default="alphanum",
+        help="Charset for timing char probe (default: alphanum)",
+    )
+    feat.add_argument("--timing-length", type=int, metavar="N", help="Fixed length for timing oracle (skip length discovery)")
+    feat.add_argument("--timing-api", action="store_true", help="Use binary API (8728) for timing oracle")
+    feat.add_argument("--timing-rest", action="store_true", help="Use REST HTTP (80) for timing oracle")
+    feat.add_argument("--timing-report", metavar="CSV", help="Write timing distributions to CSV")
+    feat.add_argument(
+        "--privesc-accounts",
+        metavar="LIST",
+        help="Accounts for --privesc-test, format: user1:pass1,user2:pass2 "
+             "(default uses -U/-P only)",
+    )
     feat.add_argument("--proxy",        metavar="URL",       help="Proxy URL (socks5://127.0.0.1:9050)")
     feat.add_argument("--interactive",   action="store_true", help="Start interactive REPL")
     feat.add_argument("--max-retries",   type=int, default=1, help="Connection retry count (default: 1)")
@@ -1038,8 +1059,13 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="SUPOUT.RIF",
         help="List sections in a RouterOS supout.rif diagnostic file.",
     )
+    dec.add_argument(
+        "--offline-analyze-dir",
+        metavar="DIR",
+        help="Analyze downloaded MikroTik artifacts directory (NPK/MIB/Winbox/Netinstall/Flashfig).",
+    )
 
-    # NSE installer (v3.5.4+)
+    # NSE installer (v3.6.0+)
     p.add_argument(
         "--install-nse",
         action="store_true",
@@ -1465,6 +1491,84 @@ def _run_cve_scan(
             print(f"  [WARN] Export failed: {exp_err}")
 
 
+# ── Research modes: timing/privesc/cli-timing ─────────────────────────────
+
+def _run_timing_oracle_mode(args: argparse.Namespace) -> int:
+    """Execute timing-oracle mode and print JSON result."""
+    try:
+        from modules.timing_oracle import TimingOracleAttacker
+    except Exception as exc:
+        print(f"\n  [timing-oracle] Module unavailable: {exc}\n")
+        return 1
+
+    mode = "rest" if getattr(args, "timing_rest", False) else "api"
+    if getattr(args, "timing_api", False):
+        mode = "api"
+
+    attacker = TimingOracleAttacker(
+        target=args.target,
+        username=getattr(args, "user", "admin"),
+        timeout=float(getattr(args, "seconds", 2.0)),
+    )
+    result = attacker.run(
+        samples=max(10, int(getattr(args, "timing_samples", 100))),
+        charset_name=getattr(args, "timing_charset", "alphanum"),
+        fixed_length=getattr(args, "timing_length", None),
+        mode=mode,
+        report_csv=getattr(args, "timing_report", None),
+    )
+    print("\n  [timing-oracle] Result:\n")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0
+
+
+def _run_privesc_mode(args: argparse.Namespace) -> int:
+    """Execute privilege-escalation test matrix and print JSON result."""
+    try:
+        from modules.privilege_escalation import Account, PrivEscTester
+    except Exception as exc:
+        print(f"\n  [privesc-test] Module unavailable: {exc}\n")
+        return 1
+
+    account_raw = getattr(args, "privesc_accounts", None)
+    if account_raw:
+        accounts = PrivEscTester.parse_accounts(account_raw, default_password=None)
+    else:
+        accounts = [Account(username=getattr(args, "user", "admin"), password=getattr(args, "passw", "") or "")]
+
+    tester = PrivEscTester(
+        target=args.target,
+        timeout=float(getattr(args, "seconds", 5.0)),
+        http_port=int(getattr(args, "http_port", 80)),
+    )
+    result = tester.run(accounts=accounts)
+    print("\n  [privesc-test] Result:\n")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0
+
+
+def _run_cli_timing_mode(args: argparse.Namespace) -> int:
+    """Execute CLI timing collection and print JSON result."""
+    try:
+        from modules.cli_timing_oracle import CLITimingOracle
+    except Exception as exc:
+        print(f"\n  [cli-timing] Module unavailable: {exc}\n")
+        return 1
+
+    oracle = CLITimingOracle(
+        target=args.target,
+        username=getattr(args, "user", "admin"),
+        timeout=float(getattr(args, "seconds", 3.0)),
+    )
+    result = oracle.run(
+        password=getattr(args, "passw", "") or "",
+        samples=max(5, int(getattr(args, "timing_samples", 30))),
+    )
+    print("\n  [cli-timing] Result:\n")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0
+
+
 # ── Entrypoint ────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -1497,7 +1601,7 @@ def main() -> None:
         cli.start()
         sys.exit(0)
 
-    # ── NSE install (v3.5.4+) ─────────────────────────────────────
+    # ── NSE install (v3.6.0+) ─────────────────────────────────────
     if getattr(args, "install_nse", False):
         try:
             from mikrotikapi_bf.nse_installer import install_nse
@@ -1512,6 +1616,7 @@ def main() -> None:
     _decode_backup  = getattr(args, "decode_backup",  None)
     _analyze_npk    = getattr(args, "analyze_npk",    None)
     _decode_supout  = getattr(args, "decode_supout",  None)
+    _offline_dir    = getattr(args, "offline_analyze_dir", None)
 
     if _decode_userdat:
         try:
@@ -1567,6 +1672,17 @@ def main() -> None:
                 print(f"\n  Users found in supout: {[u['username'] for u in users]}\n")
         except Exception as _se:
             print(f"\n  [supout] Error: {_se}\n")
+        sys.exit(0)
+
+    if _offline_dir:
+        try:
+            from xpl.offline_analyzer import OfflineArtifactAnalyzer
+            analyzer = OfflineArtifactAnalyzer()
+            result = analyzer.analyze_directory(_offline_dir)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        except Exception as _oe:
+            print(f"\n  [offline-analyzer] Error: {_oe}\n")
+            sys.exit(1)
         sys.exit(0)
 
     # ── MAC Server / Layer-2 modes (v3.3.0+) ─────────────────────────
@@ -1666,6 +1782,22 @@ def main() -> None:
             http_port=getattr(args, "http_port", 80) or 80,
         )
         sys.exit(0)
+
+    # ── Timing oracle / PrivEsc / CLI timing standalone modes ───────────
+    if getattr(args, "timing_oracle", False):
+        if not args.target:
+            parser.error("Target (-t) is required for --timing-oracle")
+        sys.exit(_run_timing_oracle_mode(args))
+
+    if getattr(args, "privesc_test", False):
+        if not args.target:
+            parser.error("Target (-t) is required for --privesc-test")
+        sys.exit(_run_privesc_mode(args))
+
+    if getattr(args, "cli_timing", False):
+        if not args.target:
+            parser.error("Target (-t) is required for --cli-timing")
+        sys.exit(_run_cli_timing_mode(args))
 
     # ── Multi-target mode (v3.5.0+) ────────────────────────────────
     _target_list_file = getattr(args, "target_list", None)
@@ -1868,3 +2000,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

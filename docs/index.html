@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MikrotikAPI-BF v2.1 - Documentação</title>
+    <title>MikrotikAPI-BF v3.6.0 - Documentação</title>
     <style>
         * {
             margin: 0;
@@ -284,7 +284,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 MikrotikAPI-BF v2.1</h1>
+            <h1>🔐 MikrotikAPI-BF v3.6.0</h1>
             <p>Ferramenta Avançada de Pentesting para Dispositivos Mikrotik RouterOS</p>
             <span class="version-badge">Versão 2.1</span>
         </div>
@@ -303,7 +303,7 @@
         <div class="content">
             <div class="card" id="overview">
                 <h2>🎯 Visão Geral</h2>
-                <p>O <span class="highlight">MikrotikAPI-BF v2.1</span> é uma ferramenta avançada de pentesting especificamente desenvolvida para dispositivos Mikrotik RouterOS. Oferece capacidades completas de teste de segurança, incluindo autenticação dupla, validação pós-login e sistema de sessão persistente.</p>
+                <p>O <span class="highlight">MikrotikAPI-BF v3.6.0</span> é uma ferramenta avançada de pentesting especificamente desenvolvida para dispositivos Mikrotik RouterOS. Oferece capacidades completas de teste de segurança, incluindo autenticação dupla, validação pós-login e sistema de sessão persistente.</p>
                 
                 <h3>Principais Características:</h3>
                 <ul>
@@ -370,12 +370,12 @@ git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 
 # Execute o script de instalação
-./install-v2.1.sh  # Linux/macOS
+./install-v3.6.0.sh  # Linux/macOS
 # ou
-.\install-v2.1.ps1  # Windows
+.\install-v3.6.0.ps1  # Windows
 
 # Teste a instalação
-python mikrotikapi-bf-v2.1.py --help
+python mikrotikapi-bf-v3.6.0.py --help
                 </div>
                 
                 <h3>Instalação Manual:</h3>
@@ -396,22 +396,22 @@ pip install -r requirements.txt
                 
                 <h3>Comando Simples:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -U admin -P 123456
+python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -U admin -P 123456
                 </div>
                 
                 <h3>Com Wordlists:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
+python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
                 </div>
                 
                 <h3>Com Validação:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
+python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
                 </div>
                 
                 <h3>Com Stealth Mode:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth --fingerprint --progress
+python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth --fingerprint --progress
                 </div>
             </div>
             
@@ -420,7 +420,7 @@ python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --ste
                 
                 <h3>Pentest Completo:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v2.1.py \
+python mikrotikapi-bf-v3.6.0.py \
   -t 192.168.1.1 \
   -u wordlists/users.lst \
   -p wordlists/passwords.lst \
@@ -436,22 +436,22 @@ python mikrotikapi-bf-v2.1.py \
                 <h3>Sistema de Sessão:</h3>
                 <div class="code-block">
 # Listar sessões
-python mikrotikapi-bf-v2.1.py --list-sessions
+python mikrotikapi-bf-v3.6.0.py --list-sessions
 
 # Continuar sessão
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --resume
+python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 --resume
 
 # Forçar nova sessão
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --force
+python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 --force
                 </div>
                 
                 <h3>Exportação:</h3>
                 <div class="code-block">
 # Exportar todos os formatos
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
+python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
 
 # Exportar formatos específicos
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json,csv
+python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json,csv
                 </div>
             </div>
             
@@ -581,3 +581,4 @@ bf.run()
     </script>
 </body>
 </html>
+

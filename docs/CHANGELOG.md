@@ -7,6 +7,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v3.6.0] - 2026-04-03
+
+### Added
+- Security lab modules for SNMP, web security, SSH audit, hardening validation, privilege escalation tests, timing oracle, and offline artifact analysis.
+- New CLI modes and flags in `mikrotikapi-bf.py` for comprehensive security suite execution.
+- Automated lab scripts for CHR hardening, user/group provisioning, and full comparative test orchestration.
+
+### Changed
+- Banner refreshed to the new `MikrotikAPI-BF` visual identity.
+- Documentation and package metadata updated to version `3.6.0`.
+- Expanded coverage matrix for SNMP/MIB validation, REST/Web surface checks, neighbor discovery, and entry vectors by protocol/user.
+
+### Fixed
+- Hardening flow stability by preferring RouterOS REST calls over unstable API sessions in specific operations.
+- UTF-8 display consistency in terminal execution environments.
+
+---
+
 ## [v2.0] - 2025-01-15
 
 ### 🎉 MAJOR RELEASE - Complete Rewrite
@@ -337,7 +355,7 @@ MikrotikAPI-BF/
 
 ### 🎯 Next Steps (Roadmap)
 
-#### **v2.1** (planned)
+#### **v3.6.0** (planned)
 - [ ] Complete integration in main script
 - [ ] Pause/Resume attack (Ctrl+Z)
 - [ ] Web dashboard (Flask/FastAPI)
@@ -421,4 +439,5 @@ MikrotikAPI-BF/
 **Thank you for using MikrotikAPI-BF!** 🚀
 
 If you found this project useful, consider giving it a ⭐ on GitHub!
+
 
