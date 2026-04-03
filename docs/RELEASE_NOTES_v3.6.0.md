@@ -17,7 +17,6 @@ Date: 2026-04-03
 - Timing side-channel feasibility analysis (char-by-char).
 
 ## Versioning
-- Previous stable: `3.5.4`
 - Current release: `3.6.0`
 
 ## Tag / Release Mapping

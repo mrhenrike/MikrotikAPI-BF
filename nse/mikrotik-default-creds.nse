@@ -25,7 +25,6 @@ Default credential list includes:
 
 References:
   - https://github.com/mrhenrike/MikrotikAPI-BF
-  - https://kb.cert.org/vince/comm/ (VUID 375660)
 ]]
 
 ---

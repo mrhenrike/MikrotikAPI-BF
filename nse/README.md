@@ -102,8 +102,8 @@ python mikrotikapi-bf.py -t <target> --scan-cve -U admin -P <found_pass>
 |--------|-----|
 | `mikrotik-winbox-cve-2018-14847.nse` | CVE-2018-14847 (CRITICAL 9.1) |
 | `mikrotik-routeros-version.nse` | Version mapping to all applicable CVEs |
-| `mikrotik-api-brute.nse` | VUID 375660 — no rate-limiting (TCP/8728) |
-| `mikrotik-default-creds.nse` | VUID 375660 — default credentials |
+| `mikrotik-api-brute.nse` | Authentication exposure and brute-force posture validation (TCP/8728) |
+| `mikrotik-default-creds.nse` | Default/empty credential validation across API and REST |
 
 ---
 
@@ -113,4 +113,3 @@ python mikrotikapi-bf.py -t <target> --scan-cve -U admin -P <found_pass>
 - [Nmap NSE Documentation](https://nmap.org/book/nse.html)
 - [RouterOS API Manual](https://wiki.mikrotik.com/wiki/Manual:API)
 - [CVE-2018-14847](https://nvd.nist.gov/vuln/detail/CVE-2018-14847)
-- [CERT/CC VINCE VUID 375660](https://kb.cert.org/vince/)
