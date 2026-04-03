@@ -369,13 +369,18 @@
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 
-# Execute o script de instalação
-./install-v3.6.0.sh  # Linux/macOS
-# ou
-.\install-v3.6.0.ps1  # Windows
+# (Opcional) crie um ambiente virtual
+python -m venv venv
+# Linux/macOS
+source venv/bin/activate
+# Windows
+venv\\Scripts\\activate
+
+# Instale dependências
+pip install -r requirements.txt
 
 # Teste a instalação
-python mikrotikapi-bf-v3.6.0.py --help
+python mikrotikapi-bf.py --help
                 </div>
                 
                 <h3>Instalação Manual:</h3>
@@ -396,22 +401,22 @@ pip install -r requirements.txt
                 
                 <h3>Comando Simples:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -U admin -P 123456
+python mikrotikapi-bf.py -t 192.168.1.1 -U admin -P 123456
                 </div>
                 
                 <h3>Com Wordlists:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
+python mikrotikapi-bf.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
                 </div>
                 
                 <h3>Com Validação:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
                 </div>
                 
                 <h3>Com Stealth Mode:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth --fingerprint --progress
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth --fingerprint --progress
                 </div>
             </div>
             
@@ -420,7 +425,7 @@ python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --s
                 
                 <h3>Pentest Completo:</h3>
                 <div class="code-block">
-python mikrotikapi-bf-v3.6.0.py \
+python mikrotikapi-bf.py \
   -t 192.168.1.1 \
   -u wordlists/users.lst \
   -p wordlists/passwords.lst \
@@ -436,22 +441,22 @@ python mikrotikapi-bf-v3.6.0.py \
                 <h3>Sistema de Sessão:</h3>
                 <div class="code-block">
 # Listar sessões
-python mikrotikapi-bf-v3.6.0.py --list-sessions
+python mikrotikapi-bf.py --list-sessions
 
 # Continuar sessão
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 --resume
+python mikrotikapi-bf.py -t 192.168.1.1 --resume
 
 # Forçar nova sessão
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 --force
+python mikrotikapi-bf.py -t 192.168.1.1 --force
                 </div>
                 
                 <h3>Exportação:</h3>
                 <div class="code-block">
 # Exportar todos os formatos
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
 
 # Exportar formatos específicos
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json,csv
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json,csv
                 </div>
             </div>
             
@@ -581,4 +586,5 @@ bf.run()
     </script>
 </body>
 </html>
+
 

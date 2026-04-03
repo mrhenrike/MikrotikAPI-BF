@@ -44,9 +44,9 @@ cd MikrotikAPI-BF
 # Install dependencies
 pip install -r requirements.txt
 
-# Optional installer (Linux/macOS)
-chmod +x install-v3.6.0.sh
-./install-v3.6.0.sh
+# Optional: create virtual environment
+python -m venv venv
+source venv/bin/activate
 
 # Or run directly
 python mikrotikapi-bf.py --help
@@ -343,5 +343,6 @@ MIT License — see LICENSE.
 ## ⚠️ Legal & Responsible Use
 
 Use only on systems you own or have explicit written authorization to test. Testing will likely be logged; coordinate with stakeholders.
+
 
 

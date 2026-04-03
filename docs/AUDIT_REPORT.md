@@ -33,7 +33,7 @@ A auditoria completa do código MikrotikAPI-BF v3.6.0 foi realizada com sucesso.
 ### 4. **Estrutura do Projeto**
 ```
 MikrotikAPI-BF/
-├── mikrotikapi-bf-v3.6.0.py      # Script principal
+├── mikrotikapi-bf.py      # Script principal
 ├── _api.py                      # Comunicação RouterOS API
 ├── _log.py                      # Sistema de logging
 ├── _session.py                  # Gerenciamento de sessões
@@ -81,7 +81,7 @@ MikrotikAPI-BF/
 ## 📊 Estatísticas do Projeto
 
 ### **Arquivos Principais**
-- **Script principal:** `mikrotikapi-bf-v3.6.0.py` (813 linhas)
+- **Script principal:** `mikrotikapi-bf.py` (813 linhas)
 - **Módulos:** 8 arquivos `_*.py`
 - **Documentação:** 5 arquivos em `docs/`
 
@@ -121,7 +121,7 @@ MikrotikAPI-BF/
 
 ### **1. Teste de Funcionalidade**
 ```bash
-python mikrotikapi-bf-v3.6.0.py --help
+python mikrotikapi-bf.py --help
 # ✅ Executado com sucesso
 ```
 
@@ -191,4 +191,5 @@ A ferramenta está pronta para ser usada em pentests reais, com todas as funcion
 **Auditor:** Andre Henrique  
 **Data:** 05/10/2025  
 **Status:** ✅ Concluído com Sucesso
+
 

