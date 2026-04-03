@@ -15,13 +15,12 @@ the full authentication handshake including:
   - RouterOS 6.43+: MD5 challenge/response (two-phase)
   - RouterOS < 6.43: legacy plaintext login
 
-No rate-limiting or account lockout is enforced by default on RouterOS —
-this is the vulnerability tracked as VUID 375660 (CERT/CC).
+No rate-limiting or account lockout is enforced by default on many RouterOS
+setups unless explicitly configured by the operator.
 
 References:
   - https://github.com/mrhenrike/MikrotikAPI-BF
   - https://wiki.mikrotik.com/wiki/Manual:API
-  - https://kb.cert.org/vince/comm/  (VUID 375660)
 ]]
 
 ---

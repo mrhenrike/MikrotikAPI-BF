@@ -255,7 +255,7 @@ nmap -p 8728 --script mikrotik-api-brute \
 
 | Service | Port | Brute-Force | CVE/Exploits | NSE Script |
 |---------|------|------------|-------------|-----------|
-| RouterOS API | TCP/8728 | ✅ Primary target | VUID 375660 | `mikrotik-api-brute.nse` |
+| RouterOS API | TCP/8728 | ✅ Primary target | Brute-force/rate-limit exposure validation | `mikrotik-api-brute.nse` |
 | REST API | TCP/80,443 | ✅ HTTP Basic Auth | CVE-2019-3924, 2019-3943, 2023-30799, 2023-30800, 2024-35274 | `mikrotik-default-creds.nse` |
 | Winbox | TCP/8291 | ⚠️ Not (no auth lib) | CVE-2018-14847, 2018-10066, 2021-27263 | `mikrotik-winbox-cve-2018-14847.nse` |
 | FTP | TCP/21 | ✅ Post-login | CVE-2019-3976, 2019-3977, EDB-44450 | — |
@@ -431,7 +431,7 @@ add chain=input action=drop
 - **GitHub Actions** — `.github/workflows/publish-pypi.yml` + `publish-testpypi.yml` with OIDC trusted publishing
 - **PyPI-ready** — `dist/mikrotikapi_bf-3.6.0-py3-none-any.whl` built and validated
 - **Printer NSE scripts** — collected in `dev/Printers/` (12 scripts: HP, Xerox, Lexmark, CUPS, PJL, SNMP)
-- **VINCE VUID 375660** — comprehensive technical update prepared: CVSS 9.8, CWE-307, PoC tool ref, Shodan Brazil scale (19,424 devices), expired 90-day deadline notice
+- **Disclosure references cleaned** — versioned documentation now focuses on technical behavior, exploit coverage, and reproducible lab evidence
 
 ### v3.5.3
 - **5 Nmap NSE scripts** in `nse/`: `mikrotik-routeros-version`, `mikrotik-api-brute`, `mikrotik-default-creds`, `mikrotik-api-info`, `mikrotik-winbox-cve-2018-14847`

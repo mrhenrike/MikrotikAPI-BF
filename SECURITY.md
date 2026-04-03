@@ -14,9 +14,9 @@ Older releases are unsupported — upgrade to the current version.
 
 | Version | Status | Security fixes |
 | ------- | ------ | -------------- |
-| **3.5.x** (current) | :white_check_mark: Active | Yes |
-| 3.4.x | :x: EOL | No — upgrade to 3.5.x |
-| 3.3.x and below | :x: EOL | No — upgrade to 3.5.x |
+| **3.6.x** (current) | :white_check_mark: Active | Yes |
+| 3.5.x | :x: EOL | No — upgrade to 3.6.x |
+| 3.4.x and below | :x: EOL | No — upgrade to 3.6.x |
 
 ---
 
@@ -29,13 +29,12 @@ Older releases are unsupported — upgrade to the current version.
 Use the **[Report a vulnerability](https://github.com/mrhenrike/MikrotikAPI-BF/security/advisories/new)** button on the Security tab.  
 This creates a private advisory visible only to the maintainer.
 
-### Option 2 — CERT/CC VINCE
+### Option 2 — Coordinated disclosure channels
 
 For vulnerabilities with broader scope (affecting RouterOS itself), you may
-coordinate via the **CERT/CC VINCE** platform:
+coordinate via trusted CERT channels:
 
 - Portal: https://kb.cert.org/vince/
-- Active case for RouterOS API: VUID 375660 (brute-force / rate-limiting)
 
 ### Option 3 — Direct contact
 
