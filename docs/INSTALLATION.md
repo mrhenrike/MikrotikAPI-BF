@@ -63,13 +63,13 @@ git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 
 # 2. Run installer
-.\install-v3.6.0.ps1
+pip install -r requirements.txt
 
 # 3. Activate venv
 .\venv\Scripts\Activate.ps1
 
 # 4. Test installation
-python mikrotikapi-bf-v3.6.0.py --help
+python mikrotikapi-bf.py --help
 ```
 
 ### Method 2: Manual
@@ -92,7 +92,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 
 # 6. Test installation
-python mikrotikapi-bf-v3.6.0.py --help
+python mikrotikapi-bf.py --help
 ```
 
 ### Method 3: Chocolatey
@@ -119,17 +119,17 @@ pip install -r requirements.txt
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
 
-# 2. Make script executable
-chmod +x install-v3.6.0.sh
+# 2. Create virtual environment
+python -m venv venv
 
-# 3. Run installer
-./install-v3.6.0.sh
-
-# 4. Activate venv
+# 3. Activate venv
 source venv/bin/activate
 
+# 4. Install dependencies
+pip install -r requirements.txt
+
 # 5. Test installation
-python mikrotikapi-bf-v3.6.0.py --help
+python mikrotikapi-bf.py --help
 ```
 
 ### Method 2: Manual
@@ -159,7 +159,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # 8. Test installation
-python mikrotikapi-bf-v3.6.0.py --help
+python mikrotikapi-bf.py --help
 ```
 
 #### CentOS/RHEL/Fedora
@@ -235,10 +235,10 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Make executable
-RUN chmod +x mikrotikapi-bf-v3.6.0.py
+RUN chmod +x mikrotikapi-bf.py
 
 # Default command
-CMD ["python", "mikrotikapi-bf-v3.6.0.py", "--help"]
+CMD ["python", "mikrotikapi-bf.py", "--help"]
 ```
 
 ### Docker Compose
@@ -254,7 +254,7 @@ services:
       - ./sessions:/app/sessions
     environment:
       - PYTHONUNBUFFERED=1
-    command: ["python", "mikrotikapi-bf-v3.6.0.py", "-t", "192.168.1.1", "--help"]
+    command: ["python", "mikrotikapi-bf.py", "-t", "192.168.1.1", "--help"]
 ```
 
 ### Docker commands
@@ -263,14 +263,14 @@ services:
 docker build -t mikrotikapi-bf:v3.6.0 .
 
 # 2. Run container
-docker run -it --rm mikrotikapi-bf:v3.6.0 python mikrotikapi-bf-v3.6.0.py --help
+docker run -it --rm mikrotikapi-bf:v3.6.0 python mikrotikapi-bf.py --help
 
 # 3. Run with volumes
 docker run -it --rm \
   -v $(pwd)/wordlists:/app/wordlists \
   -v $(pwd)/results:/app/results \
   -v $(pwd)/sessions:/app/sessions \
-  mikrotikapi-bf:v3.6.0 python mikrotikapi-bf-v3.6.0.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
+  mikrotikapi-bf:v3.6.0 python mikrotikapi-bf.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
 
 # 4. Using Docker Compose
 docker-compose up
@@ -285,7 +285,7 @@ python --version
 # Deve retornar: Python 3.8.x até 3.12.x
 
 # Check script runs
-python mikrotikapi-bf-v3.6.0.py --help
+python mikrotikapi-bf.py --help
 # Deve mostrar a ajuda do programa
 ```
 
@@ -301,7 +301,7 @@ print('✅ Todas as dependências estão instaladas!')
 ### Functionality test
 ```bash
 # Basic local test
-python mikrotikapi-bf-v3.6.0.py -t 127.0.0.1 -U admin -P 123456 --fingerprint
+python mikrotikapi-bf.py -t 127.0.0.1 -U admin -P 123456 --fingerprint
 
 # Deve mostrar informações de fingerprinting
 ```
@@ -329,7 +329,7 @@ brew install python@3.12              # macOS
 ```bash
 # Verificar se está no diretório correto
 pwd
-ls -la mikrotikapi-bf-v3.6.0.py
+ls -la mikrotikapi-bf.py
 
 # Reinstalar dependências
 pip install --force-reinstall -r requirements.txt
@@ -338,9 +338,7 @@ pip install --force-reinstall -r requirements.txt
 ### Issue: Permission denied
 ```bash
 # Linux/macOS
-chmod +x mikrotikapi-bf-v3.6.0.py
-chmod +x install-v3.6.0.sh
-
+chmod +x mikrotikapi-bf.py
 # Windows
 # Executar PowerShell como Administrador
 ```
@@ -360,7 +358,7 @@ export PYTHONHTTPSVERIFY=0
 ping 8.8.8.8
 
 # Testar com target local
-python mikrotikapi-bf-v3.6.0.py -t 127.0.0.1 --fingerprint
+python mikrotikapi-bf.py -t 127.0.0.1 --fingerprint
 ```
 
 ### Issue: Encoding error
@@ -387,7 +385,7 @@ git pull origin master
 pip install --upgrade -r requirements.txt
 
 # 4. Verify
-python mikrotikapi-bf-v3.6.0.py --help
+python mikrotikapi-bf.py --help
 ```
 
 ### Manual update
@@ -439,7 +437,7 @@ Se encontrar problemas durante a instalação:
 1. **Verificar logs**: Execute com `-vv` para debug completo
 2. **Verificar dependências**: `pip list | grep -E "(requests|colorama|paramiko)"`
 3. **Verificar Python**: `python --version`
-4. **Verificar permissões**: `ls -la mikrotikapi-bf-v3.6.0.py`
+4. **Verificar permissões**: `ls -la mikrotikapi-bf.py`
 5. **Reportar issue**: GitHub Issues com logs completos
 
 ### Info for support
@@ -460,4 +458,5 @@ Após a instalação bem-sucedida:
 3. **Teste com target local**: Use `127.0.0.1` para testes
 4. **Configure proxy** (se necessário): `--proxy socks5://127.0.0.1:1080`
 5. **Explore recursos avançados**: Stealth mode, fingerprinting, sessões
+
 

@@ -16,3 +16,11 @@ Author: André Henrique (LinkedIn/X: @mrhenrike)
 ## Release
 - Release notes: `./RELEASE_NOTES_v3.6.0.md`
 
+## Wiki Validation
+- Checked in this cycle:
+  - GitHub wiki base link in `../README.md` and `../README.pt-BR.md`
+  - Guide links (`Complete-Usage-Guide`, `Complete-Usage-Guide-pt-BR`, `EDB-Exploit-Coverage`)
+  - Local wiki index references in this file
+- Status: references aligned with current release `v3.6.0`
+
+

@@ -12,7 +12,7 @@
 
 ## 🏗️ Módulos Principais
 
-### `mikrotikapi-bf-v3.6.0.py`
+### `mikrotikapi-bf.py`
 Arquivo principal que orquestra todo o sistema.
 
 **Funções principais:**
@@ -570,7 +570,7 @@ if info['is_mikrotik']:
 
 O sistema foi projetado com arquitetura modular para facilitar manutenção e extensão:
 
-- **`mikrotikapi-bf-v3.6.0.py`** - Orquestrador principal
+- **`mikrotikapi-bf.py`** - Orquestrador principal
 - **`_api.py`** - Comunicação com RouterOS API
 - **`_log.py`** - Sistema de logging
 - **`_session.py`** - Gerenciamento de sessões
@@ -610,4 +610,5 @@ Otimizações implementadas:
 - Retry com exponential backoff
 - Progress tracking assíncrono
 - Exportação em background
+
 

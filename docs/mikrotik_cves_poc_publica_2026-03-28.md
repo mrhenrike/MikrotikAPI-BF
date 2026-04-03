@@ -150,3 +150,4 @@ Legenda de status:
 - CVE.org: https://www.cve.org/CVERecord?id=CVE-2008-6976
 - NVD: https://nvd.nist.gov/vuln/detail/CVE-2008-6976
 
+

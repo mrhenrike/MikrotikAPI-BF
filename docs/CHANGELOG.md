@@ -353,16 +353,16 @@ MikrotikAPI-BF/
 
 ---
 
-### 🎯 Next Steps (Roadmap)
+### 🎯 Next Steps (Historical Roadmap Snapshot)
 
-#### **v3.6.0** (planned)
+#### **Phase A (planned at the time)**
 - [ ] Complete integration in main script
 - [ ] Pause/Resume attack (Ctrl+Z)
 - [ ] Web dashboard (Flask/FastAPI)
 - [ ] Winbox protocol support (port 8291)
 - [ ] Intelligent rate limiting based on target response
 
-#### **v2.2** (planned)
+#### **Phase B (planned at the time)**
 - [ ] Machine Learning for wordlist optimization
 - [ ] Automatic honeypot detection
 - [ ] Distributed cluster support
@@ -439,5 +439,6 @@ MikrotikAPI-BF/
 **Thank you for using MikrotikAPI-BF!** 🚀
 
 If you found this project useful, consider giving it a ⭐ on GitHub!
+
 
 
