@@ -1,4 +1,4 @@
-# MikrotikAPI-BF v2.1 - Relatório de Auditoria
+# MikrotikAPI-BF v3.6.0 - Relatório de Auditoria
 
 **Data:** 05/10/2025  
 **Versão:** 2.1  
@@ -6,7 +6,7 @@
 
 ## 📋 Resumo Executivo
 
-A auditoria completa do código MikrotikAPI-BF v2.1 foi realizada com sucesso. O projeto foi limpo, otimizado e documentado, resultando em uma ferramenta profissional de pentesting para dispositivos Mikrotik RouterOS.
+A auditoria completa do código MikrotikAPI-BF v3.6.0 foi realizada com sucesso. O projeto foi limpo, otimizado e documentado, resultando em uma ferramenta profissional de pentesting para dispositivos Mikrotik RouterOS.
 
 ## ✅ Ações Realizadas
 
@@ -33,7 +33,7 @@ A auditoria completa do código MikrotikAPI-BF v2.1 foi realizada com sucesso. O
 ### 4. **Estrutura do Projeto**
 ```
 MikrotikAPI-BF/
-├── mikrotikapi-bf-v2.1.py      # Script principal
+├── mikrotikapi-bf-v3.6.0.py      # Script principal
 ├── _api.py                      # Comunicação RouterOS API
 ├── _log.py                      # Sistema de logging
 ├── _session.py                  # Gerenciamento de sessões
@@ -81,7 +81,7 @@ MikrotikAPI-BF/
 ## 📊 Estatísticas do Projeto
 
 ### **Arquivos Principais**
-- **Script principal:** `mikrotikapi-bf-v2.1.py` (813 linhas)
+- **Script principal:** `mikrotikapi-bf-v3.6.0.py` (813 linhas)
 - **Módulos:** 8 arquivos `_*.py`
 - **Documentação:** 5 arquivos em `docs/`
 
@@ -121,7 +121,7 @@ MikrotikAPI-BF/
 
 ### **1. Teste de Funcionalidade**
 ```bash
-python mikrotikapi-bf-v2.1.py --help
+python mikrotikapi-bf-v3.6.0.py --help
 # ✅ Executado com sucesso
 ```
 
@@ -177,7 +177,7 @@ python mikrotikapi-bf-v2.1.py --help
 
 ## 🏆 Conclusão
 
-A auditoria do MikrotikAPI-BF v2.1 foi **100% bem-sucedida**. O projeto está:
+A auditoria do MikrotikAPI-BF v3.6.0 foi **100% bem-sucedida**. O projeto está:
 
 - ✅ **Limpo e organizado**
 - ✅ **Bem documentado**
@@ -191,3 +191,4 @@ A ferramenta está pronta para ser usada em pentests reais, com todas as funcion
 **Auditor:** Andre Henrique  
 **Data:** 05/10/2025  
 **Status:** ✅ Concluído com Sucesso
+

@@ -320,3 +320,54 @@ class NPKSecurityAnalyzer:
 
         return {"vulnerable": vulnerable, "evidence": evidence, "details": analysis}
 
+
+def analyze_npk_artifact(npk_path: str) -> Dict[str, object]:
+    """Classify NPK package for hardening utility and attack-surface impact.
+
+    Args:
+        npk_path: Path to a `.npk` package.
+
+    Returns:
+        Dict with package purpose and security classification.
+    """
+    analysis = NPKSecurityAnalyzer.analyze(npk_path)
+    package_name = (analysis.get("package_name") or "").lower()
+
+    notes: List[str] = []
+    impact = "medium"
+    hardening_useful = True
+
+    if "container" in package_name:
+        impact = "high"
+        notes.append("Container runtime package increases attack surface; install only if required.")
+    elif "tr069" in package_name:
+        impact = "high"
+        notes.append("TR-069 client may expose management workflow risks if misconfigured.")
+    elif "user-manager" in package_name:
+        impact = "high"
+        notes.append("AAA package adds web/auth interfaces that require strict hardening.")
+    elif "wireless" in package_name or "wifi" in package_name:
+        impact = "medium"
+        notes.append("Wireless stack not required for pure CHR unless explicit use case exists.")
+    elif "security" in package_name:
+        impact = "low"
+        notes.append("Security package can be useful for defensive controls.")
+    else:
+        notes.append("Validate package necessity against minimum-feature principle.")
+
+    if analysis.get("valid_digest") is False:
+        impact = "high"
+        notes.append("Digest mismatch indicates potential tampering.")
+
+    if analysis.get("has_signature") is False:
+        notes.append("Missing signature part; verify source and integrity before deployment.")
+
+    return {
+        "path": npk_path,
+        "package_name": analysis.get("package_name"),
+        "architecture": analysis.get("architecture"),
+        "hardening_useful": hardening_useful,
+        "attack_surface_impact": impact,
+        "notes": notes,
+    }
+

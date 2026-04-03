@@ -18,8 +18,8 @@ try:
     from version import __version__, VERSION, MAJOR, MINOR, PATCH
 except ModuleNotFoundError:
     # Fallback when running from isolated build env or installed package
-    __version__ = "3.5.4"
-    VERSION = (3, 5, 4)
+    __version__ = "3.6.0"
+    VERSION = (3, 6, 0)
     MAJOR, MINOR, PATCH = VERSION
 
 __all__ = ["__version__", "VERSION", "MAJOR", "MINOR", "PATCH"]

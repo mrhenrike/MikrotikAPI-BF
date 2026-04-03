@@ -1,4 +1,4 @@
-# MikrotikAPI-BF v2.1 - Complete Documentation (en-us)
+# MikrotikAPI-BF v3.6.0 - Complete Documentation (en-us)
 
 ## 📋 Índice
 
@@ -15,7 +15,7 @@
 
 ## 🎯 Overview
 
-MikrotikAPI-BF v2.1 is an advanced pentesting toolkit for Mikrotik RouterOS and CHR. It focuses on credential testing against RouterOS API and REST-API and can validate access to FTP/SSH/Telnet after login. It includes sessions, stealth, fingerprinting, progress/ETA, and export.
+MikrotikAPI-BF v3.6.0 is an advanced pentesting toolkit for Mikrotik RouterOS and CHR. It focuses on credential testing against RouterOS API and REST-API and can validate access to FTP/SSH/Telnet after login. It includes sessions, stealth, fingerprinting, progress/ETA, and export.
 
 ### ✨ Highlights
 
@@ -45,11 +45,11 @@ cd MikrotikAPI-BF
 pip install -r requirements.txt
 
 # Optional installer (Linux/macOS)
-chmod +x install-v2.1.sh
-./install-v2.1.sh
+chmod +x install-v3.6.0.sh
+./install-v3.6.0.sh
 
 # Or run directly
-python mikrotikapi-bf-v2.1.py --help
+python mikrotikapi-bf.py --help
 ```
 
 ### Dependencies
@@ -69,19 +69,19 @@ pytest>=7.0.0
 ### Single credential
 
 ```bash
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -U admin -P 123456
+python mikrotikapi-bf.py -t 192.168.1.1 -U admin -P 123456
 ```
 
 ### With wordlists
 
 ```bash
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
+python mikrotikapi-bf.py -t 192.168.1.1 -u wordlists/users.lst -p wordlists/passwords.lst
 ```
 
 ### With post-login validation
 
 ```bash
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --validate ftp,ssh,telnet
 ```
 
 ## 🔧 Advanced Features
@@ -89,7 +89,7 @@ python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --val
 ### Stealth Mode
 
 ```bash
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --stealth
 ```
 
 Features:
@@ -100,7 +100,7 @@ Features:
 ### Fingerprinting
 
 ```bash
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --fingerprint
+python mikrotikapi-bf.py -t 192.168.1.1 --fingerprint
 ```
 
 Collected info:
@@ -110,7 +110,7 @@ Collected info:
 ### Progress Tracking
 
 ```bash
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --progress
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --progress
 ```
 
 Shows: visual bar, ETA, speed, success counter
@@ -121,16 +121,16 @@ Shows: visual bar, ETA, speed, success counter
 
 ```bash
 # Listar sessões
-python mikrotikapi-bf-v2.1.py --list-sessions
+python mikrotikapi-bf.py --list-sessions
 
 # Ver informações de sessão
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --session-info
+python mikrotikapi-bf.py -t 192.168.1.1 --session-info
 
 # Continuar sessão existente
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --resume
+python mikrotikapi-bf.py -t 192.168.1.1 --resume
 
 # Forçar nova sessão
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 --force
+python mikrotikapi-bf.py -t 192.168.1.1 --force
 ```
 
 ### Capabilities
@@ -190,13 +190,13 @@ How to mitigate:
 
 ```bash
 # Exportar em todos os formatos
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all
 
 # Exportar formatos específicos
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json,csv
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --export json,csv
 
 # Especificar diretório de saída
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all --export-dir reports/
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst --export-all --export-dir reports/
 ```
 
 ### Output structure
@@ -282,10 +282,10 @@ Solution: run with adequate privileges
 
 ```bash
 # Enable full debug
-python mikrotikapi-bf-v2.1.py -t 192.168.1.1 -u users.lst -p passwords.lst -vv
+python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p passwords.lst -vv
 
 # List sessions
-python mikrotikapi-bf-v2.1.py --list-sessions
+python mikrotikapi-bf.py --list-sessions
 
 # Clean old sessions
 rm -rf sessions/*.json
@@ -293,7 +293,7 @@ rm -rf sessions/*.json
 
 ## 📝 Changelog
 
-### v2.1 (2025-10-05)
+### v3.6.0 (2025-10-05)
 
 #### ✨ Novos Recursos
 - Sistema de sessão persistente
@@ -343,3 +343,5 @@ MIT License — see LICENSE.
 ## ⚠️ Legal & Responsible Use
 
 Use only on systems you own or have explicit written authorization to test. Testing will likely be logged; coordinate with stakeholders.
+
+

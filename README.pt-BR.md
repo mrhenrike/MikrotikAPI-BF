@@ -1,8 +1,8 @@
-# MikrotikAPI-BF v3.5.4 (pt-BR)
+# MikrotikAPI-BF v3.6.0 (pt-BR)
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.5.4-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.5.4)
+[![Version](https://img.shields.io/badge/version-3.6.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.6.0)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 [![PyPI](https://img.shields.io/badge/pip-mikrotikapi--bf-blue)](https://pypi.org/project/mikrotikapi-bf/)
@@ -51,7 +51,7 @@
 - **`--decode-supout`** — lista seções em `supout.rif`
 - **`--analyze-npk`** — analisador de pacotes NPK (vetor CVE-2019-3977)
 
-### 🗺️ Scripts Nmap NSE (v3.5.4+)
+### 🗺️ Scripts Nmap NSE (v3.6.0+)
 - `mikrotik-routeros-version.nse` — fingerprint RouterOS via HTTP/API/Winbox
 - `mikrotik-api-brute.nse` — força bruta completa da API (auth 6.x MD5 + 7.x plaintext)
 - `mikrotik-default-creds.nse` — testa credenciais padrão/vazias
@@ -129,7 +129,7 @@ nmap -p 8291 --script mikrotik-winbox-cve-2018-14847 192.168.1.1
 
 ## 🗺️ Mapeamento de Superfície de Ataque
 
-### Superfície Completa — Status de Cobertura (v3.5.4)
+### Superfície Completa — Status de Cobertura (v3.6.0)
 
 ![Mapa Completo da Superfície de Ataque MikrotikAPI-BF](img/mikrotik_full_attack_surface.png)
 
@@ -197,4 +197,5 @@ Consulte a [tabela completa de flags](README.md#-cli-reference-all-flags) no REA
 
 Licenciado sob MIT — ver [`LICENSE`](LICENSE).  
 **Autor:** André Henrique ([@mrhenrike](https://github.com/mrhenrike)) · LinkedIn/X: `@mrhenrike`
+
 

@@ -12,6 +12,13 @@ from .fingerprint import MikrotikFingerprinter
 from .wordlists import SmartWordlistManager
 from .proxy import ProxyManager
 from .discovery import MikrotikDiscovery
+from .snmp import SNMPScanner
+from .hardening_check import HardeningValidator
+from .web_security import WebSecurityTester
+from .ssh_audit import SSHAuditor
+from .timing_oracle import TimingOracleAttacker
+from .privilege_escalation import PrivEscTester
+from .cli_timing_oracle import CLITimingOracle
 
 __all__ = [
     "StealthManager",
@@ -19,4 +26,11 @@ __all__ = [
     "SmartWordlistManager",
     "ProxyManager",
     "MikrotikDiscovery",
+    "SNMPScanner",
+    "HardeningValidator",
+    "WebSecurityTester",
+    "SSHAuditor",
+    "TimingOracleAttacker",
+    "PrivEscTester",
+    "CLITimingOracle",
 ]

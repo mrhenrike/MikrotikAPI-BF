@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mikrotikapi-bf"
-version = "3.5.4"
+version = "3.6.0"
 description = "RouterOS Attack & Exploitation Framework — credential brute-force, CVE scanner, MAC-Server, decoders"
 readme = "README.md"
 license = "MIT"
