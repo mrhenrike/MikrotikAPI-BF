@@ -76,22 +76,30 @@ Five Lua scripts in `nse/` for Nmap integration:
 
 ## 🚀 Quick Start
 
-### Install via pip
+### Install via pip (recommended)
 
 ```bash
-pip install git+https://github.com/mrhenrike/MikrotikAPI-BF.git
-# or (when on PyPI):
+# Latest stable release from PyPI
 pip install mikrotikapi-bf
 
+# Upgrade to the latest version
+pip install --upgrade mikrotikapi-bf
+
+# Verify installation
 mikrotikapi-bf --help
-mikrotikapi-bf --nse-path    # prints NSE scripts directory for Nmap
+mikrotikapi-bf --nse-path    # prints bundled NSE scripts directory for Nmap
 ```
 
-### Install from source
+> **NSE scripts** are installed automatically to Nmap's scripts directory during `pip install`.  
+> To install them manually: `mikrotikapi-install-nse`
+
+### Install from source (development)
 
 ```bash
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
+pip install -e .          # editable install — includes NSE auto-install hook
+# or without the hook:
 pip install -r requirements.txt
 python mikrotikapi-bf.py --help
 ```
