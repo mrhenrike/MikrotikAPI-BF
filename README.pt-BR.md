@@ -163,6 +163,17 @@ nmap -p 8291 --script mikrotik-winbox-cve-2018-14847 192.168.1.1
 
 Consulte a [tabela completa de flags](README.md#-cli-reference-all-flags) no README em inglês ou o [Guia Completo (pt-BR)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/Complete-Usage-Guide-pt-BR) na wiki.
 
+### Nota técnica — validação de rate-limiting (2026-04-08)
+
+Teste prático executado em **CHR 7.22.1 default-fresh** com o mesmo corpus de 30 tentativas:
+- `--delay-mode high` (`0.0s`): **3.70 att/s**
+- `--delay-mode custom -s 0.05`: **3.15 att/s**
+- `--delay-mode balanced` (`0.25s`): **1.85 att/s**
+- `--delay-mode stealth` (`1.0s`): **0.79 att/s**
+
+Teste estendido em `high` (300 tentativas): **3.68 att/s** (estável).
+Esses números foram usados como insumo de resposta técnica no caso VINCE.
+
 ---
 
 ## 📖 Documentação

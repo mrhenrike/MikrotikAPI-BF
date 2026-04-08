@@ -212,8 +212,9 @@ nmap -p 8728 --script mikrotik-api-brute \
 | `--userlist` | `-u` | Username wordlist file | — |
 | `--passlist` | `-p` | Password wordlist file | — |
 | `--dictionary` | `-d` | Combo file (`user:pass`) | — |
-| `--seconds` | `-s` | Delay between attempts (s) | 5 |
-| `--threads` | — | Thread count (max 15) | 2 |
+| `--delay-mode` | — | Delay profile: `high,balanced,stealth,custom` | high |
+| `--seconds` | `-s` | Custom delay in seconds (with `--delay-mode custom`) | profile-based |
+| `--threads` | — | Thread count (max 300; `>15` requires `--high-threads`) | 2 |
 | `--api-port` | — | RouterOS API port | 8728 |
 | `--rest-port` | — | RouterOS REST port | 8729 |
 | `--http-port` | — | HTTP port | 80 |
@@ -426,6 +427,8 @@ add chain=input action=drop
 - **`--install-nse`** flag and `mikrotikapi-install-nse` entry point for manual NSE installation
 - **3 more official Nmap MikroTik scripts** bundled: `mikrotik-routeros-brute.nse`, `mikrotik-routeros-username-brute.nse`, `broadcast-mndp-discover.nse`
 - **300-thread support** — `--threads N` (up to 300) with mandatory `--high-threads` disclaimer for values > 15
+- **Delay profiles for rate-limit validation** — new `--delay-mode high|balanced|stealth|custom` with `high` as default and `custom` via `-s/--seconds`
+- **Rate-limiting benchmark snapshot (2026-04-08)** — on CHR 7.22.1 default-fresh: `high=3.70 att/s`, `custom(0.05s)=3.15 att/s`, `balanced=1.85 att/s`, `stealth=0.79 att/s`; sustained `high` run (300 attempts) remained stable at `3.68 att/s`
 - **`setup.py` post-install hook** — NSE scripts installed automatically on pip install
 - **`pyproject.toml` fixed** — proper `setuptools.build_meta` backend; package builds and passes `twine check`
 - **GitHub Actions** — `.github/workflows/publish-pypi.yml` + `publish-testpypi.yml` with OIDC trusted publishing
