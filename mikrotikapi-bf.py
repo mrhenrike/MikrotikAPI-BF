@@ -949,8 +949,23 @@ def _build_parser() -> argparse.ArgumentParser:
 
     # Timing
     timing = p.add_argument_group("Timing & Threads")
-    timing.add_argument("-s", "--seconds", type=float, default=5, metavar="N",
-                        help="Delay between attempts (default: 5)")
+    timing.add_argument(
+        "--delay-mode",
+        choices=("high", "balanced", "stealth", "custom"),
+        default="high",
+        help=(
+            "Delay profile between attempts. "
+            "'high' keeps requests aggressive for rate-limit validation "
+            "(default), 'custom' uses --seconds."
+        ),
+    )
+    timing.add_argument(
+        "-s", "--seconds",
+        type=float,
+        default=None,
+        metavar="N",
+        help="Custom delay in seconds (used with --delay-mode custom).",
+    )
     timing.add_argument("--threads", type=int, default=2, metavar="N",
                         help="Thread count (default: 2, max: 300). "
                              "Values > 15 require --high-threads acknowledgement. "
@@ -1140,6 +1155,31 @@ def _parse_validate(raw: Optional[str]) -> Dict[str, Optional[int]]:
         else:
             svcs[item.lower()] = None
     return svcs
+
+
+def _resolve_delay(delay_mode: str, seconds: Optional[float], log: Optional[Log] = None) -> float:
+    """Resolve effective delay from preset mode and optional custom value."""
+    presets = {
+        "high": 0.0,      # Fastest mode to validate server-side rate-limiting.
+        "balanced": 0.25,
+        "stealth": 1.0,
+    }
+    mode = delay_mode
+
+    # Backward compatibility: legacy scripts that pass only --seconds.
+    if seconds is not None and delay_mode != "custom":
+        mode = "custom"
+        if log:
+            log.warning("[DELAY] --seconds provided. Forcing --delay-mode custom.")
+
+    if mode == "custom":
+        if seconds is None:
+            raise ValueError("Custom delay mode requires --seconds N.")
+        if seconds < 0:
+            raise ValueError("Custom delay must be >= 0.")
+        return seconds
+
+    return presets.get(mode, 0.0)
 
 
 def _list_sessions(sm: SessionManager) -> None:
@@ -1685,6 +1725,17 @@ def main() -> None:
             sys.exit(1)
         sys.exit(0)
 
+    # ── Delay mode resolution (used by brute-force flows) ──────────────
+    _effective_delay: Optional[float] = None
+    if getattr(args, "target_list", None) or args.target or getattr(args, "mac_brute", False):
+        try:
+            _effective_delay = _resolve_delay(
+                delay_mode=getattr(args, "delay_mode", "high"),
+                seconds=getattr(args, "seconds", None),
+            )
+        except ValueError as delay_exc:
+            parser.error(str(delay_exc))
+
     # ── MAC Server / Layer-2 modes (v3.3.0+) ─────────────────────────
     mac_discover = getattr(args, "mac_discover", False)
     mac_brute    = getattr(args, "mac_brute",    False)
@@ -1732,7 +1783,8 @@ def main() -> None:
                 _wl = [("admin", ""), ("admin", "admin"), ("admin", "mikrotik")]
 
             print(f"\n  [MAC-BRUTE] Testing {len(_wl)} combination(s) via MAC-Telnet…\n")
-            _brute = MACServerBrute(wordlist=_wl, delay=args.seconds if hasattr(args, "seconds") else 0.5)
+            _mac_delay = _effective_delay if _effective_delay is not None else 0.0
+            _brute = MACServerBrute(wordlist=_wl, delay=_mac_delay)
             _mac_results = _brute.run(devices=_devices)
 
             if _mac_results:
@@ -1824,7 +1876,7 @@ def main() -> None:
                 usernames=args.userlist if args.userlist else args.user,
                 passwords=args.passlist if args.passlist else args.passw,
                 combo_dict=args.dictionary,
-                delay=args.seconds,
+                delay=_effective_delay if _effective_delay is not None else 0.0,
                 api_port=args.api_port,
                 rest_port=args.rest_port,
                 http_port=args.http_port,
@@ -1928,7 +1980,7 @@ def main() -> None:
         usernames=usernames,
         passwords=passwords,
         combo_dict=args.dictionary,
-        delay=args.seconds,
+        delay=_effective_delay if _effective_delay is not None else 0.0,
         api_port=args.api_port,
         rest_port=args.rest_port,
         http_port=args.http_port,
