@@ -1,26 +1,65 @@
 name: "Publish to PyPI"
 
+# Only triggers on signed release published from the default branch.
+# workflow_dispatch was intentionally removed to prevent unauthorised ad-hoc publishes.
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to publish (e.g. 3.6.0)"
-        required: true
 
 jobs:
+  verify-actor:
+    name: Verify release actor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block unauthorised publishers
+        # Only the canonical maintainer account may trigger a PyPI release.
+        if: ${{ github.triggering_actor != 'mrhenrike' }}
+        run: |
+          echo "::error::Unauthorised actor: ${{ github.triggering_actor }}. Only mrhenrike may publish."
+          exit 1
+
+  check-secrets:
+    name: Guard against secret leakage
+    runs-on: ubuntu-latest
+    needs: verify-actor
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect committed secrets (.env / token files)
+        run: |
+          # Fail if any .env or secret-like files were accidentally staged
+          if git ls-files | grep -E '(^|/)(\.env|secrets?\.(yml|json|txt)|credentials)$'; then
+            echo "::error::Potential secret file detected in repository. Aborting publish."
+            exit 1
+          fi
+          echo "Secret file check passed."
+
   build-and-publish:
     name: Build and publish to PyPI
     runs-on: ubuntu-latest
+    needs: check-secrets
+    # Must originate from the default branch or a release tag on main
     environment:
       name: pypi
       url: https://pypi.org/p/mikrotikapi-bf
     permissions:
-      id-token: write   # required for trusted publishing
+      id-token: write   # required for OIDC Trusted Publisher (no static token stored)
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Verify release is on main branch
+        run: |
+          # The tag must point to a commit reachable from origin/main
+          git fetch origin main --depth=1
+          if ! git merge-base --is-ancestor "${{ github.sha }}" origin/main; then
+            echo "::error::Release tag must be on the main branch. Aborting."
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -33,11 +72,10 @@ jobs:
       - name: Build package
         run: python -m build
 
-      - name: Verify package
+      - name: Verify package integrity
         run: twine check dist/*
 
-      - name: Publish to PyPI (Trusted Publisher)
+      - name: Publish to PyPI (OIDC Trusted Publisher — no stored token)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           print-hash: true
-

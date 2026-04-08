@@ -62,22 +62,30 @@
 
 ## 🚀 Início Rápido
 
-### Instalar via pip
+### Instalar via pip (recomendado)
 
 ```bash
-pip install git+https://github.com/mrhenrike/MikrotikAPI-BF.git
-# ou (quando no PyPI):
+# Versão estável mais recente direto do PyPI
 pip install mikrotikapi-bf
 
+# Atualizar para a versão mais recente
+pip install --upgrade mikrotikapi-bf
+
+# Verificar instalação
 mikrotikapi-bf --help
-mikrotikapi-bf --nse-path    # caminho dos scripts NSE para o Nmap
+mikrotikapi-bf --nse-path    # caminho dos scripts NSE instalados para o Nmap
 ```
 
-### Instalar do código-fonte
+> **Scripts NSE** são instalados automaticamente no diretório do Nmap durante o `pip install`.  
+> Para instalar manualmente: `mikrotikapi-install-nse`
+
+### Instalar do código-fonte (desenvolvimento)
 
 ```bash
 git clone https://github.com/mrhenrike/MikrotikAPI-BF.git
 cd MikrotikAPI-BF
+pip install -e .          # instalação editável — inclui hook NSE automático
+# ou sem o hook:
 pip install -r requirements.txt
 python mikrotikapi-bf.py --help
 ```
