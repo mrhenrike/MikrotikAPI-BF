@@ -87,6 +87,8 @@ class PentestCLI:
             "stealth": self._cmd_stealth,
             "wordlists": self._cmd_wordlists,
             "exploits": self._cmd_exploits,
+            "run": self._cmd_run_exploit,
+            "audit": self._cmd_audit,
             "exit": self._cmd_exit,
             "quit": self._cmd_exit,
         }
@@ -114,6 +116,8 @@ class PentestCLI:
 
   EXPLOITATION:
     exploits <target>           Show applicable CVEs / exploits for target
+    run <CVE_ID> <target>       Run a specific exploit/PoC check by CVE ID
+    audit <target>              Run full 8-phase security audit via REST API
 
   RESULTS:
     results                     Show found credentials
@@ -209,6 +213,51 @@ class PentestCLI:
             scanner.print_results(results)
         except ImportError:
             print("  [!] xpl module not available.")
+        except Exception as exc:
+            print(f"  [!] Error: {exc}")
+
+    def _cmd_run_exploit(self, args: List[str]) -> None:
+        if len(args) < 2:
+            print("  [!] Usage: run <CVE_ID> <target>")
+            return
+        cve_id, target = args[0].upper(), args[1]
+        print(f"  [*] Running {cve_id} against {target}…")
+        try:
+            from xpl.exploits import EXPLOIT_REGISTRY
+            exploit_cls = EXPLOIT_REGISTRY.get(cve_id)
+            if not exploit_cls:
+                print(f"  [!] Exploit '{cve_id}' not found.")
+                avail = ", ".join(sorted(list(EXPLOIT_REGISTRY.keys())[:8]))
+                print(f"  [i] Available: {avail}…")
+                return
+            exploit = exploit_cls(target=target, timeout=10)
+            result = exploit.check()
+            vuln = result.get("vulnerable", False)
+            print(f"  [+] Vulnerable: {'YES' if vuln else 'NO'}")
+            print(f"  [+] Evidence:   {result.get('evidence', 'N/A')[:150]}")
+        except Exception as exc:
+            print(f"  [!] Error: {exc}")
+
+    def _cmd_audit(self, args: List[str]) -> None:
+        if not args:
+            print("  [!] Usage: audit <target>")
+            return
+        target = args[0]
+        print(f"  [*] Starting full audit on {target}…")
+        try:
+            from xpl.auditor import MikroTikAuditor
+            from pathlib import Path
+            auditor = MikroTikAuditor(host=target, user="admin", password="")
+            results = auditor.run_full_audit()
+            report_dir = Path("results")
+            rpt = auditor.generate_report(results, report_dir)
+            print(f"  [+] Report: {rpt}")
+            self.session_data["scan_results"].append({
+                "type": "audit", "target": target,
+                "findings": len(auditor.findings),
+            })
+        except ImportError:
+            print("  [!] xpl.auditor module not available.")
         except Exception as exc:
             print(f"  [!] Error: {exc}")
 

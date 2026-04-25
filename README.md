@@ -1,14 +1,14 @@
-# MikrotikAPI-BF v3.6.0
+# MikrotikAPI-BF v3.9.0
 
-[![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.6.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.6.0)
+[![Version](https://img.shields.io/badge/version-3.9.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.9.0)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 [![PyPI](https://img.shields.io/badge/pip-mikrotikapi--bf-blue)](https://pypi.org/project/mikrotikapi-bf/)
 [![CodeQL](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml/badge.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml)
 
-**RouterOS Attack & Exploitation Framework** — credential brute-force, **40 CVE/EDB PoC exploits**, MAC-Server Layer-2 discovery, offline credential decoders, NPK analyzer, CVE scanner, Nmap NSE scripts, multi-target, stealth, REST/API/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF vectors.
+**RouterOS Attack & Exploitation Framework** — credential brute-force, **47 CVE/EDB PoC exploits**, 8-phase automated security audit, MAC-Server Layer-2 discovery, offline credential decoders, NPK analyzer, CVE scanner, SARIF CI/CD export, Nmap NSE scripts, multi-target, stealth, REST/API/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF vectors.
 
 **Portuguese (pt-BR):** [README.pt-BR.md](README.pt-BR.md) · **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · **Security:** [SECURITY.md](SECURITY.md)
 
@@ -24,11 +24,14 @@
 - **Threading** — up to 15 workers (`--threads N`)
 
 ### 🔍 CVE Scanner & Exploit Engine
-- **40 exploit classes** — 22 CVEs + 2 design findings + 13 Exploit-DB PoCs + 5 new CVEs
+- **47 exploit classes** — 27 CVEs + 5 design/config findings + 13 Exploit-DB PoCs + novel research PoCs
 - **Pre-auth exploits** — Winbox (CVE-2018-14847, CVE-2018-10066), HTTP traversal, SNMP, SMB, BFD, OSPF, DNS
-- **Post-auth exploits** — Scheduler RCE, Container escalation, FOISted, WireGuard key extraction, packet sniffer wiretapping
+- **Post-auth exploits** — Scheduler RCE, Container escalation, FOISted, WireGuard key extraction, packet sniffer wiretapping, SSRF via tool/fetch, REST path traversal, scheduler command injection
+- **SSH Jailbreak** — RouterOS root shell via SSH backup patching (ROS 2.9.8–6.41rc56)
+- **Winbox credential decryption** — enhances CVE-2018-14847 with DAT file decryption
 - **Version-aware** — CVE database maps applicability to detected RouterOS version
 - **`--scan-cve`** — standalone CVE scan (no brute-force needed)
+- **`--run-exploit <CVE_ID>`** — run a specific exploit PoC by ID (v3.9.0+)
 
 ### 🌐 Winbox CVE Coverage (TCP 8291)
 - **CVE-2018-14847** — Credential disclosure (Chimay-Red / EternalWink) — pre-auth file read
@@ -65,11 +68,24 @@ Five Lua scripts in `nse/` for Nmap integration:
 - Includes `labs_mikrotik_pass.lst` (MikroTik-specific), `labs_passwords.lst`, `labs_users.lst`
 - Smart wordlist engine with target-informed combinations
 
+### 🛡️ Automated Security Audit (v3.9.0+)
+- **`--audit`** — full 8-phase security audit via REST API (no brute-force needed)
+- Phase 1: System enumeration (identity, resource, packages, health)
+- Phase 2: Service & network mapping (ip/service, firewall, interfaces)
+- Phase 3: User & credential audit (blank password, default creds)
+- Phase 4: REST API injection testing (scheduler, path traversal, SSRF)
+- Phase 5: Winbox protocol probing (port 8291, M2 banner)
+- Phase 6: SNMP analysis (default communities)
+- Phase 7: Undocumented/debug endpoint discovery
+- Phase 8: Configuration export & firewall audit
+- Generates markdown report + raw JSON + SARIF
+
 ### 🔄 Sessions, Stealth & Export
 - **Persistent sessions** — resume interrupted attacks (`--resume`)
 - **Stealth mode** — Fibonacci delays, User-Agent rotation (`--stealth`)
 - **Progress bar** — ETA and speed display (`--progress`)
-- **Export** — JSON, CSV, XML, TXT (`--export-all`)
+- **Export** — JSON, CSV, XML, TXT, **SARIF v2.1.0** (`--export-all` / `--export sarif`)
+- **SARIF** — OASIS Static Analysis Results Interchange Format for CI/CD pipelines (v3.9.0+)
 - **Proxy** — SOCKS5/HTTP proxy support (`--proxy socks5://...`)
 
 ---
@@ -119,6 +135,12 @@ python mikrotikapi-bf.py -T targets.lst -d passwords.lst --threads 5
 # Full CVE scan (authenticated)
 python mikrotikapi-bf.py -t 192.168.1.1 --scan-cve --all-cves -U admin -P pass
 
+# Run specific exploit by CVE ID
+python mikrotikapi-bf.py -t 192.168.1.1 --run-exploit CVE-2018-14847
+
+# Full 8-phase security audit with SARIF output
+python mikrotikapi-bf.py -t 192.168.1.1 --audit --export sarif -U admin -P pass
+
 # Full pentest run
 python mikrotikapi-bf.py \
   -t 192.168.1.1 \
@@ -155,7 +177,7 @@ nmap -p 8728 --script mikrotik-api-brute \
 
 ## 🗺️ Attack Surface Mapping
 
-### Full Attack Surface — Coverage Status (v3.6.0)
+### Full Attack Surface — Coverage Status (v3.9.0)
 
 ![MikrotikAPI-BF Full Attack Surface Map](img/mikrotik_full_attack_surface.png)
 
@@ -237,10 +259,13 @@ nmap -p 8728 --script mikrotik-api-brute \
 | `--exploit` | — | Run exploit scanner after BF | false |
 | `--scan-cve` | — | Standalone CVE scan (no BF) | false |
 | `--all-cves` | — | Show all CVEs (ignore version) | false |
+| `--run-exploit` | — | Run specific exploit by CVE ID | — |
+| `--audit` | — | Full 8-phase security audit via REST | false |
+| `--audit-report` | — | Audit report output directory | results |
 | `--proxy` | — | Proxy URL (`socks5://...`) | — |
 | `--interactive` | — | Start interactive REPL | false |
 | `--max-retries` | — | Connection retry count | 1 |
-| `--export` | — | Formats: `json,csv,xml,txt` | — |
+| `--export` | — | Formats: `json,csv,xml,txt,sarif` | — |
 | `--export-all` | — | Export to all formats | false |
 | `--export-dir` | — | Output directory | results |
 | `--resume` | — | Resume previous session | false |
@@ -276,7 +301,7 @@ nmap -p 8728 --script mikrotik-api-brute \
 
 ---
 
-## 🔎 Full Exploit Coverage (40 entries)
+## 🔎 Full Exploit Coverage (47 entries)
 
 | ID | Title | CVSS | Auth | PoC | Fixed in |
 |----|-------|------|------|-----|---------|
@@ -305,8 +330,15 @@ nmap -p 8728 --script mikrotik-api-brute \
 | CVE-2024-35274 | Authenticated RCE via Scheduler Injection | 8.8 | Yes | — | Pending |
 | CVE-2025-6563 | RouterOS 7.x WebFig XSS/Open Redirect | 6.1 | No | — | Pending |
 | CVE-2017-20149 | www Password Exposure | 7.5 | No | — | 6.38.5 |
+| CVE-2025-61481 | WebFig HTTP Credential Exposure | 7.5 | No | — | Pending |
+| CVE-2025-10948 | REST API Stack Buffer Overflow RCE | 9.8 | No | — | Pending |
 | MIKROTIK-CONFIG-001 | WireGuard Private Key Exposure | — | Yes | — | Design |
 | MIKROTIK-CONFIG-002 | Packet Sniffer Remote Streaming | — | Yes | — | Design |
+| MIKROTIK-CONFIG-003 | SSRF via /rest/tool/fetch | — | Yes | — | Design |
+| MIKROTIK-CONFIG-004 | Scheduler Command Injection | — | Yes | — | Design |
+| MIKROTIK-CONFIG-005 | REST API Path Traversal Probe | — | Yes | — | Design |
+| MIKROTIK-JAILBREAK-001 | SSH Backup Patch Root Shell | 9.8 | Yes | — | 6.41rc56 |
+| CVE-2018-14847-DECRYPT | Winbox Credential Decryption | 9.1 | No | — | 6.42.1 |
 | EDB-31102 | RouterOS 3.x SNMP SET DoS | — | No | [EDB ✓](https://www.exploit-db.com/exploits/31102) | ≤ 3.2 |
 | EDB-6366 | RouterOS 3.x SNMP Unauthorized Write | — | No | [EDB ✓](https://www.exploit-db.com/exploits/6366) | ≤ 3.13 |
 | EDB-44283/44284 | Chimay-Red Stack Clash RCE (MIPSBE+x86) | 9.8 | No | [EDB](https://www.exploit-db.com/exploits/44283) | < 6.38.4 |
@@ -331,7 +363,7 @@ nmap -p 8728 --script mikrotik-api-brute \
 ```
 MikrotikAPI-BF/
 ├── version.py                    # Canonical version source (edit to bump)
-├── mikrotikapi-bf.py             # Main entry point (v3.6.0)
+├── mikrotikapi-bf.py             # Main entry point (v3.9.0)
 ├── pyproject.toml                # pip package definition
 ├── requirements.txt
 ├── .env.example                  # Environment variable template (safe to commit)
@@ -348,8 +380,9 @@ MikrotikAPI-BF/
 │   └── mikrotik-winbox-cve-2018-14847.nse
 ├── core/                         # Core engine
 │   ├── api.py                    # RouterOS binary API protocol
-│   ├── cli.py                    # CLI argument parsing
-│   ├── export.py                 # JSON/CSV/XML/TXT export
+│   ├── apiros_client.py          # Alternative API client (full binary protocol + SSL)
+│   ├── cli.py                    # Interactive REPL CLI
+│   ├── export.py                 # JSON/CSV/XML/TXT/SARIF export
 │   ├── log.py                    # Logging subsystem
 │   ├── progress.py               # Progress bar + ETA
 │   ├── retry.py                  # Retry + backoff
@@ -364,11 +397,15 @@ MikrotikAPI-BF/
 │   ├── stealth.py                # Fibonacci delays + UA rotation
 │   └── wordlists.py              # Smart wordlist engine
 ├── xpl/                          # Exploit/CVE engine
-│   ├── cve_db.py                 # CVE database (40 exploits)
-│   ├── exploits.py               # 40 exploit classes
+│   ├── auditor.py                # 8-phase automated security audit (v3.9.0)
+│   ├── cve_db.py                 # CVE database (47 exploits)
+│   ├── exploits.py               # 47 exploit classes
 │   ├── npk_decoder.py            # NPK package analyzer (v3.6.0)
 │   ├── nvd_shodan.py             # NVD API + Shodan integration
+│   ├── offline_analyzer.py       # Offline artifact analyzer
 │   └── scanner.py                # Vulnerability scanner
+├── tools/                        # Standalone utilities (v3.8.0+)
+│   └── binary_analysis.py        # Offline firmware binary analysis (LIEF + Capstone)
 ├── img/                          # Attack surface diagrams
 │   ├── mikrotik_full_attack_surface.png
 │   ├── mikrotik_access_vectors.png
@@ -430,7 +467,24 @@ add chain=input action=drop
 
 ## 📋 What's New
 
-### v3.6.0 (current)
+### v3.9.0 (current)
+- **`--audit`** — full 8-phase automated security audit via REST API: system enumeration, service mapping, credential audit, injection testing, Winbox probing, SNMP analysis, debug endpoint discovery, firewall audit
+- **`--run-exploit <CVE_ID>`** — run any registered exploit PoC directly by ID (47 available)
+- **SARIF v2.1.0 export** — `--export sarif` for CI/CD pipeline integration (GitHub Code Scanning, Azure DevOps, etc.)
+- **7 new exploit classes** (v3.7.0–3.9.0):
+  - `Exploit_CVE_2025_61481` — WebFig HTTP credential exposure
+  - `Exploit_CVE_2025_10948` — REST API stack buffer overflow RCE
+  - `Exploit_SSRF_TOOL_FETCH` — SSRF via /rest/tool/fetch
+  - `Exploit_ROUTEROS_JAILBREAK` — SSH backup patch root shell (ROS 2.9.8–6.41rc56)
+  - `Exploit_WINBOX_CRED_DECRYPT` — Winbox credential decryption (enhances CVE-2018-14847)
+  - `Exploit_SCHED_CMD_INJECTION` — Scheduler command injection via REST API
+  - `Exploit_REST_PATH_TRAVERSAL` — REST API path traversal probe
+- **`core/apiros_client.py`** — alternative RouterOS API client with full binary protocol, MD5 challenge, and anonymous DH SSL
+- **`tools/binary_analysis.py`** — offline firmware binary analysis (LIEF ELF parsing + Capstone disassembly)
+- **Interactive CLI** — new `run <CVE_ID> <target>` and `audit <target>` REPL commands
+- **Total: 47 exploit classes** across 27 CVEs + 5 config findings + 13 Exploit-DB PoCs + 2 novel research PoCs
+
+### v3.6.0
 - **NSE auto-installer** — `mikrotikapi_bf/nse_installer.py` copies NSE scripts to Nmap on Windows/Linux/macOS automatically during `pip install` or `pip install --upgrade`
 - **`--install-nse`** flag and `mikrotikapi-install-nse` entry point for manual NSE installation
 - **3 more official Nmap MikroTik scripts** bundled: `mikrotik-routeros-brute.nse`, `mikrotik-routeros-username-brute.nse`, `broadcast-mndp-discover.nse`
@@ -441,8 +495,6 @@ add chain=input action=drop
 - **`pyproject.toml` fixed** — proper `setuptools.build_meta` backend; package builds and passes `twine check`
 - **GitHub Actions** — `.github/workflows/publish-pypi.yml` + `publish-testpypi.yml` with OIDC trusted publishing
 - **PyPI-ready** — `dist/mikrotikapi_bf-3.6.0-py3-none-any.whl` built and validated
-- **Printer NSE scripts** — collected in `dev/Printers/` (12 scripts: HP, Xerox, Lexmark, CUPS, PJL, SNMP)
-- **Disclosure references cleaned** — versioned documentation now focuses on technical behavior, exploit coverage, and reproducible lab evidence
 
 ### v3.5.3
 - **5 Nmap NSE scripts** in `nse/`: `mikrotik-routeros-version`, `mikrotik-api-brute`, `mikrotik-default-creds`, `mikrotik-api-info`, `mikrotik-winbox-cve-2018-14847`
