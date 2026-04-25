@@ -1,14 +1,14 @@
-# MikrotikAPI-BF v3.9.0 (pt-BR)
+# MikrotikAPI-BF v3.10.0 (pt-BR)
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.9.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.9.0)
+[![Version](https://img.shields.io/badge/version-3.10.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.10.0)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 [![PyPI](https://img.shields.io/badge/pip-mikrotikapi--bf-blue)](https://pypi.org/project/mikrotikapi-bf/)
 [![CodeQL](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml/badge.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml)
 
-**Framework de Ataque e Exploração RouterOS** — força bruta de credenciais, **47 exploits CVE/EDB com PoC**, auditoria de segurança automatizada em 8 fases, descoberta MAC-Server Layer-2, decodificadores offline de credenciais, analisador NPK, scanner CVE, export SARIF para CI/CD, scripts Nmap NSE, multi-alvo, stealth, vetores API/REST/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF.
+**Framework de Ataque e Exploração RouterOS** — força bruta de credenciais, **100 exploits CVE/EDB com PoC**, auditoria de segurança automatizada em 8 fases, descoberta MAC-Server Layer-2, decodificadores offline de credenciais, analisador NPK, scanner CVE, export SARIF para CI/CD, scripts Nmap NSE, multi-alvo, stealth, vetores API/REST/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF.
 
 **English:** [README.md](README.md) · **Contribuição:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Conduta:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · **Segurança:** [SECURITY.md](SECURITY.md)
 
@@ -31,9 +31,9 @@
 - **Decriptação Winbox** — aprimora CVE-2018-14847 com decriptação de arquivos DAT
 - **Ciente de versão** — banco de dados CVE mapeia aplicabilidade à versão RouterOS detectada
 - **`--scan-cve`** — scan CVE standalone (sem força bruta)
-- **`--run-exploit <CVE_ID>`** — executar exploit específico por ID (v3.9.0+)
+- **`--run-exploit <CVE_ID>`** — executar exploit específico por ID (v3.10.0+)
 
-### 🛡️ Auditoria Automatizada de Segurança (v3.9.0+)
+### 🛡️ Auditoria Automatizada de Segurança (v3.10.0+)
 - **`--audit`** — auditoria completa em 8 fases via REST API (sem necessidade de força bruta)
 - Fase 1: Enumeração de sistema (identidade, recursos, pacotes, saúde)
 - Fase 2: Mapeamento de serviços e rede (ip/service, firewall, interfaces)
@@ -158,7 +158,7 @@ nmap -p 8291 --script mikrotik-winbox-cve-2018-14847 192.168.1.1
 
 ## 🗺️ Mapeamento de Superfície de Ataque
 
-### Superfície Completa — Status de Cobertura (v3.9.0)
+### Superfície Completa — Status de Cobertura (v3.10.0)
 
 ![Mapa Completo da Superfície de Ataque MikrotikAPI-BF](img/mikrotik_full_attack_surface.png)
 

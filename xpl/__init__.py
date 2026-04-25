@@ -1,7 +1,7 @@
 """xpl — MikroTik RouterOS exploit and CVE scanning package.
 
 Provides:
-  - CVE_DATABASE: complete curated MikroTik CVE database (20+ entries)
+  - CVE_DATABASE: complete curated MikroTik CVE database (100 entries)
   - get_cves_for_version(): version-aware CVE filter
   - get_all_cves(): full database regardless of version
   - get_cves_with_poc(): only CVEs with public PoC
@@ -13,7 +13,7 @@ Provides:
   - EXPLOIT_REGISTRY: maps CVE IDs to PoC exploit classes
 
 Author: André Henrique (LinkedIn/X: @mrhenrike)
-Version: 3.9.0
+Version: 3.10.0
 """
 from .cve_db import (
     CVE_DATABASE,

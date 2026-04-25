@@ -1,14 +1,14 @@
-# MikrotikAPI-BF v3.9.0
+# MikrotikAPI-BF v3.10.0
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.9.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.9.0)
+[![Version](https://img.shields.io/badge/version-3.10.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.10.0)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 [![PyPI](https://img.shields.io/badge/pip-mikrotikapi--bf-blue)](https://pypi.org/project/mikrotikapi-bf/)
 [![CodeQL](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml/badge.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml)
 
-**RouterOS Attack & Exploitation Framework** — credential brute-force, **47 CVE/EDB PoC exploits**, 8-phase automated security audit, MAC-Server Layer-2 discovery, offline credential decoders, NPK analyzer, CVE scanner, SARIF CI/CD export, Nmap NSE scripts, multi-target, stealth, REST/API/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF vectors.
+**RouterOS Attack & Exploitation Framework** — credential brute-force, **100 CVE/EDB PoC exploits**, 8-phase automated security audit, MAC-Server Layer-2 discovery, offline credential decoders, NPK analyzer, CVE scanner, SARIF CI/CD export, Nmap NSE scripts, multi-target, stealth, REST/API/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF vectors.
 
 **Portuguese (pt-BR):** [README.pt-BR.md](README.pt-BR.md) · **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · **Security:** [SECURITY.md](SECURITY.md)
 
@@ -24,14 +24,14 @@
 - **Threading** — up to 15 workers (`--threads N`)
 
 ### 🔍 CVE Scanner & Exploit Engine
-- **47 exploit classes** — 27 CVEs + 5 design/config findings + 13 Exploit-DB PoCs + novel research PoCs
+- **100 exploit classes** — 27 CVEs + 5 design/config findings + 13 Exploit-DB PoCs + novel research PoCs
 - **Pre-auth exploits** — Winbox (CVE-2018-14847, CVE-2018-10066), HTTP traversal, SNMP, SMB, BFD, OSPF, DNS
 - **Post-auth exploits** — Scheduler RCE, Container escalation, FOISted, WireGuard key extraction, packet sniffer wiretapping, SSRF via tool/fetch, REST path traversal, scheduler command injection
 - **SSH Jailbreak** — RouterOS root shell via SSH backup patching (ROS 2.9.8–6.41rc56)
 - **Winbox credential decryption** — enhances CVE-2018-14847 with DAT file decryption
 - **Version-aware** — CVE database maps applicability to detected RouterOS version
 - **`--scan-cve`** — standalone CVE scan (no brute-force needed)
-- **`--run-exploit <CVE_ID>`** — run a specific exploit PoC by ID (v3.9.0+)
+- **`--run-exploit <CVE_ID>`** — run a specific exploit PoC by ID (v3.10.0+)
 
 ### 🌐 Winbox CVE Coverage (TCP 8291)
 - **CVE-2018-14847** — Credential disclosure (Chimay-Red / EternalWink) — pre-auth file read
@@ -68,7 +68,7 @@ Five Lua scripts in `nse/` for Nmap integration:
 - Includes `labs_mikrotik_pass.lst` (MikroTik-specific), `labs_passwords.lst`, `labs_users.lst`
 - Smart wordlist engine with target-informed combinations
 
-### 🛡️ Automated Security Audit (v3.9.0+)
+### 🛡️ Automated Security Audit (v3.10.0+)
 - **`--audit`** — full 8-phase security audit via REST API (no brute-force needed)
 - Phase 1: System enumeration (identity, resource, packages, health)
 - Phase 2: Service & network mapping (ip/service, firewall, interfaces)
@@ -85,7 +85,7 @@ Five Lua scripts in `nse/` for Nmap integration:
 - **Stealth mode** — Fibonacci delays, User-Agent rotation (`--stealth`)
 - **Progress bar** — ETA and speed display (`--progress`)
 - **Export** — JSON, CSV, XML, TXT, **SARIF v2.1.0** (`--export-all` / `--export sarif`)
-- **SARIF** — OASIS Static Analysis Results Interchange Format for CI/CD pipelines (v3.9.0+)
+- **SARIF** — OASIS Static Analysis Results Interchange Format for CI/CD pipelines (v3.10.0+)
 - **Proxy** — SOCKS5/HTTP proxy support (`--proxy socks5://...`)
 
 ---
@@ -177,7 +177,7 @@ nmap -p 8728 --script mikrotik-api-brute \
 
 ## 🗺️ Attack Surface Mapping
 
-### Full Attack Surface — Coverage Status (v3.9.0)
+### Full Attack Surface — Coverage Status (v3.10.0)
 
 ![MikrotikAPI-BF Full Attack Surface Map](img/mikrotik_full_attack_surface.png)
 
@@ -363,7 +363,7 @@ nmap -p 8728 --script mikrotik-api-brute \
 ```
 MikrotikAPI-BF/
 ├── version.py                    # Canonical version source (edit to bump)
-├── mikrotikapi-bf.py             # Main entry point (v3.9.0)
+├── mikrotikapi-bf.py             # Main entry point (v3.10.0)
 ├── pyproject.toml                # pip package definition
 ├── requirements.txt
 ├── .env.example                  # Environment variable template (safe to commit)
@@ -397,9 +397,9 @@ MikrotikAPI-BF/
 │   ├── stealth.py                # Fibonacci delays + UA rotation
 │   └── wordlists.py              # Smart wordlist engine
 ├── xpl/                          # Exploit/CVE engine
-│   ├── auditor.py                # 8-phase automated security audit (v3.9.0)
-│   ├── cve_db.py                 # CVE database (47 exploits)
-│   ├── exploits.py               # 47 exploit classes
+│   ├── auditor.py                # 8-phase automated security audit (v3.10.0)
+│   ├── cve_db.py                 # CVE database (100 exploits)
+│   ├── exploits.py               # 100 exploit classes
 │   ├── npk_decoder.py            # NPK package analyzer (v3.6.0)
 │   ├── nvd_shodan.py             # NVD API + Shodan integration
 │   ├── offline_analyzer.py       # Offline artifact analyzer
@@ -467,11 +467,20 @@ add chain=input action=drop
 
 ## 📋 What's New
 
-### v3.9.0 (current)
+### v3.10.0 (current)
+- **100 CVE/EDB database entries** — comprehensive coverage from 2008 to 2025
+- **97 executable exploit classes** — all invocable via `--run-exploit <CVE_ID>` or `--scan-cve --all-cves`
+- **VU#375660 formal entry** — author's own brute-force rate-limiting vulnerability (CERT/CC VINCE)
+- **2020 memory corruption series** — 21 CVEs covering NULL pointer, OOB write, memcorrupt in console, graphing, sniffer, resolver, lcdstat, wireless, dot1x, bfd, igmp-proxy, detnet, diskd, mactel, netwatch, traceroute
+- **Legacy CVE coverage** — CVE-2017-17537/17538, CVE-2015-2350, CVE-2012-6050, CVE-2008-6976
+- **13 EDB entries synced** — EDB-31102, EDB-6366, EDB-44283/44284, EDB-44450, EDB-43317, EDB-41752, EDB-41601, EDB-28056, EDB-24968, EDB-18817, EDB-52366, EDB-48474, EDB-39817
+- **New exploit classes** — DNS cache poisoning, FTP .rsc overwrite, Winbox user enum, VXLAN bypass, DHCPv6 RCE, bridge2 OOB write, REST ACL bypass, IPv6 FW bypass, hotspot XSS, L2TP downgrade, and more
+
+### v3.9.0
 - **`--audit`** — full 8-phase automated security audit via REST API: system enumeration, service mapping, credential audit, injection testing, Winbox probing, SNMP analysis, debug endpoint discovery, firewall audit
-- **`--run-exploit <CVE_ID>`** — run any registered exploit PoC directly by ID (47 available)
+- **`--run-exploit <CVE_ID>`** — run any registered exploit PoC directly by ID
 - **SARIF v2.1.0 export** — `--export sarif` for CI/CD pipeline integration (GitHub Code Scanning, Azure DevOps, etc.)
-- **7 new exploit classes** (v3.7.0–3.9.0):
+- **7 new exploit classes** (v3.7.0–v3.9.0):
   - `Exploit_CVE_2025_61481` — WebFig HTTP credential exposure
   - `Exploit_CVE_2025_10948` — REST API stack buffer overflow RCE
   - `Exploit_SSRF_TOOL_FETCH` — SSRF via /rest/tool/fetch
@@ -482,7 +491,7 @@ add chain=input action=drop
 - **`core/apiros_client.py`** — alternative RouterOS API client with full binary protocol, MD5 challenge, and anonymous DH SSL
 - **`tools/binary_analysis.py`** — offline firmware binary analysis (LIEF ELF parsing + Capstone disassembly)
 - **Interactive CLI** — new `run <CVE_ID> <target>` and `audit <target>` REPL commands
-- **Total: 47 exploit classes** across 27 CVEs + 5 config findings + 13 Exploit-DB PoCs + 2 novel research PoCs
+- **Total: 100 exploit classes** across 27 CVEs + 5 config findings + 13 Exploit-DB PoCs + 2 novel research PoCs
 
 ### v3.6.0
 - **NSE auto-installer** — `mikrotikapi_bf/nse_installer.py` copies NSE scripts to Nmap on Windows/Linux/macOS automatically during `pip install` or `pip install --upgrade`
