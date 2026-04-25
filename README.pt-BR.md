@@ -1,14 +1,14 @@
-# MikrotikAPI-BF v3.6.0 (pt-BR)
+# MikrotikAPI-BF v3.9.0 (pt-BR)
 
-[![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.6.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.6.0)
+[![Version](https://img.shields.io/badge/version-3.9.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.9.0)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 [![PyPI](https://img.shields.io/badge/pip-mikrotikapi--bf-blue)](https://pypi.org/project/mikrotikapi-bf/)
 [![CodeQL](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml/badge.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/actions/workflows/codeql.yml)
 
-**Framework de Ataque e Exploração RouterOS** — força bruta de credenciais, **40 exploits CVE/EDB com PoC**, descoberta MAC-Server Layer-2, decodificadores offline de credenciais, analisador NPK, scanner CVE, scripts Nmap NSE, multi-alvo, stealth, vetores API/REST/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF.
+**Framework de Ataque e Exploração RouterOS** — força bruta de credenciais, **47 exploits CVE/EDB com PoC**, auditoria de segurança automatizada em 8 fases, descoberta MAC-Server Layer-2, decodificadores offline de credenciais, analisador NPK, scanner CVE, export SARIF para CI/CD, scripts Nmap NSE, multi-alvo, stealth, vetores API/REST/Winbox/FTP/SSH/Telnet/SMB/SNMP/BFD/OSPF.
 
 **English:** [README.md](README.md) · **Contribuição:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Conduta:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · **Segurança:** [SECURITY.md](SECURITY.md)
 
@@ -24,11 +24,26 @@
 - **Threading** — até 15 workers (`--threads N`)
 
 ### 🔍 Scanner CVE e Engine de Exploits
-- **40 classes de exploit** — 22 CVEs + 2 design findings + 13 PoCs Exploit-DB + 5 novos CVEs
+- **47 classes de exploit** — 27 CVEs + 5 config/design findings + 13 PoCs Exploit-DB + pesquisa novel
 - **Exploits pre-auth** — Winbox (CVE-2018-14847, CVE-2018-10066), HTTP traversal, SNMP, SMB, BFD, OSPF, DNS
-- **Exploits post-auth** — RCE via Scheduler, escalonamento Container, FOISted, extração chave WireGuard, wiretapping via packet sniffer
+- **Exploits post-auth** — RCE via Scheduler, escalonamento Container, FOISted, extração chave WireGuard, wiretapping via packet sniffer, SSRF via tool/fetch, path traversal REST, command injection scheduler
+- **SSH Jailbreak** — shell root via patch de backup SSH (ROS 2.9.8–6.41rc56)
+- **Decriptação Winbox** — aprimora CVE-2018-14847 com decriptação de arquivos DAT
 - **Ciente de versão** — banco de dados CVE mapeia aplicabilidade à versão RouterOS detectada
 - **`--scan-cve`** — scan CVE standalone (sem força bruta)
+- **`--run-exploit <CVE_ID>`** — executar exploit específico por ID (v3.9.0+)
+
+### 🛡️ Auditoria Automatizada de Segurança (v3.9.0+)
+- **`--audit`** — auditoria completa em 8 fases via REST API (sem necessidade de força bruta)
+- Fase 1: Enumeração de sistema (identidade, recursos, pacotes, saúde)
+- Fase 2: Mapeamento de serviços e rede (ip/service, firewall, interfaces)
+- Fase 3: Auditoria de usuários e credenciais (senha em branco, credenciais padrão)
+- Fase 4: Teste de injeção REST API (scheduler, path traversal, SSRF)
+- Fase 5: Sondagem de protocolo Winbox (porta 8291, banner M2)
+- Fase 6: Análise SNMP (comunidades padrão)
+- Fase 7: Descoberta de endpoints ocultos/debug
+- Fase 8: Exportação de configuração e auditoria de firewall
+- Gera relatório markdown + JSON raw + SARIF
 
 ### 🌐 Cobertura Winbox (TCP 8291)
 - **CVE-2018-14847** — Divulgação de credenciais (Chimay-Red / EternalWink) — leitura de arquivo pre-auth
@@ -105,6 +120,12 @@ python mikrotikapi-bf.py -T targets.lst -d passwords.lst --threads 5
 # Scan completo de CVEs (autenticado)
 python mikrotikapi-bf.py -t 192.168.1.1 --scan-cve --all-cves -U admin -P senha
 
+# Executar exploit específico por CVE ID
+python mikrotikapi-bf.py -t 192.168.1.1 --run-exploit CVE-2018-14847
+
+# Auditoria completa de segurança em 8 fases com saída SARIF
+python mikrotikapi-bf.py -t 192.168.1.1 --audit --export sarif -U admin -P senha
+
 # Execução estilo pentest completo
 python mikrotikapi-bf.py \
   -t 192.168.1.1 \
@@ -137,7 +158,7 @@ nmap -p 8291 --script mikrotik-winbox-cve-2018-14847 192.168.1.1
 
 ## 🗺️ Mapeamento de Superfície de Ataque
 
-### Superfície Completa — Status de Cobertura (v3.6.0)
+### Superfície Completa — Status de Cobertura (v3.9.0)
 
 ![Mapa Completo da Superfície de Ataque MikrotikAPI-BF](img/mikrotik_full_attack_surface.png)
 

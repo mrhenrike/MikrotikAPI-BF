@@ -932,6 +932,8 @@ def _build_parser() -> argparse.ArgumentParser:
             "  python mikrotikapi-bf.py -t 192.168.1.1 -U admin -P admin\n"
             "  python mikrotikapi-bf.py -t 192.168.1.1 -d wordlists/combos.lst --stealth\n"
             "  python mikrotikapi-bf.py -t 192.168.1.1 --exploit --fingerprint\n"
+            "  python mikrotikapi-bf.py -t 192.168.1.1 --run-exploit CVE-2018-14847\n"
+            "  python mikrotikapi-bf.py -t 192.168.1.1 --audit --export sarif\n"
             "  python mikrotikapi-bf.py --interactive\n"
         ),
     )
@@ -1004,6 +1006,9 @@ def _build_parser() -> argparse.ArgumentParser:
     feat.add_argument("--exploit",      action="store_true", help="Run exploit/CVE scanner after BF")
     feat.add_argument("--scan-cve",     action="store_true", help="Fingerprint target and run all applicable CVE PoCs")
     feat.add_argument("--all-cves",     action="store_true", help="Show ALL CVEs regardless of version (with --scan-cve)")
+    feat.add_argument("--run-exploit",  metavar="CVE_ID",    help="Run a specific exploit check by ID (e.g. CVE-2018-14847)")
+    feat.add_argument("--audit",        action="store_true", help="Run full 8-phase security audit via REST API")
+    feat.add_argument("--audit-report", metavar="DIR", default="results", help="Output dir for audit report (default: results)")
     feat.add_argument("--timing-oracle", action="store_true", help="Run timing oracle test (length + char probe)")
     feat.add_argument("--privesc-test", action="store_true", help="Run low-impact privilege escalation test matrix")
     feat.add_argument("--cli-timing", action="store_true", help="Run multi-channel CLI timing collection")
@@ -1833,6 +1838,91 @@ def main() -> None:
             export_dir=getattr(args, "export_dir", "results"),
             http_port=getattr(args, "http_port", 80) or 80,
         )
+        sys.exit(0)
+
+    # ── Run specific exploit by ID (v3.9.0+) ────────────────────────
+    _run_exploit_id = getattr(args, "run_exploit", None)
+    if _run_exploit_id and args.target:
+        try:
+            from xpl.exploits import EXPLOIT_REGISTRY
+            exploit_cls = EXPLOIT_REGISTRY.get(_run_exploit_id)
+            if not exploit_cls:
+                print(f"\n  [ERROR] Exploit '{_run_exploit_id}' not found in registry.")
+                print(f"  Available: {', '.join(sorted(EXPLOIT_REGISTRY.keys())[:10])}...")
+                sys.exit(1)
+            print(f"\n  [EXPLOIT] Running {_run_exploit_id} against {args.target}…")
+            exploit = exploit_cls(
+                target=args.target,
+                timeout=10,
+                username=getattr(args, "user", ""),
+                password=getattr(args, "passw", ""),
+            )
+            result = exploit.check()
+            vuln = result.get("vulnerable", False)
+            print(f"  CVE:        {_run_exploit_id}")
+            print(f"  Vulnerable: {'YES' if vuln else 'NO'}")
+            print(f"  Evidence:   {result.get('evidence', 'N/A')[:200]}")
+            if result.get("error"):
+                print(f"  Error:      {result['error']}")
+
+            _exp_fmts_xpl: List[str] = []
+            if getattr(args, "export_all", False):
+                _exp_fmts_xpl = ["json", "csv", "xml", "txt", "sarif"]
+            elif getattr(args, "export", None):
+                _exp_fmts_xpl = [f.strip().lower() for f in args.export.split(",")]
+            if _exp_fmts_xpl:
+                _exp_dir = getattr(args, "export_dir", "results")
+                exporter = ResultExporter(
+                    [result], args.target, output_dir=_exp_dir,
+                )
+                for fmt in _exp_fmts_xpl:
+                    method = getattr(exporter, f"export_{fmt}", None)
+                    if method:
+                        path = method()
+                        print(f"  Exported:   {path}")
+            print()
+        except Exception as exc:
+            print(f"\n  [ERROR] Exploit execution failed: {exc}\n")
+            if getattr(args, "verbose_all", False):
+                import traceback
+                traceback.print_exc()
+        sys.exit(0)
+
+    # ── Full audit mode (v3.9.0+) ─────────────────────────────────────
+    if getattr(args, "audit", False) and args.target:
+        try:
+            from xpl.auditor import MikroTikAuditor
+            auditor = MikroTikAuditor(
+                host=args.target,
+                user=getattr(args, "user", "") or "admin",
+                password=getattr(args, "passw", "") or "",
+                timeout=10,
+            )
+            results = auditor.run_full_audit()
+            report_dir = Path(getattr(args, "audit_report", "results"))
+            report_path = auditor.generate_report(results, report_dir)
+            print(f"\n  [AUDIT] Report: {report_path}")
+
+            _exp_fmts_audit: List[str] = []
+            if getattr(args, "export_all", False):
+                _exp_fmts_audit = ["json", "sarif"]
+            elif getattr(args, "export", None):
+                _exp_fmts_audit = [f.strip().lower() for f in args.export.split(",")]
+            if _exp_fmts_audit:
+                exporter = ResultExporter(
+                    auditor.findings, args.target,
+                    output_dir=str(report_dir),
+                )
+                for fmt in _exp_fmts_audit:
+                    method = getattr(exporter, f"export_{fmt}", None)
+                    if method:
+                        path = method()
+                        print(f"  [AUDIT] Exported: {path}")
+        except Exception as exc:
+            print(f"\n  [ERROR] Audit failed: {exc}\n")
+            if getattr(args, "verbose_all", False):
+                import traceback
+                traceback.print_exc()
         sys.exit(0)
 
     # ── Timing oracle / PrivEsc / CLI timing standalone modes ───────────

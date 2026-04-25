@@ -8,6 +8,7 @@ management, result export, progress tracking, retry logic and interactive CLI.
 """
 
 from .api import Api
+from .apiros_client import ApiRosClient
 from .log import Log
 from .session import SessionManager
 from .export import ResultExporter
@@ -16,6 +17,7 @@ from .retry import retry, CircuitBreaker
 
 __all__ = [
     "Api",
+    "ApiRosClient",
     "Log",
     "SessionManager",
     "ResultExporter",

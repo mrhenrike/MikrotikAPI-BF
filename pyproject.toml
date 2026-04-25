@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mikrotikapi-bf"
-version = "3.6.0"
-description = "RouterOS Attack & Exploitation Framework — credential brute-force, CVE scanner, MAC-Server, decoders"
+version = "3.9.0"
+description = "RouterOS Attack & Exploitation Framework — 47 CVE/EDB exploits, 8-phase audit, credential brute-force, SARIF export"
 readme = "README.md"
 license = "MIT"
 authors = [
@@ -74,7 +74,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["core*", "modules*", "xpl*", "mikrotikapi_bf*"]
+include = ["core*", "modules*", "xpl*", "tools*", "mikrotikapi_bf*"]
 exclude = ["tests*", "docs*", ".log*", "dist*", "build*"]
 
 [tool.setuptools.package-data]

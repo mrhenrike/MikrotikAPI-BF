@@ -10,9 +10,9 @@ All modules, scripts, and build tools import from here.
 
 Usage
 -----
-    from version import __version__               # "3.6.0"
-    from version import VERSION                   # (3, 6, 0)
-    from version import MAJOR, MINOR, PATCH       # 3, 6, 0
+    from version import __version__               # "3.9.0"
+    from version import VERSION                   # (3, 9, 0)
+    from version import MAJOR, MINOR, PATCH       # 3, 9, 0
 
 Versioning scheme: MAJOR.MINOR.PATCH
     MAJOR — breaking API or architecture change
@@ -21,7 +21,7 @@ Versioning scheme: MAJOR.MINOR.PATCH
 """
 
 # ── Canonical version tuple ───────────────────────────────────────────────────
-VERSION: tuple = (3, 6, 0)
+VERSION: tuple = (3, 9, 0)
 
 MAJOR: int = VERSION[0]
 MINOR: int = VERSION[1]

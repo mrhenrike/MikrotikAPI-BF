@@ -583,6 +583,152 @@ CVE_DATABASE: List[Dict] = [
             "streaming-server=<attacker-ip>:37008. No patch — admin access prevention only."
         ),
     },
+    {
+        "cve_id": "MIKROTIK-JAILBREAK-001",
+        "title": "RouterOS Jailbreak via Backup Path Traversal (SSH)",
+        "description": (
+            "MikroTik RouterOS 2.9.8 through 6.41rc56 allows an authenticated "
+            "SSH user to create a 'devel' user by exploiting path traversal in "
+            "the backup restore mechanism. The patched backup injects a devel-login "
+            "entry into /nova/etc/, granting a full Linux telnet shell."
+        ),
+        "severity": "CRITICAL",
+        "cvss_score": 9.0,
+        "affected": [((2, 9, 8), (6, 42, 0))],
+        "fixed_in": "6.42",
+        "services": ["ssh"],
+        "ports": [22],
+        "poc_available": True,
+        "exploit_type": "privesc",
+        "auth_required": True,
+        "references": [
+            "https://github.com/0ki/mikrotik-tools",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Requires valid SSH credentials. Creates 'devel' user for Linux shell. "
+            "After restore, telnet devel/<admin_password> gives root shell."
+        ),
+    },
+    {
+        "cve_id": "CVE-2018-14847-DECRYPT",
+        "title": "Winbox Full Credential Extraction and Decryption",
+        "description": (
+            "Extension of CVE-2018-14847 that not only detects the user.dat "
+            "disclosure but fully extracts and decrypts all stored credentials "
+            "using the RouterOS MD5-based key derivation scheme. Returns actual "
+            "username/password pairs in plaintext."
+        ),
+        "severity": "CRITICAL",
+        "cvss_score": 9.1,
+        "affected": [(None, (6, 42, 0))],
+        "fixed_in": "6.42.1",
+        "services": ["winbox"],
+        "ports": [8291],
+        "poc_available": True,
+        "exploit_type": "disclosure",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2018-14847",
+            "https://github.com/BasuCert/WinboxPoC",
+            "https://n0p.me/winbox-bug-dissection/",
+        ],
+        "metasploit": "auxiliary/gather/mikrotik_winbox_disclosure",
+        "notes": (
+            "Full credential decryption using MD5(user + '283i4jfkai3389') key. "
+            "Returns plaintext passwords for all local users."
+        ),
+    },
+    {
+        "cve_id": "MIKROTIK-CONFIG-004",
+        "title": "Scheduler/Script Command Injection via REST API",
+        "description": (
+            "MikroTik RouterOS REST API allows authenticated administrators to "
+            "create scheduler entries with arbitrary RouterOS script commands in "
+            "the on-event field. These execute with full system privileges, enabling "
+            "persistence (scheduled backdoor tasks), lateral movement (SSRF chains), "
+            "and data exfiltration (DNS/HTTP exfil via resolve/fetch). By-design "
+            "feature used as a post-authentication attack vector."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.2,
+        "affected": [(None, None)],
+        "fixed_in": None,
+        "services": ["rest-api", "api"],
+        "ports": [80, 443, 8728],
+        "poc_available": True,
+        "exploit_type": "injection",
+        "auth_required": True,
+        "references": [
+            "https://github.com/mrhenrike/MikrotikAPI-BF",
+        ],
+        "metasploit": None,
+        "notes": (
+            "By-design: admin can schedule commands. Attack value: persistence, "
+            "C2 callbacks, DNS exfil via :resolve, data theft via /tool/fetch. "
+            "No sanitization of on-event field — stored verbatim."
+        ),
+    },
+    {
+        "cve_id": "MIKROTIK-CONFIG-005",
+        "title": "REST API Path Traversal Probe",
+        "description": (
+            "Tests whether the MikroTik RouterOS REST API endpoint parser is "
+            "vulnerable to directory traversal, null-byte injection, or command "
+            "chaining via crafted URI paths. Probes ../../../etc/passwd, "
+            "URL-encoded sequences, null bytes, and inline command separators."
+        ),
+        "severity": "MEDIUM",
+        "cvss_score": 5.3,
+        "affected": [(None, None)],
+        "fixed_in": None,
+        "services": ["rest-api"],
+        "ports": [80, 443],
+        "poc_available": True,
+        "exploit_type": "traversal",
+        "auth_required": True,
+        "references": [
+            "https://github.com/mrhenrike/MikrotikAPI-BF",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Audit probe — tests if REST API has path traversal. "
+            "Modern RouterOS typically blocks these vectors. "
+            "Useful for regression testing after firmware updates."
+        ),
+    },
+    {
+        "cve_id": "MIKROTIK-CONFIG-003",
+        "title": "SSRF via REST API tool/fetch Endpoint",
+        "description": (
+            "MikroTik RouterOS REST API endpoint /rest/tool/fetch allows an "
+            "authenticated administrator to make arbitrary HTTP/FTP requests from "
+            "the router's network context. This enables internal service access "
+            "(127.0.0.1, [::1] on any port), cloud metadata theft (169.254.169.254 "
+            "in AWS/GCP/Azure), and network pivoting using the router as an SSRF proxy. "
+            "Particularly dangerous on CHR deployments in cloud environments where "
+            "instance credentials are accessible via metadata service."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.2,
+        "affected": [((7, 0, 0), None)],
+        "fixed_in": None,
+        "services": ["rest-api"],
+        "ports": [80, 443],
+        "poc_available": True,
+        "exploit_type": "ssrf",
+        "auth_required": True,
+        "references": [
+            "https://github.com/mrhenrike/MikrotikAPI-BF",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Discovered during lab assessment 2026-04. "
+            "REST API only (RouterOS 7.x+). No CVE assigned — by-design feature. "
+            "CWE-918 (Server-Side Request Forgery). "
+            "Mitigation: restrict REST API access by IP, audit tool/fetch usage."
+        ),
+    },
     # ─────────────────────────────────────────────────────────────────────────
     # CVE-2018-14847-MAC variant (Layer-2 MNDP/MAC-server delivery)
     # ─────────────────────────────────────────────────────────────────────────
@@ -726,6 +872,221 @@ CVE_DATABASE: List[Dict] = [
     # ─────────────────────────────────────────────────────────────────────────
     # 2024
     # ─────────────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2017 (additional)
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2017-20149",
+        "title": "RouterOS www Password Exposure in HTTP Response",
+        "description": (
+            "In certain MikroTik RouterOS versions before 6.38.5, the web management "
+            "interface leaks the admin password hash or plaintext in HTTP response "
+            "headers or body under specific conditions. Also tracked as the 'TikTok' "
+            "vulnerability."
+        ),
+        "severity": "CRITICAL",
+        "cvss_score": 9.8,
+        "affected": [(None, (6, 38, 4))],
+        "fixed_in": "6.38.5",
+        "services": ["http", "www"],
+        "ports": [80],
+        "poc_available": True,
+        "exploit_type": "disclosure",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2017-20149",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Pre-authentication — no credentials needed. "
+            "Affects very old RouterOS versions (< 6.38.5)."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2019 (additional)
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2019-3981",
+        "title": "RouterOS DNS Forwarder MitM / Cache Poisoning",
+        "description": (
+            "MikroTik RouterOS before 6.45.7 DNS forwarder uses predictable source "
+            "ports and transaction IDs, enabling DNS cache poisoning when "
+            "allow-remote-requests=yes. An attacker can redirect DNS queries through "
+            "the router via a MitM attack."
+        ),
+        "severity": "MEDIUM",
+        "cvss_score": 5.9,
+        "affected": [(None, (6, 45, 6))],
+        "fixed_in": "6.45.7",
+        "services": ["dns"],
+        "ports": [53],
+        "poc_available": True,
+        "exploit_type": "spoofing",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2019-3981",
+            "https://github.com/tenable/routeros",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Requires allow-remote-requests=yes in /ip dns. "
+            "Only exploitable when router acts as DNS forwarder."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2020 (additional)
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2020-5720",
+        "title": "RouterOS UDP Fragment Crash (Packet of Death)",
+        "description": (
+            "A specially crafted fragmented UDP packet causes MikroTik RouterOS "
+            "to crash and reboot. This is a denial-of-service vulnerability that "
+            "requires IP-level access to the device."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [(None, (6, 46, 4))],
+        "fixed_in": "6.46.5 / 6.47 (long-term)",
+        "services": ["ip"],
+        "ports": [],
+        "poc_available": True,
+        "exploit_type": "dos",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2020-5720",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Requires IP-level access. Crafted fragmented UDP packet triggers crash. "
+            "Update to 6.46.5+ or 6.47+ to patch."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2022 (additional)
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2022-45313",
+        "title": "RouterOS SMB Heap Use-After-Free (Pre-Auth RCE)",
+        "description": (
+            "A heap use-after-free vulnerability in the MikroTik RouterOS SMB "
+            "service allows pre-authenticated remote code execution. Different from "
+            "CVE-2022-45315 (authenticated stack overflow). An unauthenticated "
+            "attacker can send crafted SMB negotiate requests to trigger the UAF."
+        ),
+        "severity": "CRITICAL",
+        "cvss_score": 9.8,
+        "affected": [(None, (6, 49, 6)), ((7, 0, 0), (7, 5, 99))],
+        "fixed_in": "6.49.7 / 7.6",
+        "services": ["smb"],
+        "ports": [445],
+        "poc_available": True,
+        "exploit_type": "rce",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2022-45313",
+            "https://www.exploit-db.com/exploits/51451",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Pre-authentication — no credentials needed. "
+            "SMB must be enabled. Not enabled by default on most RouterOS builds."
+        ),
+    },
+    # ─────────────────────────────────────────────────────────────────────────
+    # 2025
+    # ─────────────────────────────────────────────────────────────────────────
+    {
+        "cve_id": "CVE-2025-6563",
+        "title": "RouterOS 7.x WebFig Reflected XSS / Open Redirect",
+        "description": (
+            "MikroTik RouterOS 7.x WebFig web interface is vulnerable to reflected "
+            "cross-site scripting and open redirect via crafted URL parameters. "
+            "An attacker can steal admin session tokens or redirect admins to "
+            "attacker-controlled pages."
+        ),
+        "severity": "MEDIUM",
+        "cvss_score": 6.1,
+        "affected": [((7, 0, 0), (7, 19, 0))],
+        "fixed_in": "7.19.1 (partial)",
+        "services": ["http", "www"],
+        "ports": [80, 443],
+        "poc_available": True,
+        "exploit_type": "xss",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-6563",
+            "https://www.exploit-db.com/exploits/52366",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Requires victim to click crafted URL. "
+            "Can be used to steal admin cookies/tokens. "
+            "Partial fix in 7.19.1."
+        ),
+    },
+    {
+        "cve_id": "CVE-2025-61481",
+        "title": "WebFig HTTP Credential Exposure and Information Leak",
+        "description": (
+            "MikroTik RouterOS and SwitchOS WebFig (web management interface) "
+            "transmits HTTP Basic Auth credentials in cleartext when accessed "
+            "over plain HTTP. A network observer or MITM attacker can capture "
+            "admin credentials. Additionally, certain REST API endpoints leak "
+            "device identity, firmware version, and RouterBOARD info without "
+            "authentication, enabling reconnaissance."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 7.5,
+        "affected": [(None, None)],
+        "fixed_in": None,
+        "services": ["http", "rest-api"],
+        "ports": [80, 443],
+        "poc_available": True,
+        "exploit_type": "disclosure",
+        "auth_required": False,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-61481",
+            "https://github.com/mrhenrike/MikrotikAPI-BF",
+        ],
+        "metasploit": None,
+        "notes": (
+            "Affects any RouterOS version with WebFig over HTTP. "
+            "Fix: enable HTTPS, disable plain HTTP service, restrict by IP."
+        ),
+    },
+    {
+        "cve_id": "CVE-2025-10948",
+        "title": "REST API Stack-Based Buffer Overflow (Authenticated RCE)",
+        "description": (
+            "A stack-based buffer overflow in the MikroTik RouterOS 7 REST API "
+            "HTTP request processing layer when parsing malformed Accept-Language "
+            "or long custom headers. Any authenticated REST API user (even read-only) "
+            "can trigger the overflow, crashing the REST daemon or achieving arbitrary "
+            "code execution. Combined with default blank admin credentials, this "
+            "achieves unauthenticated full router compromise."
+        ),
+        "severity": "HIGH",
+        "cvss_score": 8.8,
+        "affected": [((7, 0, 0), (7, 16, 1))],
+        "fixed_in": "7.16.2",
+        "services": ["http", "rest-api"],
+        "ports": [80, 443],
+        "poc_available": True,
+        "exploit_type": "rce",
+        "auth_required": True,
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-10948",
+            "https://zeropath.com/blog/cve-2025-10948-mikrotik-routeros-buffer-overflow",
+            "https://mikrotik.com/security/bulletins/CVE-2025-10948",
+        ],
+        "metasploit": None,
+        "notes": (
+            "RouterOS 7.0–7.16.1 only. "
+            "Trigger: 4096-byte Accept-Language header to any /rest/* endpoint. "
+            "Fix: upgrade to 7.16.2+. Workaround: disable REST API or restrict by IP."
+        ),
+    },
     {
         "cve_id": "CVE-2024-2169",
         "title": "BFD Protocol Reflection / Amplification Loop (DoS)",

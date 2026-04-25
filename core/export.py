@@ -113,6 +113,55 @@ class ResultExporter:
                 fh.write(f"{r.get('user', '')}:{r.get('pass', '')} ({services})\n")
         return path
 
+    def export_sarif(self) -> Path:
+        """Export results in SARIF v2.1.0 format for CI/CD integration."""
+        path = self._fname("sarif.json")
+        runs = []
+        results_sarif = []
+        for r in self.results:
+            result_entry = {
+                "ruleId": r.get("cve", r.get("id", "unknown")),
+                "level": self._sarif_level(r.get("severity", "warning")),
+                "message": {
+                    "text": r.get("evidence", r.get("title", "Finding detected")),
+                },
+                "locations": [{
+                    "physicalLocation": {
+                        "artifactLocation": {"uri": self.target},
+                    },
+                }],
+            }
+            if r.get("vulnerable") is True:
+                result_entry["kind"] = "fail"
+            results_sarif.append(result_entry)
+
+        sarif = {
+            "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [{
+                "tool": {
+                    "driver": {
+                        "name": "MikrotikAPI-BF",
+                        "informationUri": "https://github.com/mrhenrike/MikrotikAPI-BF",
+                        "version": self._meta().get("tool", "MikrotikAPI-BF"),
+                    },
+                },
+                "results": results_sarif,
+            }],
+        }
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(sarif, fh, indent=2, ensure_ascii=False)
+        return path
+
+    @staticmethod
+    def _sarif_level(severity: str) -> str:
+        """Map severity strings to SARIF result levels."""
+        mapping = {
+            "critical": "error", "high": "error",
+            "medium": "warning", "low": "note", "info": "note",
+        }
+        return mapping.get(severity.lower(), "warning")
+
     def export_all(self) -> Dict[str, Path]:
         """Export to all formats and return a dict of format→path."""
         return {
@@ -120,6 +169,7 @@ class ResultExporter:
             "csv": self.export_csv(),
             "xml": self.export_xml(),
             "txt": self.export_txt(),
+            "sarif": self.export_sarif(),
         }
 
     # ------------------------------------------------------------------
