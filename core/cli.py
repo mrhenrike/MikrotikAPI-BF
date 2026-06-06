@@ -317,14 +317,45 @@ class PentestCLI:
             return
         print(f"  [+] Stealth mode: {args[0].upper()}")
 
-    def _cmd_wordlists(self, _: List[str]) -> None:
+    def _cmd_wordlists(self, args: List[str]) -> None:
         mgr = self._get_wordlist_mgr()
         if not mgr:
             return
+
+        # Handle: wordlists generate:routeros [--count N] [--output FILE]
+        if args and args[0] == "generate:routeros":
+            count = 0
+            output_file = None
+            for i, a in enumerate(args[1:], 1):
+                if a == "--count" and i + 1 < len(args):
+                    try:
+                        count = int(args[i + 1])
+                    except ValueError:
+                        pass
+                if a == "--output" and i + 1 < len(args):
+                    output_file = args[i + 1]
+            candidates = mgr.generate_routeros_patterns(count=count)
+            print(f"\n  [+] Generated {len(candidates)} RouterOS password candidates")
+            if output_file:
+                from pathlib import Path
+                Path(output_file).write_text("\n".join(candidates), encoding="utf-8")
+                print(f"  [+] Saved to: {output_file}")
+            else:
+                print(f"  First 20 candidates:")
+                for c in candidates[:20]:
+                    print(f"    {c!r}")
+                if len(candidates) > 20:
+                    print(f"    ... and {len(candidates) - 20} more. Use --output FILE to save all.")
+            return
+
         stats = mgr.get_wordlist_stats()
         print(f"\n  Mikrotik defaults : {stats['mikrotik_defaults']}")
         print(f"  Mikrotik passwords: {stats['mikrotik_passwords']}")
         print(f"  Total combos      : {stats['total_combinations']}")
+        print(f"\n  RouterOS pattern generator:")
+        patterns = mgr.generate_routeros_patterns()
+        print(f"    Available via: wordlists generate:routeros [--count N] [--output FILE]")
+        print(f"    Native candidates: {len(patterns)}")
 
     def _cmd_exit(self, _: List[str]) -> None:
         print("  [*] Saving session…")
