@@ -19,7 +19,7 @@ the RouterOS binary protocol entirely in-memory (no per-byte socket reads).
 -- @output
 -- | mikrotik-api-info:
 -- |   version: 7.20.7 (long-term)
--- |   board: CHR DigitalOcean Droplet
+-- |   board: CHR
 -- |   cpu-load: 1%
 -- |_  firewall-rules: 0 -- WARNING: NO FIREWALL RULES
 

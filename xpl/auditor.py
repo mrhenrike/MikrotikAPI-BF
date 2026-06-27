@@ -91,7 +91,9 @@ class MikroTikAuditor:
     def _add_finding(
         self, fid: str, severity: str, title: str, detail: str, evidence: str = ""
     ) -> None:
-        """Register an audit finding."""
+        """Register an audit finding (deduplicated by id)."""
+        if any(f["id"] == fid for f in self.findings):
+            return
         self.findings.append({
             "id": fid, "severity": severity, "title": title,
             "detail": detail, "evidence": evidence[:2000],

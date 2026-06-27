@@ -59,8 +59,11 @@ class Log:
         return datetime.now().strftime("%H:%M:%S")
 
     def _print(self, level: str, message: str, color: str) -> None:
+        from .console import colorize_protocol_tag
+
         reset = Style.RESET_ALL if _HAS_COLOR else ""
-        print(f"{color}[{level:<4}] [{self._ts()}] {message}{reset}")
+        body = colorize_protocol_tag(message)
+        print(f"{color}[{level:<4}] [{self._ts()}] {body}{reset}")
 
     # ------------------------------------------------------------------
     # Public log methods
@@ -80,8 +83,15 @@ class Log:
 
     def fail(self, message: str) -> None:
         """Failed login attempt — shown only when verbose."""
-        if self.verbose or self.verbose_all:
-            self._print("FAIL", message, Fore.RED)
+        if not (self.verbose or self.verbose_all):
+            return
+        try:
+            from .escape import ShutdownCoordinator
+            if not ShutdownCoordinator.should_emit_logs():
+                return
+        except ImportError:
+            pass
+        self._print("FAIL", message, Fore.RED)
 
     def skip(self, message: str) -> None:
         """Skipped entry — shown only when verbose."""

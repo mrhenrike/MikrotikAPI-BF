@@ -38,7 +38,7 @@ References:
 -- | mikrotik-default-creds:
 -- |   CREDENTIALS FOUND
 -- |     admin:  (empty password) — API:8728, REST:80
--- |_  RouterOS 7.20.7 | Board: CHR DigitalOcean Droplet
+-- |_  RouterOS 7.20.7 | Board: CHR
 
 author = "Andre Henrique <@mrhenrike>"
 license = "Same as Nmap -- See https://nmap.org/book/man-legal.html"

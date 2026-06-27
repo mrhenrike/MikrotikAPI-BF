@@ -240,26 +240,26 @@ CVE_DATABASE: List[Dict] = [
     # ─────────────────────────────────────────────────────────────────────────
     {
         "cve_id": "CVE-2020-11881",
-        "title": "RouterOS DNS Server Heap Buffer Overflow",
+        "title": "RouterOS SMB Remote Denial of Service",
         "description": (
-            "MikroTik RouterOS 7.x before 7.0beta7 is vulnerable to a heap-based "
-            "buffer overflow in the DNS server component when processing malformed "
-            "DNS queries. Can lead to denial of service or potential code execution."
+            "Unauthenticated remote DoS in MikroTik SMB service (RouterOS 6.41.3–6.46.5) "
+            "via crafted setup-request with SessionID=0 after negotiation."
         ),
         "severity": "HIGH",
         "cvss_score": 7.5,
-        "affected": [((7, 0, 0), (7, 0, 0))],
-        "fixed_in": "7.0beta7",
-        "services": ["dns"],
-        "ports": [53],
-        "poc_available": False,
+        "affected": [((6, 41, 3), (6, 46, 5))],
+        "fixed_in": "6.46.6 / 6.47",
+        "services": ["smb"],
+        "ports": [445],
+        "poc_available": True,
         "exploit_type": "dos",
         "auth_required": False,
         "references": [
             "https://nvd.nist.gov/vuln/detail/CVE-2020-11881",
+            "https://github.com/botlabsDev/CVE-2020-11881",
         ],
         "metasploit": None,
-        "notes": "Only affects RouterOS 7.x early beta releases.",
+        "notes": "Native PoC: xpl/poc_payloads.py (botlabsDev packets).",
     },
     {
         "cve_id": "CVE-2020-20213",
@@ -609,6 +609,74 @@ CVE_DATABASE: List[Dict] = [
             "Requires valid SSH credentials. Creates 'devel' user for Linux shell. "
             "After restore, telnet devel/<admin_password> gives root shell."
         ),
+    },
+    {
+        "cve_id": "MIKROTIK-JAILBREAK-002",
+        "title": "RouterOS USB Defconf Jailbreak (6.41–6.44.3+)",
+        "description": "Physical USB defconf bind mount jailbreak for RouterOS 6.41+.",
+        "severity": "CRITICAL",
+        "cvss_score": 8.5,
+        "affected": [((6, 41, 0), (6, 44, 3))],
+        "fixed_in": "6.44.4",
+        "services": ["usb"],
+        "ports": [],
+        "poc_available": True,
+        "exploit_type": "privesc",
+        "auth_required": True,
+        "references": ["https://github.com/0ki/mikrotik-tools/tree/master/exploit-defconf"],
+        "metasploit": None,
+        "notes": "Requires USB hardware — not applicable to CHR/cloud.",
+    },
+    {
+        "cve_id": "MIKROTIK-SVC-DUDE",
+        "title": "MikroTik Dude Server Exposed",
+        "description": "Dude monitoring server port 8292 exposed to network.",
+        "severity": "MEDIUM",
+        "cvss_score": 5.0,
+        "affected": [(None, None)],
+        "fixed_in": None,
+        "services": ["dude"],
+        "ports": [8292],
+        "poc_available": True,
+        "exploit_type": "exposure",
+        "auth_required": False,
+        "references": ["https://github.com/0ki/mikrotik-tools"],
+        "metasploit": None,
+        "notes": "Attack surface enumeration — ecosystem map.",
+    },
+    {
+        "cve_id": "MIKROTIK-SVC-BTEST",
+        "title": "MikroTik Bandwidth-Test Server Exposed",
+        "description": "Bandwidth-test server on port 2000 exposed.",
+        "severity": "MEDIUM",
+        "cvss_score": 5.5,
+        "affected": [(None, None)],
+        "fixed_in": None,
+        "services": ["btest"],
+        "ports": [2000],
+        "poc_available": True,
+        "exploit_type": "exposure",
+        "auth_required": False,
+        "references": ["https://github.com/0ki/mikrotik-tools"],
+        "metasploit": None,
+        "notes": "DoS/amplification risk when exposed.",
+    },
+    {
+        "cve_id": "MIKROTIK-SVC-SETUP",
+        "title": "MikroTik Setup Wizard Exposed",
+        "description": "Initial setup wizard reachable without authentication.",
+        "severity": "HIGH",
+        "cvss_score": 7.0,
+        "affected": [(None, None)],
+        "fixed_in": None,
+        "services": ["www"],
+        "ports": [80],
+        "poc_available": True,
+        "exploit_type": "exposure",
+        "auth_required": False,
+        "references": ["https://github.com/0ki/mikrotik-tools"],
+        "metasploit": None,
+        "notes": "Fresh/unconfigured devices — password takeover risk.",
     },
     {
         "cve_id": "CVE-2018-14847-DECRYPT",
@@ -1409,29 +1477,8 @@ CVE_DATABASE: List[Dict] = [
         ),
     },
     # ─────────────────────────────────────────────────────────────────────────
-    # Missing CVEs — DNS, DHCPv6, NPK
+    # Missing CVEs — DHCPv6, NPK
     # ─────────────────────────────────────────────────────────────────────────
-    {
-        "cve_id": "CVE-2020-11881",
-        "title": "RouterOS DNS Server Heap Buffer Overflow",
-        "description": (
-            "A heap buffer overflow in the RouterOS DNS server allows a remote "
-            "unauthenticated attacker to cause a denial of service by sending "
-            "crafted DNS queries."
-        ),
-        "severity": "HIGH",
-        "cvss_score": 7.5,
-        "affected": [(None, (6, 46, 5))],
-        "fixed_in": "6.46.6 / 6.47",
-        "services": ["dns"],
-        "ports": [53],
-        "poc_available": False,
-        "exploit_type": "dos",
-        "auth_required": False,
-        "references": ["https://nvd.nist.gov/vuln/detail/CVE-2020-11881"],
-        "metasploit": None,
-        "notes": "Pre-auth DNS DoS. Disable DNS cache/server if not needed.",
-    },
     {
         "cve_id": "CVE-2020-20213",
         "title": "RouterOS NPK Upgrade Denial of Service",
@@ -2420,4 +2467,24 @@ def print_cve_summary() -> None:
     print(f"  CVEs with PoC: {len(get_cves_with_poc())}")
     print(f"  Metasploit modules: {sum(1 for c in CVE_DATABASE if c.get('metasploit'))}")
     print(f"{'='*70}\n")
+
+
+# Merge extended catalog entries (dedupe by cve_id)
+try:
+    from xpl.cve_extended import EXTENDED_CVE_ENTRIES
+
+    _existing_ids = {c["cve_id"] for c in CVE_DATABASE}
+    for _ext in EXTENDED_CVE_ENTRIES:
+        if _ext["cve_id"] not in _existing_ids:
+            CVE_DATABASE.append(_ext)
+            _existing_ids.add(_ext["cve_id"])
+except ImportError:
+    pass
+
+try:
+    from xpl.reproducible_catalog import sync_cve_poc_flags
+
+    sync_cve_poc_flags(CVE_DATABASE)
+except ImportError:
+    pass
 

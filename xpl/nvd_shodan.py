@@ -59,7 +59,11 @@ def _resolve_key(env_var: str, config_section: str, config_key: str = "api_key")
 
 
 NVD_API_KEY = _resolve_key("NVD_API_KEY", "nvd")
-SHODAN_API_KEY = _resolve_key("SHODAN_API_KEY", "shodan")
+SHODAN_API_KEY = (
+    _resolve_key("SHODAN_API_KEY", "shodan")
+    or os.environ.get("LABORATORY_BUG_HUNT_MIKROTIK_ENV__SHODAN_KEY")
+    or os.environ.get("LABORATORY_BUG_HUNT_ENV__SHODAN_KEY")
+)
 
 
 # ---------------------------------------------------------------------- #
@@ -267,31 +271,65 @@ class ShodanClient:
         except Exception as exc:
             return {"error": str(exc)}
 
-    def search_mikrotik(self, query: str = "product:MikroTik", limit: int = 10) -> List[Dict]:
+    def api_info(self) -> Dict:
+        """Return Shodan account credits and plan info."""
+        if not self.api_key:
+            return {"error": "No Shodan API key configured"}
+        try:
+            resp = requests.get(
+                f"{self.BASE_URL}/api-info",
+                params={"key": self.api_key},
+                timeout=self.timeout,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "plan": data.get("plan"),
+                "query_credits": data.get("query_credits"),
+                "scan_credits": data.get("scan_credits"),
+                "monitored_ips": data.get("monitored_ips"),
+            }
+        except Exception as exc:
+            return {"error": str(exc)}
+
+    def search_mikrotik(
+        self,
+        query: str = "product:MikroTik",
+        limit: int = 10,
+        page: int = 1,
+    ) -> Dict:
         """
         Search Shodan for MikroTik devices matching *query*.
 
         Args:
             query: Shodan search query.
-            limit: Maximum results.
+            limit: Maximum results (capped by Shodan page size).
+            page: Result page (1-based).
 
         Returns:
-            List of simplified host dicts.
+            Dict with total, matches (list), and optional error.
         """
         if not self.api_key:
-            return [{"error": "No Shodan API key configured"}]
+            return {"error": "No Shodan API key configured", "matches": [], "total": 0}
         try:
             resp = requests.get(
                 f"{self.BASE_URL}/shodan/host/search",
-                params={"key": self.api_key, "query": query},
+                params={
+                    "key": self.api_key,
+                    "query": query,
+                    "page": page,
+                },
                 timeout=self.timeout,
             )
             resp.raise_for_status()
             data = resp.json()
             matches = data.get("matches", [])[:limit]
-            return [self._parse_match(m) for m in matches]
+            return {
+                "total": data.get("total", 0),
+                "matches": [self._parse_match(m) for m in matches],
+            }
         except Exception as exc:
-            return [{"error": str(exc)}]
+            return {"error": str(exc), "matches": [], "total": 0}
 
     @staticmethod
     def _parse_host(data: Dict) -> Dict:
@@ -321,12 +359,18 @@ class ShodanClient:
 
     @staticmethod
     def _parse_match(data: Dict) -> Dict:
+        loc = data.get("location") or {}
         return {
             "ip": data.get("ip_str"),
             "port": data.get("port"),
             "product": data.get("product"),
             "version": data.get("version"),
             "org": data.get("org"),
-            "country": data.get("location", {}).get("country_name"),
-            "banner": str(data.get("data", ""))[:200],
+            "isp": data.get("isp"),
+            "country": loc.get("country_name"),
+            "city": loc.get("city"),
+            "hostnames": data.get("hostnames", []),
+            "tags": data.get("tags", []),
+            "vulns": data.get("vulns", []),
+            "banner": str(data.get("data", ""))[:300],
         }
