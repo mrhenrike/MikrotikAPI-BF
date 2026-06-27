@@ -520,101 +520,101 @@ class BackupDecoder:
 class SupoutDecoder:
     """Extract section metadata from a RouterOS supout.rif file.
 
-    The supout.rif diagnostic file is a concatenation of named sections.
-    Each section starts with a header containing the section name and its size.
-    This decoder lists all sections and can dump specific ones as text.
-
-    Reference:
-        https://github.com/0ki/mikrotik-tools/blob/master/decode_supout.py
-        https://mikrotik.com/download (Winbox → Diagnostics → Supout.rif)
+    Supports tribit text format (mikrotik-tools) and legacy binary magic.
+    /proc archive extraction via modules.supout_codec (PR #16).
     """
 
     @classmethod
     def list_sections(cls, supout_path: str) -> List[Dict]:
-        """Return all sections found in the supout.rif file.
+        from modules.supout_codec import list_sections as _list
 
-        Returns:
-            List of dicts with keys: name, offset, size.
-        """
-        sections = []
-        with open(supout_path, "rb") as f:
-            data = f.read()
-
-        pos = 0
-        while pos < len(data) - 8:
-            # Section header: 4-byte magic + name + \x00 + 4-byte size
-            if data[pos: pos + 4] != b"\x8b\xbe\xa8\xbc":
-                pos += 1
-                continue
-
-            pos += 4
-            name_end = data.find(b"\x00", pos)
-            if name_end < 0:
-                break
-            name = data[pos:name_end].decode("utf-8", errors="replace")
-            pos = name_end + 1
-
-            if pos + 4 > len(data):
-                break
-            size = struct.unpack(">I", data[pos: pos + 4])[0]
-            pos += 4
-
-            sections.append({"name": name, "offset": pos, "size": size})
-            pos += size
-
-        log.info("[supout] Found %d section(s) in %s", len(sections), supout_path)
-        return sections
+        return _list(supout_path)
 
     @classmethod
     def dump_section(cls, supout_path: str, section_name: str) -> Optional[str]:
-        """Return the text content of a named section.
+        from modules.supout_codec import dump_section as _dump
 
-        Args:
-            supout_path:  Path to supout.rif.
-            section_name: Section name (e.g. '/system/users', '/ip/address').
-
-        Returns:
-            Section content as string, or None if not found.
-        """
-        with open(supout_path, "rb") as f:
-            data = f.read()
-
-        for section in cls.list_sections(supout_path):
-            if section["name"] == section_name:
-                raw = data[section["offset"]: section["offset"] + section["size"]]
-                try:
-                    return raw.decode("utf-8")
-                except UnicodeDecodeError:
-                    return raw.decode("latin-1", errors="replace")
-
-        return None
+        return _dump(supout_path, section_name)
 
     @classmethod
-    def extract_users_from_supout(cls, supout_path: str) -> List[Dict]:
-        """Try to extract user/password data from /system/users section.
+    def extract_proc_archive(cls, supout_path: str, section_name: str, dest: str) -> int:
+        """Extract /proc ar archive from a named section (PR #16)."""
+        from modules.supout_codec import dump_section, extract_proc_archive, parse_supout_rif
 
-        Returns:
-            List of dicts {username, password} parsed from text representation.
-            Note: passwords in supout are usually blank or hashed — this is
-            metadata-only (confirms user existence).
-        """
-        content = cls.dump_section(supout_path, "/system/users")
-        if not content:
-            content = cls.dump_section(supout_path, "system/users")
-        if not content:
-            return []
+        for s in parse_supout_rif(supout_path):
+            if s.name == section_name or section_name in s.name:
+                endian = "le" if s.raw.startswith(b"\4\4\0\0\0\2") else "be"
+                return extract_proc_archive(s.raw, dest, endian)
+        raw = cls.dump_section(supout_path, section_name)
+        if raw is None:
+            return 0
+        blob = raw.encode("utf-8") if isinstance(raw, str) else raw
+        for endian in ("le", "be"):
+            n = extract_proc_archive(blob, dest, endian)
+            if n:
+                return n
+        return 0
 
-        users = []
-        for line in content.splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or line.startswith(";"):
-                continue
-            # Format: /user add name=admin group=full password=""
-            m = re.search(r'name=(\S+)', line)
-            if m:
-                users.append({
-                    "username": m.group(1).strip('"\''),
-                    "password": "(from supout — encrypted/blank)",
-                })
-        return users
+    @classmethod
+    def extract_all(cls, supout_path: str, output_dir: str) -> List[str]:
+        """Decode all sections to output_dir (decode_supout.py equivalent)."""
+        from modules.supout_codec import parse_supout_rif
+        import re
+
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        written: List[str] = []
+        for s in parse_supout_rif(supout_path):
+            safe = re.sub(r"[^a-z0-9\.-]", "_", s.name, flags=re.I)
+            path = out / f"{s.index:02d}_{safe}"
+            path.write_bytes(s.raw)
+            written.append(str(path))
+            if s.has_proc_archive:
+                proc_dir = out / f"{s.index:02d}_{safe}_proc"
+                cls.extract_proc_archive(supout_path, s.name, str(proc_dir))
+        return written
+
+
+class SupoutEncoder:
+    """Build supout.rif from section files (encode_supout.py / issue #14)."""
+
+    @staticmethod
+    def encode_section(name: str, content: bytes) -> str:
+        from modules.supout_codec import encode_section
+
+        return encode_section(name, content)
+
+    @staticmethod
+    def build_from_folder(folder: str, output_path: str) -> str:
+        from modules.supout_codec import build_supout_from_folder
+
+        data = build_supout_from_folder(folder)
+        Path(output_path).write_bytes(data)
+        return output_path
+
+
+# restore extract_users on SupoutDecoder
+SupoutDecoder.extract_users_from_supout = staticmethod(
+    lambda supout_path: _extract_users_from_supout(supout_path)
+)
+
+
+def _extract_users_from_supout(supout_path: str) -> List[Dict]:
+    content = SupoutDecoder.dump_section(supout_path, "/system/users")
+    if not content:
+        content = SupoutDecoder.dump_section(supout_path, "system/users")
+    if not content:
+        return []
+    users = []
+    for line in content.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or line.startswith(";"):
+            continue
+        m = re.search(r"name=(\S+)", line)
+        if m:
+            users.append({
+                "username": m.group(1).strip("\"'"),
+                "password": "(from supout — encrypted/blank)",
+            })
+    return users
 

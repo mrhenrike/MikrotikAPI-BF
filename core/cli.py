@@ -16,6 +16,10 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .log import Log
+from .escape import ShutdownCoordinator, safe_input
+from .console import warn as console_warn
+from .lab_wordlists import default_lab_credentials
+from .security import validate_target_format, confirm_authorization
 
 
 class PentestCLI:
@@ -58,8 +62,9 @@ class PentestCLI:
                 if raw:
                     self._dispatch(raw)
             except KeyboardInterrupt:
-                print("\n  [!] Use 'exit' to save and quit.")
+                print("\n  [!] Cancelled (Ctrl+C). Use 'exit' to save and quit.")
             except EOFError:
+                print("\n  [!] Cancelled (Ctrl+D).")
                 self._cmd_exit([])
                 break
 
@@ -79,6 +84,7 @@ class PentestCLI:
             "scan": self._cmd_scan,
             "fingerprint": self._cmd_fingerprint,
             "attack": self._cmd_attack,
+            "set": self._cmd_set,
             "results": self._cmd_results,
             "export": self._cmd_export,
             "targets": self._cmd_targets,
@@ -111,8 +117,9 @@ class PentestCLI:
     fingerprint <target>        Full fingerprint of a Mikrotik device
 
   ATTACK:
-    attack <target>             Brute-force with built-in wordlists
-    attack <target> -w <file>   Brute-force with custom wordlist
+    attack <target>             Brute-force (prompts for wordlist if needed)
+    attack <target> -w <file>   Brute-force with combo/user:pass file
+    set target <ip>             Set default target for attack
 
   EXPLOITATION:
     exploits <target>           Show applicable CVEs / exploits for target
@@ -183,22 +190,100 @@ class PentestCLI:
         except Exception as exc:
             print(f"  [!] Error: {exc}")
 
+    def _cmd_set(self, args: List[str]) -> None:
+        if len(args) >= 2 and args[0] == "target":
+            try:
+                validate_target_format(args[1])
+            except ValueError as exc:
+                print(f"  [!] {exc}")
+                return
+            self._current_target = args[1]
+            print(f"  [+] Current target: {self._current_target}")
+        else:
+            print("  [!] Usage: set target <ip>")
+
+    def _run_attack(
+        self,
+        target: str,
+        wordlist: Optional[str] = None,
+        *,
+        userlist: Optional[str] = None,
+        passlist: Optional[str] = None,
+    ) -> None:
+        try:
+            validate_target_format(target)
+        except ValueError as exc:
+            print(f"  [!] {exc}")
+            return
+
+        if not wordlist and not (userlist and passlist):
+            try:
+                userlist, passlist = default_lab_credentials()
+                print(f"  [i] WFH lab: {userlist} + {passlist}")
+            except (FileNotFoundError, KeyError):
+                raw = safe_input("  Combo file (-d)", "examples/combos.txt", esc_cancel=True)
+                if raw is None:
+                    print("  [!] Cancelled (Esc).")
+                    return
+                wordlist = raw or "examples/combos.txt"
+
+        try:
+            confirm_authorization(target, skip=False, stdin_is_tty=True)
+        except KeyboardInterrupt:
+            return
+
+        cred_desc = wordlist or f"{userlist} × {passlist}"
+        print(f"  [*] Brute-forcing {target} with {cred_desc}…")
+        try:
+            from .attack_runner import run_bruteforce
+
+            results = run_bruteforce(
+                target,
+                usernames=userlist,
+                passwords=passlist,
+                combo_dict=wordlist,
+                delay=0.25,
+                max_workers=2,
+                show_progress=True,
+                verbose=True,
+            )
+            for row in results:
+                cred = {
+                    "user": row.get("username") or row.get("user", "?"),
+                    "pass": row.get("password") or row.get("pass", "?"),
+                    "services": row.get("services", []),
+                    "target": target,
+                }
+                self.session_data["credentials_found"].append(cred)
+            print(f"  [+] Attack finished — {len(results)} credential(s) found.")
+        except KeyboardInterrupt:
+            print(f"\n  {console_warn('[!]')} Attack interrupted (Ctrl+C).")
+        except Exception as exc:
+            print(f"  [!] Attack error: {exc}")
+
     def _cmd_attack(self, args: List[str]) -> None:
         if not args:
-            print("  [!] Usage: attack <target> [-w <wordlist>]")
-            return
-        target = args[0]
-        wordlist = None
-        if "-w" in args:
-            idx = args.index("-w")
-            if idx + 1 < len(args):
-                wordlist = args[idx + 1]
+            target = self._current_target
+            if not target:
+                raw = safe_input("  Target IP", esc_cancel=True)
+                if raw is None:
+                    print("  [!] Cancelled (Esc).")
+                    return
+                target = raw.strip()
+            if not target:
+                print("  [!] Usage: attack <target> [-w <wordlist>]  |  lab")
+                return
+            wordlist = None
+        else:
+            target = args[0]
+            wordlist = None
+            if "-w" in args:
+                idx = args.index("-w")
+                if idx + 1 < len(args):
+                    wordlist = args[idx + 1]
 
-        # Build the CLI invocation message (attack is delegated to the main script)
-        cmd = f"python mikrotikapi-bf.py -t {target}"
-        if wordlist:
-            cmd += f" -d {wordlist}"
-        print(f"  [!] To attack from CLI, run:\n      {cmd}")
+        self._current_target = target
+        self._run_attack(target, wordlist)
 
     def _cmd_exploits(self, args: List[str]) -> None:
         if not args:

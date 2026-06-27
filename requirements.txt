@@ -22,5 +22,8 @@ PyYAML>=6.0
 beautifulsoup4>=4.12.0
 
 # ── Environment variables (optional, for .env support) ────────────────────
-# Load .env automatically when running the tool
 python-dotenv>=1.0.0
+
+# ── Winbox EC-SRP5 (RouterOS 6.43+ / 7.x) ─────────────────────────────────
+pycryptodome>=3.19.0
+ecdsa>=0.18.0

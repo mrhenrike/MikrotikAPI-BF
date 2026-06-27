@@ -50,10 +50,21 @@ results/
 sessions/
 test_results/
 wordlists/
+xpl/generated/coverage_report.json
 *.log
 *.tmp
 *.bak
 *.backup
+
+# Lab / research / deploy (local only — not part of public product)
+.tmp/
+scripts/
+tools/mikrotik-tools/
+examples/lab-*.sh
+setup_venv.sh
+HANDOFF*.md
+*HANDOFF*.md
+lab_manifest.json
 
 # Cache
 .pytest_cache/
@@ -74,6 +85,8 @@ coverage.xml
 
 # Environments
 .env
+.env.local
+lab/
 .venv
 env/
 venv/

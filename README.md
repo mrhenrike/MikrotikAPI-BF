@@ -280,6 +280,12 @@ nmap -p 8728 --script mikrotik-api-brute \
 | `--decode-backup` | — | Decode `.backup` archive | — |
 | `--analyze-npk` | — | Analyze NPK package | — |
 | `--decode-supout` | — | List `supout.rif` sections | — |
+| `--encode-supout` | — | Encode folder → `supout.rif` (tribit, v3.15+) | — |
+| `--extract-supout` | — | Extract `supout.rif` → folder (v3.15+) | — |
+| `--fetch-npk` | — | Download NPK from MikroTik CDN (v3.15+) | — |
+| `--unpack-npk` | — | Unpack NPK package offline (v3.15+) | — |
+| `--run-jailbreak` | — | Jailbreak PoC (`MIKROTIK-JAILBREAK-001/002`, v3.15+) | — |
+| `--e2e` | — | With `--run-exploit`: call `exploit()` after `check()` | false |
 
 > **Full guide:** [Wiki — Complete Usage Guide](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/Complete-Usage-Guide) · [pt-BR](https://github.com/mrhenrike/MikrotikAPI-BF/wiki/Complete-Usage-Guide-pt-BR)
 

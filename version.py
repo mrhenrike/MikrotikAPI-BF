@@ -21,7 +21,7 @@ Versioning scheme: MAJOR.MINOR.PATCH
 """
 
 # ── Canonical version tuple ───────────────────────────────────────────────────
-VERSION: tuple = (3, 10, 0)
+VERSION: tuple = (3, 15, 0)
 
 MAJOR: int = VERSION[0]
 MINOR: int = VERSION[1]
