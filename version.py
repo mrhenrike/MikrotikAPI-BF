@@ -10,7 +10,7 @@ All modules, scripts, and build tools import from here.
 
 Usage
 -----
-    from version import __version__               # "3.10.0"
+    from version import __version__               # "3.15.0"
     from version import VERSION                   # (3, 10, 0)
     from version import MAJOR, MINOR, PATCH       # 3, 10, 0
 

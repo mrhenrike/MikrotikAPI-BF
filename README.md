@@ -1,8 +1,8 @@
-# MikrotikAPI-BF v3.10.0
+# MikrotikAPI-BF v3.15.0
 
 [![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.10.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.10.0)
+[![Version](https://img.shields.io/badge/version-3.15.0-red.svg)](https://github.com/mrhenrike/MikrotikAPI-BF/releases/tag/v3.15.0)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](README.md)
 [![Wiki](https://img.shields.io/badge/Wiki-GitHub-orange)](https://github.com/mrhenrike/MikrotikAPI-BF/wiki)
 [![PyPI](https://img.shields.io/badge/pip-mikrotikapi--bf-blue)](https://pypi.org/project/mikrotikapi-bf/)
